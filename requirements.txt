@@ -1,0 +1,16 @@
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+torch==2.7.1
+torchvision==0.22.1
+scikit-learn==1.9.1
+numpy==2.5.3
+tensorboard==2.21.0
+matplotlib==3.11.2
+tqdm==4.70.1
+
+yacs==0.1.8
+pyyaml==6.0.3
+
+flake8==7.4.1
+flake8-quotes==3.4.0
+isort==9.0.2

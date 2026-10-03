@@ -1,0 +1,202 @@
+data:
+  train:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.mnist
+        name: MNIST
+        kwargs:
+          root: "'data/'"
+          split: "'train'"
+          transform: 'transforms.Compose([
+            transforms.RandomAffine(5, translate=(0.1, 0.1)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.1308,), (0.3082,)),
+          ])'
+      shuffle: True
+      batch_size: 64
+
+  train_eval:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.mnist
+        name: MNIST
+        kwargs:
+          root: "'data/'"
+          split: "'train'"
+          transform: 'transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1308,), (0.3082,)),
+          ])'
+      shuffle: False
+      batch_size: 512
+
+  valid:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.mnist
+        name: MNIST
+        kwargs:
+          root: "'data/'"
+          split: "'val'"
+          transform: 'transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1308,), (0.3082,)),
+          ])'
+      shuffle: False
+      batch_size: 512
+
+model:
+  module: models.e1.softmax
+  name: SoftmaxClassifier
+  kwargs:
+    in_channels: 1
+    image_size: 28
+    num_classes: 10
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  kwargs:
+    params: model.parameters()
+    lr: 0.001
+
+loss_fn:
+  module: torch.nn
+  name: CrossEntropyLoss
+
+trainer:
+  module: common.engine.trainer
+  name: Trainer
+  kwargs:
+    data: data.train
+    model: model
+    optimizer: optimizer
+    loss_fn: loss_fn
+    device: null
+    max_epochs: 1000
+
+evaluators:
+  train:
+    module: common.engine.evaluator
+    name: Evaluator
+    kwargs:
+      data: data.train_eval
+      model: model
+      device: null
+
+  valid:
+    module: common.engine.evaluator
+    name: Evaluator
+    kwargs:
+      data: data.valid
+      model: model
+      device: null
+
+metrics:
+  loss:
+    module: common.metrics.loss
+    name: Loss
+    kwargs:
+      loss_fn:
+        module: torch.nn
+        name: CrossEntropyLoss
+  accuracy:
+    module: common.metrics.accuracy
+    name: Accuracy
+    kwargs:
+      num_classes: 10
+  precision:
+    module: common.metrics.precision
+    name: Precision
+    kwargs:
+      num_classes: 10
+      average: True
+  recall:
+    module: common.metrics.recall
+    name: Recall
+    kwargs:
+      num_classes: 10
+      average: True
+  f1_score:
+    module: common.metrics.f1_score
+    name: F1Score
+    kwargs:
+      num_classes: 10
+      average: True
+
+lr_scheduler:
+  module: common.handlers.scheduler.metric
+  name: MetricScheduler
+  kwargs:
+    scheduler:
+      module: torch.optim.lr_scheduler
+      name: ReduceLROnPlateau
+      kwargs:
+        optimizer: optimizer
+        mode: "'min'"
+        factor: 0.1
+        patience: 10
+    evaluator: evaluators.valid
+    score_name: "'loss'"
+
+early_stopping:
+  module: common.handlers.early_stopping
+  name: EarlyStopping
+  kwargs:
+    patience: 20
+    evaluator: evaluators.valid
+    mode: "'min'"
+    score_name: "'loss'"
+
+logging:
+  tensorboard:
+    module: common.handlers.logging.tensorboard
+    name: TensorBoardLogger
+    kwargs:
+      log_dir: "'logs/e1/train_softmax_aug'"
+  tqdm:
+    module: common.handlers.logging.tqdm_logger
+    name: TQDMLogger
+
+best_checkpoint:
+  module: common.handlers.checkpoint.best
+  name: BestCheckpoint
+  kwargs:
+    dirname: "'checkpoints/e1/softmax_aug'"
+    modules:
+      - "'model'"
+    evaluator: evaluators.valid
+    score_name: "'loss'"
+    mode: "'min'"
+    n_saved: 1
+
+backup_checkpoint:
+  module: common.handlers.checkpoint.backup
+  name: BackupCheckpoint
+  kwargs:
+    dirname: "'checkpoints/e1/softmax_aug'"
+    modules:
+      - "'model'"
+      - "'optimizer'"
+      - "'trainer'"
+      - "'lr_scheduler'"
+      - "'early_stopping'"
+      - "'best_checkpoint'"
+    n_saved: 1
+
+loader:
+  module: common.handlers.checkpoint.loader
+  name: CheckpointLoader
+  kwargs:
+    path: null
+
+seed: 42
+
+extralibs:
+  transforms: torchvision.transforms

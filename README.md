@@ -1,1 +1,1 @@
-# co5085_excersises_and_assignments
+# CO5085: Deep Learning and its Applications in Computer Vision
