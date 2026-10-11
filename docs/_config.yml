@@ -1,0 +1,76 @@
+theme: jekyll-theme-chirpy
+lang: en
+timezone: Asia/Ho_Chi_Minh
+future: true
+
+title: CO5085 · HK261
+tagline: Deep Learning and its Applications in Computer Vision
+description: >-
+  Coursework reports for CO5085 — Deep Learning and its Applications in Computer Vision (HK261).
+
+url: "https://tronglh241.github.io"
+
+github:
+  username: tronglh241
+
+social:
+  name: CO5085 Coursework
+  links:
+    - https://github.com/tronglh241/co5085_excersises_and_assignments/
+
+theme_mode:
+cdn:
+avatar:
+social_preview_image:
+toc: true
+
+comments:
+  provider:
+
+analytics:
+  google:
+    id:
+
+pwa:
+  enabled: false
+  cache:
+    enabled: false
+
+paginate: 10
+baseurl: "/co5085_excersises_and_assignments"
+
+kramdown:
+  footnote_backlink: "&#8617;&#xfe0e;"
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: highlight
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+      start_line: 1
+
+collections:
+  tabs:
+    output: true
+    sort_by: order
+
+defaults:
+  - scope:
+      path: ""
+      type: tabs
+    values:
+      layout: page
+      permalink: /:title/
+
+sass:
+  style: compressed
+
+jekyll-archives:
+  enabled: [categories, tags]
+  layouts:
+    category: category
+    tag: tag
+  permalinks:
+    tag: /tags/:name/
+    category: /categories/:name/

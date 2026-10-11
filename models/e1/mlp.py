@@ -4,10 +4,10 @@ import torch.nn as nn
 class MLPClassifier(nn.Module):
     def __init__(
         self,
-        in_channels=1,
-        image_size=28,
-        hidden_dims=(256, 128),
         num_classes=10,
+        image_size=28,
+        in_channels=1,
+        hidden_dims=(256, 128),
         dropout=0.0,
     ):
         super().__init__()

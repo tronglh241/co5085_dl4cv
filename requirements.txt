@@ -14,3 +14,4 @@ pyyaml==6.0.3
 flake8==7.4.1
 flake8-quotes==3.4.0
 isort==9.0.2
+gdown==6.4.2

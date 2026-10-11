@@ -1,1 +1,1 @@
-# CO5085: Deep Learning and its Applications in Computer Vision
+# CO5085: Deep Learning and its Applications in Computer Vision (HK261)

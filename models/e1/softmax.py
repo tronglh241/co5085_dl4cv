@@ -4,9 +4,9 @@ import torch.nn as nn
 class SoftmaxClassifier(nn.Module):
     def __init__(
         self,
-        in_channels=1,
-        image_size=28,
         num_classes=10,
+        image_size=28,
+        in_channels=1,
     ):
         super().__init__()
         self.net = nn.Sequential(

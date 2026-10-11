@@ -1,4 +1,5 @@
 import argparse
+import shutil
 import sys
 from pathlib import Path
 
@@ -49,6 +50,7 @@ if __name__ == '__main__':
 
     if 'backup_checkpoint' in cfg:
         cfg.backup_checkpoint.attach(cfg.trainer, cfg)
+        shutil.copy(args.config, cfg.backup_checkpoint.dirname)
 
     if 'lr_scheduler' in cfg:
         cfg.lr_scheduler.attach(cfg.trainer)

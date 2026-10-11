@@ -4,11 +4,11 @@ import torch.nn as nn
 class CNNClassifier(nn.Module):
     def __init__(
         self,
+        num_classes=10,
+        image_size=28,
         in_channels=1,
         channels=(16, 32),
         fc_dim=128,
-        num_classes=10,
-        image_size=28,
     ):
         super().__init__()
         channels = tuple(channels)

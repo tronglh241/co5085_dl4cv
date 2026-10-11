@@ -1,0 +1,23 @@
+---
+---
+
+@use 'abstracts/variables' with (
+  $theme: '{{ site.theme_mode }}'
+);
+
+/* prettier-ignore */
+@use 'main
+{%- if jekyll.environment == 'production' -%}
+  .bundle
+{%- endif -%}
+';
+
+/* append your custom style below */
+
+/* Hide the sidebar avatar anchor when no avatar is configured.
+   The theme always renders the <a id="avatar"> wrapper (only the <img>
+   is conditional), and its fixed box + ring would otherwise show as an
+   empty circle. */
+#sidebar #avatar:not(:has(img)) {
+  display: none;
+}
