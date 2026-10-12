@@ -1,0 +1,103 @@
+% Chương E2. exercises.tex cần thêm \input{e2} và nạp amsmath, amssymb
+% (\mathbb, môi trường aligned) cùng booktabs (bảng kết quả) trong preamble.
+% Hình và bảng được tham chiếu bằng đường dẫn đầy đủ (\etwoasset bên dưới),
+% nên không cần sửa \graphicspath.
+
+\section{E2: Transformer (MSA và tokenization)}
+
+\subsection{Mục tiêu}
+Bài này hiện thực multi-head self-attention (MSA) hai lần trên cùng tập MNIST và cùng split đã dùng ở E1: 50\,000 ảnh train, 10\,000 ảnh validation (stratify, seed 42) và 10\,000 ảnh test. Bản thứ nhất viết từ \texttt{Linear}, \texttt{einsum} và softmax. Bản thứ hai bọc \texttt{nn.MultiheadAttention} để đối chiếu. Cả hai đi vào một encoder nông và một head phân loại. Ba cách lấy token bắt buộc là patch, hàng và CNN stem; thêm patch \(7\times7\) và patch chồng lấn.
+
+\subsection{Mô hình}
+Ảnh \(x\in\mathbb{R}^{B\times 1\times 28\times 28}\) được tokenizer đổi thành chuỗi \(N\) token, mỗi token thuộc \(\mathbb{R}^{D}\) với \(D=64\). Một token CLS được ghép vào đầu, rồi cộng positional embedding học được kích thước \((1, N+1, D)\), khởi tạo \texttt{trunc\_normal\_} với độ lệch chuẩn \(0.02\) (\texttt{TransformerClassifier} trong \texttt{models/e2/transformer.py}).
+
+Mỗi \texttt{EncoderBlock} là pre-norm. Gọi \(h=4\) head, \(d_k=D/h=16\):
+\begin{equation}
+\begin{aligned}
+Q,K,V &= \mathrm{split}(W_{\mathrm{in}}\,\mathrm{LN}(X)), \\
+A &= \mathrm{Dropout}\!\left(\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)\right), \\
+\mathrm{MSA}(X) &= W_{\mathrm{out}}\,\mathrm{concat}(AV), \\
+X &\leftarrow X + \mathrm{Dropout}(\mathrm{MSA}(\mathrm{LN}(X))), \\
+X &\leftarrow X + \mathrm{FFN}(\mathrm{LN}(X)).
+\end{aligned}
+\end{equation}
+FFN là \texttt{Linear} \(\to\) GELU \(\to\) Dropout \(\to\) \texttt{Linear}, chiều ẩn \(2D\). Trong \texttt{ScratchMSA} (\texttt{models/e2/attention.py}), tích \(QK^{\top}\) và \(AV\) là hai phép \texttt{einsum}: \texttt{'bhnd,bhmd->bhnm'} và \texttt{'bhnm,bhmd->bhnd'}. Trọng số \(W_{\mathrm{in}}\) xếp \([W_Q; W_K; W_V]\), cùng layout với \texttt{in\_proj\_weight} của PyTorch, khởi tạo Xavier và bias bằng 0. \texttt{TorchMSA} gọi \texttt{nn.MultiheadAttention(batch\_first=True)}. Khi không cần trả trọng số attention, PyTorch dùng kernel SDPA; đó là một lý do thời gian hai bản có thể khác nhau dù cùng kiến trúc còn lại.
+
+Sau 4 block và một \texttt{LayerNorm}, lớp \texttt{Linear} \(D\to 10\) đọc token CLS. \texttt{forward} trả logits cho \texttt{CrossEntropyLoss}. \texttt{return\_attn=True} trả thêm attention từng layer, dùng khi vẽ bản đồ attention.
+
+Ba tokenizer trong \texttt{models/e2/tokenizers.py}:
+\begin{center}
+\begin{tabular}{llll}
+\hline
+Tokenizer & Cách lấy token & \(N\) & Ghi chú \\
+\hline
+Patch \(4\times4\) & \texttt{Conv2d} kernel = stride = 4 & 49 & ô không chồng \\
+Hàng & \texttt{Linear} trên mỗi hàng \(1\cdot 28\) & 28 & cùng cách nhìn ảnh với E3 \\
+CNN stem & hai lần Conv--BN--ReLU--Pool, rồi Conv \(1\times1\) & 49 & bias cục bộ \\
+\hline
+\end{tabular}
+\end{center}
+Biến thể thêm, chỉ với MSA tự viết: patch \(7\times7\) (\(N=16\)), và patch chồng lấn kernel 8 stride 4 (\(N=36\)). Không lấy token theo kênh màu vì MNIST có \(C=1\).
+
+Mọi run dùng AdamW, learning rate \(10^{-3}\), batch 128. Weight decay \(0.05\) chỉ áp lên trọng số của \texttt{Linear} và \texttt{Conv2d}; bias, tham số của LayerNorm và BatchNorm, token CLS và positional embedding không bị decay, theo cách train ViT thông thường (\texttt{TransformerClassifier.param\_groups}). Train tối đa 200 epoch. \texttt{ReduceLROnPlateau} giảm learning rate \(\times 0.1\) sau 10 epoch loss validation không giảm; early stopping dừng sau 20 epoch, giống E1, để mô hình còn 10 epoch học với learning rate đã giảm. \texttt{EpochTimer} ghi \texttt{training/epoch\_time} là thời gian các bước train, không cộng thời gian validation.
+
+\subsection{Kiểm tra MSA}
+\texttt{scripts/e2/check\_msa.py} copy trọng số từ \texttt{nn.MultiheadAttention} sang \texttt{ScratchMSA}, chạy ở \texttt{eval} để tắt dropout, rồi so output, attention từng head và gradient theo input cùng theo trọng số. Output và attention ở float32 phải lệch dưới \(10^{-5}\). Gradient float32 được chấp nhận dưới \(10^{-4}\), vì phép cộng ngược của PyTorch không cùng thứ tự với \texttt{einsum}. Kết quả nằm ở \texttt{docs/assets/e2/msa\_check.csv}. Cùng script kiểm tra shape: tokenizer trả \((2, N, 64)\), classifier trả \((2, 10)\).
+
+\subsection{Huấn luyện và số liệu}
+Sáu run bắt buộc là \(\{\)patch, hàng, CNN stem\(\}\times\{\)scratch, torch\(\}\). So sánh (i) đọc theo hàng: cùng tokenizer, đổi bản MSA. So sánh (ii) đọc theo cột: cùng bản MSA, đổi tokenizer, về accuracy, số tham số và thời gian mỗi epoch.
+
+\texttt{scripts/e2/analyze.py} đánh giá checkpoint của mỗi run trên tập test và ghép với log TensorBoard được tạo cùng lúc với checkpoint đó. Validation accuracy được đọc tại epoch có loss validation thấp nhất, cũng là epoch mà \texttt{BestCheckpoint} giữ lại, nên Val acc và Test acc trong cùng một dòng thuộc về cùng một mô hình. Script ghi \texttt{results\_e2.csv} và \texttt{results\_e2.tex} (Bảng~\ref{tab:e2-results}), đường loss và accuracy \texttt{curves\_<tokenizer>.png} (train nét đứt, validation nét liền, mỗi bản MSA một màu), \texttt{acc\_vs\_time.png}, và \texttt{confusion\_best.png} cho run có validation accuracy cao nhất. Attention của CLS ở layer cuối, từng head, là \texttt{attn\_<run>.png}.
+
+% \IfFileExists does not search \graphicspath, so every path below is
+% written relative to reports/, where build.sh compiles.
+\newcommand{\etwoasset}[1]{../docs/assets/e2/#1}
+\newcommand{\etwofigure}[3]{%
+\IfFileExists{\etwoasset{#1}}{%
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=#2\linewidth]{\etwoasset{#1}}
+\caption{#3}\label{fig:e2-#1}
+\end{figure}%
+}{%
+\par\noindent\textit{Chưa có hình \texttt{\detokenize{#1}}: chạy \texttt{scripts/e2/analyze.py} sau khi train.}\par
+}}
+
+\begin{table}[htbp]
+\centering
+\caption{Kết quả E2 trên MNIST. Val acc lấy tại epoch có loss validation thấp nhất (Epoch); Test acc của checkpoint ở epoch đó; Time/epoch chỉ tính các bước train.}
+\label{tab:e2-results}
+\IfFileExists{\etwoasset{results_e2.tex}}{%
+\small
+\input{\etwoasset{results_e2.tex}}%
+}{%
+\textit{Chưa có \texttt{results\_e2.tex}: chạy \texttt{scripts/e2/analyze.py} sau khi train.}%
+}
+\end{table}
+
+\etwofigure{curves_patch.png}{0.92}{Loss và accuracy, tokenizer patch \(4\times4\).}
+\etwofigure{curves_row.png}{0.92}{Loss và accuracy, tokenizer theo hàng.}
+\etwofigure{curves_cnnstem.png}{0.92}{Loss và accuracy, tokenizer CNN stem.}
+\etwofigure{acc_vs_time.png}{0.72}{Validation accuracy theo thời gian train mỗi epoch.}
+\etwofigure{confusion_best.png}{0.6}{Lỗi trên tập test của run có validation accuracy cao nhất: mỗi ô là tỉ lệ ảnh của lớp thật (hàng) bị đoán thành lớp cột, số trong ô là số ảnh; đường chéo được bỏ, accuracy từng lớp ghi ở nhãn hàng.}
+
+\subsection{Thảo luận}
+Hai bản MSA chia sẻ tokenizer, LayerNorm, FFN, CLS và head. Mỗi cấu hình chỉ chạy một seed (42), nên mọi chênh lệch dưới khoảng \(0.3\) điểm phần trăm trong phần này chưa đủ để kết luận; muốn kiểm tra, copy config patch và đổi \texttt{seed} thành 43 và 44.
+
+Scratch so với torch (Bảng~\ref{tab:e2-results}). Test accuracy của hai bản gần nhau ở cả ba tokenizer: patch 98.75\% so với 98.83\%, hàng 99.19\% so với 98.95\%, CNN stem 99.36\% so với 99.35\%. Chênh lệch lớn nhất là 0.24 điểm (hàng), và hướng chênh không nhất quán (torch cao hơn ở patch, thấp hơn ở hàng), nên phù hợp với nhiễu tối ưu hơn là một khác biệt hệ thống. Kết hợp với kiểm tra số học ở \texttt{msa\_check.csv}, bản MSA tự viết cho kết quả tương đương \texttt{nn.MultiheadAttention}.
+Lần chạy đầu của patch/torch chạm giới hạn 100 epoch: \texttt{ReduceLROnPlateau} chỉ giảm learning rate quanh epoch 79, nên mô hình mới học khoảng 20 epoch với learning rate nhỏ trước khi bị cắt (best epoch 82, val 98.70\%, test 98.81\%). Giới hạn được nâng lên 200 epoch và patch/torch được train lại; lần này learning rate giảm quanh epoch 30 và early stopping dừng ở epoch 52, best epoch 31, val 98.60\%, test 98.83\% (số trong Bảng~\ref{tab:e2-results}). Các run khác đều dừng trước epoch 70, nên giới hạn mới không đổi kết quả của chúng. Hai lần chạy cùng config và cùng seed 42 nhưng đi theo hai quỹ đạo khác nhau, vì một số kernel GPU (cuBLAS, SDPA) không tất định dù đã cố định seed; test accuracy của hai lần chỉ lệch 0.02 điểm, cho thấy chênh lệch scratch/torch ở bậc 0.1 điểm nằm trong dao động giữa các lần chạy.
+
+Số tham số của cặp scratch/torch là như nhau: patch \(4\times4\) và patch \(7\times7\) đều 139\,018 (kernel lớn hơn được bù bởi positional embedding ngắn hơn), hàng 138\,442, patch chồng lấn 141\,258 và CNN stem 161\,098.
+
+Số token quyết định giá attention. Patch \(7\times7\) có 16 token, rẻ hơn patch \(4\times4\) (49 token) nhưng mỗi token phải ôm một vùng lớn hơn. CNN stem cũng ra 49 token như patch \(4\times4\), nhưng stem đã trộn lân cận trước khi attention nhìn toàn cục. Hàng chỉ có 28 token và mỗi token là cả một hàng, nên attention mô hình hóa quan hệ giữa các hàng, không phải giữa các ô.
+
+Tokenizer so với tokenizer. Với MSA tự viết, test accuracy xếp từ cao xuống thấp là: CNN stem 99.36\%, hàng 99.19\%, patch chồng lấn 99.11\%, patch \(4\times4\) 98.75\%, patch \(7\times7\) 98.67\%. CNN stem dẫn đầu với số tham số lớn nhất (161\,098, hơn các mô hình còn lại khoảng 16\%), nên chưa tách được phần đóng góp của bias cục bộ khỏi phần đóng góp của dung lượng lớn hơn. Hai tokenizer dựa trên patch không chồng lấn là yếu nhất, và patch \(7\times7\) (16 token) thấp hơn patch \(4\times4\) (49 token), phù hợp với việc mỗi token ôm vùng lớn hơn nhưng có ít token hơn để attention trộn. Patch chồng lấn (kernel 8, stride 4, 36 token) cao hơn patch \(4\times4\) khoảng 0.36 điểm với cùng bậc số tham số (141\,258 so với 139\,018); các vùng chồng nhau có thể giúp token biên nhìn thấy nét liền mạch, nhưng với một seed đây mới là giả thuyết.
+
+Thời gian. Time/epoch dao động từ 11.25 s (patch/torch) đến 17.97 s (CNN stem). Con số này gồm cả thời gian DataLoader đọc và biến đổi từng ảnh trên CPU (\texttt{num\_workers=0}), và mỗi run chạy trên một container GPU riêng, nên nó phản ánh tốc độ nạp dữ liệu và máy chạy nhiều hơn chi phí của mô hình; bằng chứng rõ nhất là cùng config patch/torch cho 16.46 s ở lần chạy đầu và 11.25 s ở lần chạy lại, nên cột này không dùng để so sánh tốc độ giữa các mô hình. Cột Ảnh/s đo riêng mô hình: một batch test 512 ảnh được giữ sẵn trên GPU và chạy lặp 50 lần sau 5 lần khởi động, mọi mô hình đo tuần tự trên cùng một GPU.
+Theo cột này, bản torch nhanh hơn bản scratch 1.42--1.64 lần ở cả ba tokenizer (patch 120\,101 so với 73\,162 ảnh/s, hàng 214\,707 so với 147\,561, CNN stem 78\,599 so với 55\,236): \texttt{nn.MultiheadAttention} gọi kernel SDPA hợp nhất, còn bản tự viết tạo riêng ma trận điểm, softmax và dropout bằng các phép \texttt{einsum}. Giữa các tokenizer, tốc độ giảm theo số token: patch \(7\times7\) (16 token) 222\,966 ảnh/s, hàng (28) 147\,561, patch chồng lấn (36) 108\,928, patch \(4\times4\) (49) 73\,162. Tích số token với ảnh/s gần như không đổi (khoảng 3.6--4.1 triệu token/s), tức chi phí tăng gần tuyến tính theo \(N\) chứ chưa theo \(N^2\): với \(N\le 49\) và \(D=64\), phần \(\mathcal{O}(N^2D)\) của attention nhỏ so với các phép chiếu và FFN \(\mathcal{O}(ND^2)\). CNN stem chậm hơn patch \(4\times4\) (55\,236 so với 73\,162) dù cùng 49 token, do thêm hai lớp tích chập ở độ phân giải đầy đủ.
+
+Lỗi của run tốt nhất (CNN stem, scratch; Hình~\ref{fig:e2-confusion_best.png}) gồm 64 ảnh trên 10\,000. Lớp 6 yếu nhất (98.6\%), chủ yếu bị đoán thành 0 và 1; các cặp nhầm nhiều nhất là 4 thành 9 (6 ảnh), 9 thành 4 (5 ảnh) và 5 thành 3 (5 ảnh), đều là các chữ số có nét gần giống nhau khi viết tay.
+
+Tất cả tám mô hình đạt trên 98.6\% test accuracy với chưa tới 162\,000 tham số, nên MNIST khó phân biệt các tokenizer; khoảng cách lớn nhất giữa mô hình tốt nhất và kém nhất chỉ 0.69 điểm. Muốn so sánh chắc chắn hơn cần nhiều seed hoặc một tập khó hơn.
+\subsection{Sử dụng công cụ AI}
+Mã trong \texttt{models/e2}, \texttt{configs/e2}, \texttt{scripts/e2}, \texttt{common/handlers/timer.py} và chương này được soạn với sự hỗ trợ của công cụ AI trong Cursor, theo đặc tả E2 của nhóm. Công cụ chỉ dùng để viết khung mã, config và lời giải thích. Số liệu thí nghiệm chỉ phát sinh khi chạy lệnh train và evaluate trong repo. Người nộp bài cần đọc và giải thích được từng file trên trước khi bảo vệ.
