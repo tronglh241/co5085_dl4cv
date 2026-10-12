@@ -1,0 +1,18 @@
+\begin{tabular}{llrrrrrr}
+\toprule
+Tokenizer & MSA & Params & Epoch & Time/epoch (s) & Val acc (\%) & Test acc (\%) & Ảnh/s \\
+\midrule
+patch & scratch & 139\,018 & 40 & 16.88 & 98.69 & 98.85 & 72131 \\
+patch & torch & 139\,018 & 49 & 15.84 & 98.62 & 98.86 & 116427 \\
+\addlinespace
+row & scratch & 138\,442 & 26 & 11.30 & 98.84 & 98.95 & 144131 \\
+row & torch & 138\,442 & 33 & 15.70 & 98.97 & 99.01 & 209633 \\
+\addlinespace
+cnnstem & scratch & 161\,098 & 36 & 11.89 & 99.37 & 99.42 & 54327 \\
+cnnstem & torch & 161\,098 & 33 & 16.91 & 99.30 & 99.33 & 76586 \\
+\addlinespace
+patch7 & scratch & 139\,018 & 47 & 16.92 & 98.74 & 98.89 & 153367 \\
+\addlinespace
+patch\_overlap & scratch & 141\,258 & 28 & 11.49 & 98.67 & 98.74 & 105613 \\
+\bottomrule
+\end{tabular}

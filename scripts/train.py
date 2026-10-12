@@ -56,4 +56,7 @@ if __name__ == '__main__':
     if 'early_stopping' in cfg:
         cfg.early_stopping.attach(cfg.trainer)
 
+    if 'timer' in cfg:
+        cfg.timer.attach(cfg.trainer)
+
     cfg.trainer.run()
