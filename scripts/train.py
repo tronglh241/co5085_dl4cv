@@ -15,8 +15,14 @@ if __name__ == '__main__':
     parser.add_argument('config')
     args = parser.parse_args()
 
-    cfg = CfgNode.load(args.config)
-    set_seed(cfg.get('seed', 42))
+    # Seed before eval(). Loading evaluates the YAML and builds the model, so a
+    # later set_seed never reaches the weight initialization.
+    cfg = CfgNode.load(args.config, evaluate=False)
+    seed = cfg['seed'] if 'seed' in cfg else 42
+    if not isinstance(seed, int):
+        raise ValueError(f'seed must be a plain int, got {seed!r}')
+    set_seed(seed)
+    cfg = cfg.eval()
     validate_train_config(cfg)
 
     if 'loader' in cfg:
@@ -38,11 +44,13 @@ if __name__ == '__main__':
         if 'tensorboard' in cfg.logging:
             cfg.logging.tensorboard.attach(cfg.trainer, 'training', optimizer=cfg.optimizer)
 
-            for name, evaluator in cfg.evaluators.items():
-                cfg.logging.tensorboard.attach(evaluator, name, epoch_source=cfg.trainer)
+            if 'evaluators' in cfg:
+                for name, evaluator in cfg.evaluators.items():
+                    cfg.logging.tensorboard.attach(evaluator, name, epoch_source=cfg.trainer)
 
         if 'tqdm' in cfg.logging:
-            cfg.logging.tqdm.attach(cfg.trainer, cfg.evaluators)
+            evaluators = cfg.evaluators if 'evaluators' in cfg else None
+            cfg.logging.tqdm.attach(cfg.trainer, evaluators)
 
     if 'best_checkpoint' in cfg:
         cfg.best_checkpoint.attach(cfg.trainer, cfg)

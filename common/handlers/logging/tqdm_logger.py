@@ -5,6 +5,8 @@ from common.engine.engine import Events
 
 class TQDMLogger:
     def attach(self, trainer=None, evaluators=None):
+        self._eval_position = 1 if trainer is not None else 0
+
         if trainer is not None:
             trainer.add_event_handler(Events.EPOCH_STARTED, self._train_started)
             trainer.add_event_handler(Events.ITERATION_COMPLETED, self._train_iter)
@@ -30,10 +32,22 @@ class TQDMLogger:
         self._train_bar.close()
 
     def _eval_started(self, engine, name):
-        self._eval_bar = tqdm(total=len(engine.data), desc=f'Eval/{name}', position=1, leave=False)
+        self._eval_bar = tqdm(
+            total=len(engine.data),
+            desc=f'Eval/{name}',
+            position=self._eval_position,
+            leave=self._eval_position == 0,
+        )
 
     def _eval_iter(self, engine):
         self._eval_bar.update(1)
 
     def _eval_done(self, engine):
+        postfix = {}
+        for key, value in (engine.result or {}).items():
+            if key == 'n' or isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            postfix[key] = f'{float(value):.4f}'
+        if postfix:
+            self._eval_bar.set_postfix(postfix)
         self._eval_bar.close()

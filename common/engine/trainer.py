@@ -32,14 +32,23 @@ class Trainer(Engine):
 
         while self.state['epoch'] < self.max_epochs and not self.should_stop:
             self._fire(Events.EPOCH_STARTED)
+            total_loss = 0.0
+            total_n = 0
 
             for batch in self.data:
                 self._fire(Events.ITERATION_STARTED)
                 self.output = self.train_step(batch)
+                total_loss += self.output['loss'] * self.output['n']
+                total_n += self.output['n']
                 self.state['iteration'] += 1
                 self._fire(Events.ITERATION_COMPLETED)
 
             self.state['epoch'] += 1
+            # Sample-weighted loss of the step that was optimized, dropout included.
+            # Evaluators log a separate loss with the model in eval mode.
+            self.result = {'n': total_n}
+            if total_n:
+                self.result['loss'] = total_loss / total_n
             self._fire(Events.EPOCH_COMPLETED)
 
         self._fire(Events.COMPLETED)
