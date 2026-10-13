@@ -237,3 +237,6 @@ docs/.sass-cache/
 data/
 checkpoints/
 logs/
+
+# macOS
+.DS_Store
