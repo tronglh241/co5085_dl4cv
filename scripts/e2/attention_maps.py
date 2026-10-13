@@ -13,21 +13,56 @@ if str(_repo_root) not in sys.path:
 
 import matplotlib.pyplot as plt
 import torch
-import torch.nn.functional as F
 
 from common.config.config import CfgNode
+from models.e2.tokenizers import (CNNStemTokenizer, PatchTokenizer,
+                                  PixelTokenizer, RowTokenizer)
 
 MEAN = 0.1308
 STD = 0.3082
 
 
-def _grid(weights, n_tokens):
-    side = int(round(n_tokens ** 0.5))
-    if side * side == n_tokens:
-        return weights.reshape(side, side)
-    if n_tokens == 28:
-        return weights.reshape(28, 1)
-    raise ValueError(f'cannot reshape {n_tokens} tokens into a grid')
+def _scatter(weights, kernel, stride, image_size):
+    '''Paint each token onto its window and average where windows overlap.'''
+    count = weights.numel()
+    side = int(round(count ** 0.5))
+    if side * side != count:
+        raise ValueError(f'cannot scatter {count} tokens onto a square grid')
+    heat = torch.zeros(image_size, image_size)
+    cover = torch.zeros(image_size, image_size)
+    values = weights.detach().float().reshape(side, side)
+    for row in range(side):
+        for col in range(side):
+            top = row * stride
+            left = col * stride
+            if top + kernel > image_size or left + kernel > image_size:
+                raise ValueError(f'token window {kernel} at {(top, left)} exceeds image_size {image_size}')
+            heat[top:top + kernel, left:left + kernel] += values[row, col]
+            cover[top:top + kernel, left:left + kernel] += 1
+    return heat / cover.clamp(min=1)
+
+
+def attention_image(weights, tokenizer, image_size):
+    '''Map CLS-to-token weights onto pixels.
+
+    Overlapping patches are added on the real kernel window and divided by how
+    many windows cover each pixel. A square nearest upsample would shift them.
+    '''
+    if isinstance(tokenizer, RowTokenizer):
+        if weights.numel() != image_size:
+            raise ValueError(f'row tokenizer expects {image_size} tokens, got {weights.numel()}')
+        return weights.detach().float().reshape(image_size, 1).expand(image_size, image_size)
+    if isinstance(tokenizer, PatchTokenizer):
+        return _scatter(weights, tokenizer.proj.kernel_size[0], tokenizer.proj.stride[0], image_size)
+    if isinstance(tokenizer, PixelTokenizer):
+        return _scatter(weights, 1, 1, image_size)
+    if isinstance(tokenizer, CNNStemTokenizer):
+        side = int(round(weights.numel() ** 0.5))
+        if side * side != weights.numel() or image_size % side:
+            raise ValueError(f'cannot align {weights.numel()} stem tokens with image_size {image_size}')
+        cell = image_size // side
+        return _scatter(weights, cell, cell, image_size)
+    raise TypeError(f'unsupported tokenizer {type(tokenizer).__name__}')
 
 
 def main():
@@ -53,7 +88,6 @@ def main():
 
     last = attentions[-1]
     cls_to_tokens = last[:, :, 0, 1:]
-    n_tokens = cls_to_tokens.shape[-1]
     n_heads = cls_to_tokens.shape[1]
     shown = images.shape[0]
     figure, axes = plt.subplots(shown, n_heads, figsize=(2.1 * n_heads, 2.1 * shown), squeeze=False)
@@ -63,8 +97,7 @@ def main():
         for head in range(n_heads):
             axis = axes[row][head]
             canvas = gray[row, 0]
-            heat = _grid(maps[row, head], n_tokens).float()
-            heat = F.interpolate(heat[None, None], size=canvas.shape, mode='nearest')[0, 0]
+            heat = attention_image(maps[row, head], model.tokenizer, canvas.shape[0])
             axis.imshow(canvas, cmap='gray', vmin=0, vmax=1)
             axis.imshow(heat, cmap='inferno', alpha=0.45)
             axis.set_axis_off()

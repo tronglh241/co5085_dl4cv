@@ -9,9 +9,16 @@ import torch.nn as nn
 
 
 def _grid_size(image_size, kernel, stride):
+    if stride <= 0 or kernel <= 0:
+        raise ValueError(f'kernel {kernel} and stride {stride} must be positive')
     side = (image_size - kernel) // stride + 1
     if side <= 0:
         raise ValueError(f'kernel {kernel} stride {stride} does not fit image_size {image_size}')
+    uncovered = (image_size - kernel) % stride
+    if uncovered:
+        raise ValueError(
+            f'kernel {kernel} stride {stride} leaves {uncovered}px uncovered on image_size {image_size}'
+        )
     return side
 
 

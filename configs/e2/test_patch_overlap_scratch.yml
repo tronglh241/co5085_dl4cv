@@ -90,7 +90,7 @@ loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e2/train_patch_overlap_scratch/261012165101/best_epoch_28_loss=0.0538.pt'"
+    path: "'checkpoints/e2/train_patch_overlap_scratch/261013032440/best_epoch_52_loss=0.0473.pt'"
 
 seed: 42
 

@@ -89,7 +89,7 @@ loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e2/train_patch_scratch/261012164156/best_epoch_40_loss=0.0522.pt'"
+    path: "'checkpoints/e2/train_patch_scratch/261013031822/best_epoch_38_loss=0.0479.pt'"
 
 seed: 42
 

@@ -70,15 +70,15 @@ python scripts/e2/attention_maps.py --config configs/e2/test_patch_scratch.yml
 
 Bảng dưới được điền từ `docs/assets/e2/results_e2.csv` sau khi train xong. Accuracy để ở thang 0–1. `Best epoch` là epoch có loss validation thấp nhất, cũng là epoch của checkpoint `best_*.pt`; `Val acc` đọc tại epoch đó, nên `Val acc` và `Test acc` thuộc cùng một mô hình.
 
-Số tham số đếm từ kiến trúc, không phụ thuộc lần train. Cột thời gian và accuracy điền sau khi train.
+Số tham số đếm từ kiến trúc, không phụ thuộc lần train. Số trong bảng là lần chạy ngày 13/10/2026 (checkpoint `checkpoints/e2/train_<run>/261013…`), sau khi sửa thứ tự đặt seed. Time/epoch gồm cả thời gian nạp dữ liệu và phụ thuộc container, không dùng để so sánh tốc độ; xem cột Ảnh/s trong `docs/assets/e2/results_e2.csv`.
 
 | Model | Variant | Params | Best epoch | Time/epoch (s) | Val acc | Test acc |
 |---|---|---|---|---|---|---|
-| patch | scratch | 139018 | 34 | 12.05 | 0.9863 | 0.9875 |
-| patch | torch | 139018 | 31 | 11.25 | 0.9860 | 0.9883 |
-| row | scratch | 138442 | 47 | 16.28 | 0.9898 | 0.9919 |
-| row | torch | 138442 | 47 | 17.09 | 0.9896 | 0.9895 |
-| cnnstem | scratch | 161098 | 30 | 17.97 | 0.9932 | 0.9936 |
-| cnnstem | torch | 161098 | 29 | 16.59 | 0.9923 | 0.9935 |
-| patch7 | scratch | 139018 | 25 | 11.27 | 0.9854 | 0.9867 |
-| patch_overlap | scratch | 141258 | 47 | 16.14 | 0.9897 | 0.9911 |
+| patch | scratch | 139018 | 38 | 11.08 | 0.9873 | 0.9885 |
+| patch | torch | 139018 | 33 | 15.83 | 0.9860 | 0.9867 |
+| row | scratch | 138442 | 43 | 16.03 | 0.9887 | 0.9913 |
+| row | torch | 138442 | 34 | 10.69 | 0.9882 | 0.9894 |
+| cnnstem | scratch | 161098 | 33 | 16.73 | 0.9932 | 0.9933 |
+| cnnstem | torch | 161098 | 34 | 15.94 | 0.9929 | 0.9948 |
+| patch7 | scratch | 139018 | 47 | 11.76 | 0.9860 | 0.9870 |
+| patch_overlap | scratch | 141258 | 52 | 16.17 | 0.9894 | 0.9898 |

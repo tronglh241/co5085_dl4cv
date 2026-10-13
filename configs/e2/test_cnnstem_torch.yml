@@ -88,7 +88,7 @@ loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e2/train_cnnstem_torch/261012165102/best_epoch_33_loss=0.0271.pt'"
+    path: "'checkpoints/e2/train_cnnstem_torch/261013032411/best_epoch_34_loss=0.0293.pt'"
 
 seed: 42
 

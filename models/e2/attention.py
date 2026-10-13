@@ -9,6 +9,7 @@ import math
 
 import torch
 import torch.nn as nn
+from torch.nn.utils import skip_init
 
 
 class ScratchMSA(nn.Module):
@@ -20,7 +21,10 @@ class ScratchMSA(nn.Module):
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.head_dim = embed_dim // num_heads
-        self.in_proj = nn.Linear(embed_dim, 3 * embed_dim, bias=bias)
+        # Same draw order as nn.MultiheadAttention: QKV is left empty, out_proj
+        # draws Kaiming, then QKV is Xavier. A normal Linear for QKV would draw
+        # extra samples first and shift the FFN and the classifier head.
+        self.in_proj = skip_init(nn.Linear, embed_dim, 3 * embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.attn_drop = nn.Dropout(dropout)
         self._reset_parameters()

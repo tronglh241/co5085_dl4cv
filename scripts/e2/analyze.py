@@ -230,7 +230,7 @@ def _write_latex(records, path):
 
 
 def _plot_curves(groups, out_dir):
-    '''Line style encodes the split (train dashed, valid solid); colour encodes the MSA.'''
+    '''Dashed is the train split. The loss panel uses training/loss when that tag exists.'''
     for family, runs in groups.items():
         if not any(item['series'] for item in runs.values()):
             continue
@@ -241,7 +241,14 @@ def _plot_curves(groups, out_dir):
                 continue
             for axis, tag in ((axes[0], 'loss'), (axes[1], 'accuracy')):
                 for split, line in (('train', '--'), ('valid', '-')):
-                    points = item['series'].get(f'{split}/{tag}', [])
+                    key = f'{split}/{tag}'
+                    label = f'{split}/{variant}'
+                    # training/loss is the optimized loss (dropout on). train/loss
+                    # is a later eval pass. Old logs only have the eval pass.
+                    if tag == 'loss' and split == 'train' and item['series'].get('training/loss'):
+                        key = 'training/loss'
+                        label = f'optim/{variant}'
+                    points = item['series'].get(key, [])
                     if not points:
                         continue
                     axis.plot(
@@ -249,7 +256,7 @@ def _plot_curves(groups, out_dir):
                         [value for _, value in points],
                         linestyle=line,
                         color=color,
-                        label=f'{split}/{variant}',
+                        label=label,
                     )
         axes[0].set_title('Loss')
         axes[1].set_title('Accuracy')
