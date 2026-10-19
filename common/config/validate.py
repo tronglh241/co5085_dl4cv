@@ -31,9 +31,9 @@ def validate_train_config(cfg):
         if 'metrics' in cfg:
             assert len(cfg.metrics) > 0, 'metrics must be non-empty'
 
-        for name, metric in cfg.metrics.items():
-            assert callable(getattr(metric, 'attach', None)), \
-                f"metric '{name}' must define attach(evaluator, name)"
+            for name, metric in cfg.metrics.items():
+                assert callable(getattr(metric, 'attach', None)), \
+                    f"metric '{name}' must define attach(evaluator, name)"
     elif 'metrics' in cfg:
         assert False, "config has 'metrics' but no 'evaluators' to attach them to"
 

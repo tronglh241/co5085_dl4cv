@@ -77,6 +77,23 @@ Extracts the TensorBoard logs into a CSV file. The output `metrics.csv` is writt
 python scripts/tensorboard/extract.py
 ```
 
+**1.6 Download and verify artifacts**
+
+Downloads the shared checkpoints and training logs, then verifies them against the checksum manifests in `manifests/`. The manifests cover checkpoint `.pt`/`.yml` files and TensorBoard event files.
+
+```bash
+bash scripts/shell/download_artifacts.sh
+bash scripts/shell/checksums.sh
+```
+
+`checksums.sh` prints `all artifacts verified` when every file matches; otherwise it lists the missing or mismatching files and exits non-zero.
+
+Maintainers regenerate the manifests after changing the shared assets, and commit the result:
+
+```bash
+bash scripts/shell/checksums.sh generate
+```
+
 ### 2. Preview GitHub Pages
 
 **2.1 Start a shell**

@@ -29,6 +29,6 @@ if __name__ == '__main__':
             cfg.logging.tensorboard.attach(cfg.evaluator, prefix='test')
 
         if 'tqdm' in cfg.logging:
-            cfg.logging.tqdm.attach(cfg.evaluator)
+            cfg.logging.tqdm.attach(evaluators={'test': cfg.evaluator})
 
     cfg.evaluator.run()

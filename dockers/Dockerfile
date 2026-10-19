@@ -26,6 +26,8 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV PIP_NO_CACHE_DIR=1
 ENV MPLBACKEND=Agg
 
+COPY dockers/profile.d/10-dev-path.sh /etc/profile.d/10-dev-path.sh
+
 RUN chown ${UID}:${GID} /workspace
 USER ${UNAME}
 

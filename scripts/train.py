@@ -16,8 +16,9 @@ if __name__ == '__main__':
     parser.add_argument('config')
     args = parser.parse_args()
 
-    cfg = CfgNode.load(args.config)
+    cfg = CfgNode.load(args.config, evaluate=False)
     set_seed(cfg.get('seed', 42))
+    cfg = cfg.eval()
     validate_train_config(cfg)
 
     if 'loader' in cfg:
@@ -39,11 +40,12 @@ if __name__ == '__main__':
         if 'tensorboard' in cfg.logging:
             cfg.logging.tensorboard.attach(cfg.trainer, 'training', optimizer=cfg.optimizer)
 
-            for name, evaluator in cfg.evaluators.items():
-                cfg.logging.tensorboard.attach(evaluator, name, epoch_source=cfg.trainer)
+            if 'evaluators' in cfg:
+                for name, evaluator in cfg.evaluators.items():
+                    cfg.logging.tensorboard.attach(evaluator, name, epoch_source=cfg.trainer)
 
         if 'tqdm' in cfg.logging:
-            cfg.logging.tqdm.attach(cfg.trainer, cfg.evaluators)
+            cfg.logging.tqdm.attach(cfg.trainer, cfg.get('evaluators'))
 
     if 'best_checkpoint' in cfg:
         cfg.best_checkpoint.attach(cfg.trainer, cfg)
@@ -57,5 +59,8 @@ if __name__ == '__main__':
 
     if 'early_stopping' in cfg:
         cfg.early_stopping.attach(cfg.trainer)
+
+    if 'timer' in cfg:
+        cfg.timer.attach(cfg.trainer)
 
     cfg.trainer.run()
