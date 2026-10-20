@@ -79,11 +79,11 @@ python scripts/tensorboard/extract.py
 
 **1.6 Download and verify artifacts**
 
-Downloads the shared checkpoints and training logs, then verifies them against the checksum manifests in `manifests/`. The manifests cover checkpoint `.pt`/`.yml` files and TensorBoard event files.
+Downloads the shared checkpoints and training logs, then verifies them against the checksum manifests in `checksums/`. The manifests cover checkpoint `.pt`/`.yml` files and TensorBoard event files.
 
 ```bash
-bash scripts/shell/download_artifacts.sh
-bash scripts/shell/checksums.sh
+bash scripts/artifacts/download.sh
+bash scripts/artifacts/checksums.sh
 ```
 
 `checksums.sh` prints `all artifacts verified` when every file matches; otherwise it lists the missing or mismatching files and exits non-zero.
@@ -91,8 +91,18 @@ bash scripts/shell/checksums.sh
 Maintainers regenerate the manifests after changing the shared assets, and commit the result:
 
 ```bash
-bash scripts/shell/checksums.sh generate
+bash scripts/artifacts/checksums.sh generate
 ```
+
+**1.7 Generate report assets**
+
+Generates the figures and CSV values used by the report. Start the experiment container and run the generator inside it:
+
+```bash
+bash scripts/generate.sh all
+```
+
+Checkpoints and logs must already be present, and each test config must point to its best checkpoint. Figures go to `reports/images/` and values to `reports/results/`.
 
 ### 2. Preview GitHub Pages
 

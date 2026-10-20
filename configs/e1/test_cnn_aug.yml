@@ -80,7 +80,7 @@ loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e1/cnn_aug/261012055414/best_epoch_87_loss=0.0207.pt'"
+    path: "'checkpoints/e1/cnn_aug/261020010144/best_epoch_72_loss=0.0241.pt'"
 
 seed: 42
 

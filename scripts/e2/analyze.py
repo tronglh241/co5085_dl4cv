@@ -34,6 +34,7 @@ STAMP_FORMAT = '%y%m%d%H%M%S'
 # TensorBoardLogger and BestCheckpoint stamp their folders a moment apart
 # while the same config is built, so allow a small gap when pairing them.
 MAX_STAMP_GAP_S = 60
+RESULTS_DIR = _repo_root / 'reports' / 'results'
 
 
 def _run_name(config_path):
@@ -264,7 +265,7 @@ def _plot_curves(groups, out_dir):
             axis.set_xlabel('Epoch')
             axis.legend(fontsize=8)
         figure.tight_layout()
-        figure.savefig(out_dir / f'curves_{family}.png', dpi=150)
+        figure.savefig(out_dir / f'curves_{family}.pdf', dpi=150)
         plt.close(figure)
 
 
@@ -284,7 +285,7 @@ def _plot_acc_vs_time(records, out_dir):
     axis.set_ylabel('Val accuracy (best-loss epoch)')
     axis.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=8, frameon=False)
     figure.tight_layout()
-    figure.savefig(out_dir / 'acc_vs_time.png', dpi=150)
+    figure.savefig(out_dir / 'acc_vs_time.pdf', dpi=150)
     plt.close(figure)
 
 
@@ -321,17 +322,18 @@ def _plot_confusion(result, label, out_dir):
     total_errors = int(counts.sum() - np.trace(counts))
     axis.set_title(f'{label}: {total_errors} errors / {int(counts.sum())}', fontsize=9)
     figure.tight_layout()
-    figure.savefig(out_dir / 'confusion_best.png', dpi=150)
+    figure.savefig(out_dir / 'confusion_best.pdf', dpi=150)
     plt.close(figure)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Compare E2 runs.')
     parser.add_argument('--configs', nargs='+', required=True)
-    parser.add_argument('--out-dir', default=str(_repo_root / 'docs' / 'assets' / 'e2'))
+    parser.add_argument('--out-dir', default=str(_repo_root / 'reports' / 'images' / 'e2'))
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     records = []
     groups = {}
@@ -358,11 +360,11 @@ def main():
         })
         groups.setdefault(family, {})[variant] = {'series': stats['series']}
 
-    with (out_dir / 'results_e2.csv').open('w', newline='') as handle:
+    with (RESULTS_DIR / 'e2_results.csv').open('w', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=COLUMNS)
         writer.writeheader()
         writer.writerows(_csv_row(record) for record in records)
-    _write_latex(records, out_dir / 'results_e2.tex')
+    _write_latex(records, RESULTS_DIR / 'results_e2.tex')
     _plot_curves(groups, out_dir)
     _plot_acc_vs_time(records, out_dir)
 
@@ -370,7 +372,7 @@ def main():
     if evaluated:
         best = max(evaluated, key=lambda record: -1.0 if record['val_acc'] is None else record['val_acc'])
         _plot_confusion(best['result'], best['run'], out_dir)
-    print(f'wrote {out_dir / "results_e2.csv"} and {out_dir / "results_e2.tex"}')
+    print(f'wrote {RESULTS_DIR / "e2_results.csv"} and {RESULTS_DIR / "results_e2.tex"}')
 
 
 if __name__ == '__main__':

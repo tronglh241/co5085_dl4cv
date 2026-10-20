@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 targets=(checkpoints logs)
-manifest_dir=manifests
+manifest_dir=checksums
 
 find_artifacts() {
     case "$1" in
