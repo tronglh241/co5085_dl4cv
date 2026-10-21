@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 from importlib import import_module
 from pathlib import Path
 from typing import Any, Union
@@ -88,7 +87,10 @@ class CfgNode(_CfgNode):
             key_list (list[str]): a list of names which index this CfgNode from the root.
                 Currently only used for logging purposes.
         '''
-        dic = copy.deepcopy(dic)
+        # Shallow copy: a deepcopy would clone evaluated objects such as the
+        # nn.Parameters in optimizer param groups, detaching them from the model;
+        # the optimizer would then update copies and the model would never train.
+        dic = dict(dic)
         for k, v in dic.items():
             if isinstance(v, dict):
                 # Convert dict to CfgNode
