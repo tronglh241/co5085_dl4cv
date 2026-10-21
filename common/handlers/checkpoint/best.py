@@ -1,3 +1,5 @@
+import re
+
 from .base import Checkpoint
 
 
@@ -58,6 +60,19 @@ class BestCheckpoint(Checkpoint):
 
     def state_filename(self, engine):
         return f'{self.filename_prefix()}_epoch_{engine.state["epoch"]}_{self.score_name}={self.score_value():.4f}.pt'
+
+    def priority_from_filename(self, filename):
+        pattern = rf'{self.filename_prefix()}_epoch_\d+_{re.escape(self.score_name)}=(.+)\.pt'
+        match = re.fullmatch(pattern, filename)
+        if match is None:
+            return None
+
+        try:
+            score = float(match.group(1))
+        except ValueError:
+            return None
+
+        return score if self.mode == 'max' else -score
 
     def state_dict(self):
         return {'best_score': self.best_score}

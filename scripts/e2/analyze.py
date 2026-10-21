@@ -10,7 +10,6 @@ import csv
 import os
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 
 os.environ.setdefault('MPLBACKEND', 'Agg')
@@ -25,14 +24,14 @@ import torch
 
 from common.config.config import CfgNode
 from common.metrics.confusion_matrix import ConfusionMatrix
+from common.stamp import parse_stamp
 from models.e2.utils import count_params
 
 COLUMNS = (
     'Model', 'Variant', 'Params', 'Best epoch', 'Time/epoch', 'Val acc', 'Test acc', 'Images/s',
 )
-STAMP_FORMAT = '%y%m%d%H%M%S'
-# TensorBoardLogger and BestCheckpoint stamp their folders a moment apart
-# while the same config is built, so allow a small gap when pairing them.
+# TensorBoardLogger and BestCheckpoint share one stamp per run now. Runs made
+# before that stamped their folders a moment apart, so allow a small gap.
 MAX_STAMP_GAP_S = 60
 
 
@@ -47,13 +46,6 @@ def _run_name(config_path):
     raise ValueError(f'cannot parse run name from {config_path}')
 
 
-def _stamp(name):
-    try:
-        return datetime.strptime(name, STAMP_FORMAT)
-    except ValueError:
-        return None
-
-
 def _log_dir_for(run, checkpoint_path):
     '''Pick the TensorBoard run that produced checkpoint_path.
 
@@ -62,19 +54,19 @@ def _log_dir_for(run, checkpoint_path):
     root = _repo_root / 'logs' / 'e2' / f'train_{run}'
     if not root.is_dir():
         return None
-    candidates = sorted(path for path in root.iterdir() if path.is_dir() and _stamp(path.name) is not None)
+    candidates = sorted(path for path in root.iterdir() if path.is_dir() and parse_stamp(path.name) is not None)
     if not candidates:
         return None
     if checkpoint_path is None:
         return candidates[-1]
 
-    target = _stamp(Path(checkpoint_path).parent.name)
+    target = parse_stamp(Path(checkpoint_path).parent.name)
     if target is None:
         print(f'warn {run}: checkpoint folder has no timestamp, using newest log run')
         return candidates[-1]
 
-    nearest = min(candidates, key=lambda path: abs((_stamp(path.name) - target).total_seconds()))
-    gap = abs((_stamp(nearest.name) - target).total_seconds())
+    nearest = min(candidates, key=lambda path: abs((parse_stamp(path.name) - target).total_seconds()))
+    gap = abs((parse_stamp(nearest.name) - target).total_seconds())
     if gap > MAX_STAMP_GAP_S:
         print(f'warn {run}: no log run within {MAX_STAMP_GAP_S}s of checkpoint {checkpoint_path}')
         return None

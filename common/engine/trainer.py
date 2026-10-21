@@ -1,3 +1,5 @@
+import torch
+
 from .engine import Engine, Events, default_prepare_batch
 
 
@@ -11,19 +13,37 @@ class Trainer(Engine):
         device=None,
         max_epochs=1,
         prepare_batch=None,
+        amp=False,
+        channels_last=False,
+        clip_grad_norm=None,
     ):
-        super().__init__(data, model, device=device, max_epochs=max_epochs)
+        super().__init__(
+            data,
+            model,
+            device=device,
+            max_epochs=max_epochs,
+            amp=amp,
+            channels_last=channels_last,
+        )
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.prepare_batch = prepare_batch or default_prepare_batch
+        self.clip_grad_norm = clip_grad_norm
         self.should_stop = False
 
     def train_step(self, batch):
         self.model.train()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         x, y = self.prepare_batch(batch, self.device)
-        loss = self.loss_fn(self.model(x), y)
+
+        with self.autocast():
+            loss = self.loss_fn(self.model(self.to_input(x)), y)
+
         loss.backward()
+
+        if self.clip_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad_norm)
+
         self.optimizer.step()
         return {'loss': loss.item(), 'n': y.size(0)}
 

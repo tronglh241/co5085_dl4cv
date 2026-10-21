@@ -178,7 +178,7 @@ timer:
   module: common.handlers.timer
   name: EpochTimer
   kwargs:
-    writer: logging.tensorboard.writer
+    logger: logging.tensorboard
 
 best_checkpoint:
   module: common.handlers.checkpoint.best

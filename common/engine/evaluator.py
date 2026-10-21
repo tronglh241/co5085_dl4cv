@@ -10,14 +10,21 @@ class Evaluator(Engine):
         model,
         device=None,
         prepare_batch=None,
+        amp=False,
+        channels_last=False,
     ):
-        super().__init__(data, model, device=device)
+        super().__init__(data, model, device=device, amp=amp, channels_last=channels_last)
         self.prepare_batch = prepare_batch or default_prepare_batch
 
     @torch.no_grad()
     def eval_step(self, batch):
         x, y = self.prepare_batch(batch, self.device)
-        return {'y_pred': self.model(x), 'y': y}
+
+        with self.autocast():
+            y_pred = self.model(self.to_input(x))
+
+        # Metrics and the loss see float32 logits even under bf16 autocast.
+        return {'y_pred': y_pred.float(), 'y': y}
 
     def run(self):
         self._fire(Events.STARTED)

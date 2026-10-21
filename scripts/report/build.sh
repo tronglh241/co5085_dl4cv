@@ -6,6 +6,7 @@ cd "$(dirname "$0")/../.."
 texfiles=(
   reports/exercises.tex
   reports/assignment_1.tex
+  reports/a1.1_assignment.tex
   reports/assignment_2.tex
 )
 

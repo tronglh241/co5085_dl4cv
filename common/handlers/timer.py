@@ -4,8 +4,8 @@ from common.engine.engine import Events
 
 
 class EpochTimer:
-    def __init__(self, writer=None):
-        self.writer = writer
+    def __init__(self, logger=None):
+        self.logger = logger
         self._start = None
         self._last = None
 
@@ -23,8 +23,8 @@ class EpochTimer:
         self._last = time.perf_counter()
 
     def _on_epoch(self, engine):
-        if self._start is None or self._last is None or self.writer is None:
+        if self._start is None or self._last is None or self.logger is None:
             return
 
         elapsed = self._last - self._start
-        self.writer.add_scalar('training/epoch_time', elapsed, engine.state['epoch'])
+        self.logger.writer.add_scalar('training/epoch_time', elapsed, engine.state['epoch'])

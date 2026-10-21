@@ -1,0 +1,50 @@
+% Báo cáo A1.1. Build: bash scripts/report/build.sh reports/a1.1_assignment.tex
+% (latexmk -lualatex). Nội dung nằm ở a1.tex; hình và bảng số liệu được đọc
+% từ docs/assets/a1/ khi đã có, nên file này biên dịch được ngay cả trước khi
+% chạy EDA, benchmark hay train.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+
+\captionsetup{font=small,labelfont=bf}
+\setlist{nosep,leftmargin=*}
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0pt}
+% Đường dẫn trong \texttt không ngắt dòng được; cho phép giãn khoảng trắng thay vì tràn lề.
+\setlength{\emergencystretch}{3em}
+
+% Không dùng babel: đặt tay các nhãn tiếng Việt.
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\refname}{Tài liệu tham khảo}
+
+\title{%
+  \textbf{Bài tập lớn A1: CNN và Transformer trên Food-101}\\[0.4em]
+  \large Mốc A1.1: tập dữ liệu và giao thức thí nghiệm\\[0.2em]
+  \normalsize CO5085 Học sâu và ứng dụng trong thị giác máy tính, học kỳ 261 (2026--2027)}
+\author{%
+  Huỳnh Văn Tâm Thiện (2470094) \and Lê Hữu Trọng (2470578)\\[0.4em]
+  \small Giảng viên: TS. Lê Thành Sách, TS. Nguyễn Quốc Minh\\
+  \small Trường Đại học Bách khoa, ĐHQG-HCM}
+\date{\the\day/\the\month/\the\year}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\input{a1}
+
+\end{document}

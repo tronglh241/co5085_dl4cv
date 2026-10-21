@@ -22,7 +22,7 @@ class MNIST(_TorchvisionMNIST):
             train_idx, val_idx = train_test_split(
                 range(len(self.data)),
                 test_size=val_ratio,
-                stratify=list(self.targets),
+                stratify=self.targets.numpy(),
                 random_state=seed,
             )
             self.indices = list(train_idx if split == 'train' else val_idx)

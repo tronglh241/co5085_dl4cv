@@ -21,7 +21,7 @@ class CheckpointLoader:
         checkpoint = torch.load(self.path, map_location=self.map_location, weights_only=False)
 
         if self.module_names is None:
-            names = [key for key in checkpoint if key not in ('rng', 'best')]
+            names = [key for key in checkpoint if key != 'rng']
         else:
             names = self.module_names
 
