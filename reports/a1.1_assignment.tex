@@ -22,6 +22,24 @@
 \setlength{\parindent}{0pt}
 % Đường dẫn trong \texttt không ngắt dòng được; cho phép giãn khoảng trắng thay vì tràn lề.
 \setlength{\emergencystretch}{3em}
+\clubpenalty=10000
+\widowpenalty=10000
+% Hình và bảng được phép chiếm nhiều chỗ hơn trên một trang và lấp khoảng trống.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.7}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+% Trang chỉ có hình/bảng: dồn lên đầu trang, khoảng trắng thừa xuống cuối trang.
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{12pt}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
 
 % Không dùng babel: đặt tay các nhãn tiếng Việt.
 \renewcommand{\figurename}{Hình}
@@ -41,7 +59,9 @@
 
 \begin{document}
 \maketitle
+\setcounter{tocdepth}{1}
 \tableofcontents
+\clearpage
 
 % Hình và bảng số liệu sinh bởi scripts/a1/{eda,analyze}.py được đọc từ
 % docs/assets/a1/ nếu đã có; chưa có thì in một dòng nhắc thay vì lỗi biên dịch.
@@ -51,13 +71,13 @@
 \newcommand{\aonemissing}[2]{\textit{Chưa có \texttt{\detokenize{#1}}: chạy \texttt{#2}.}}
 % Khi chưa có hình, vẫn đánh số và đặt nhãn để \ref trong bài không thành ``??''.
 \newcommand{\aonefigure}[5]{%
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
 \IfFileExists{\aoneasset{#1}}{\includegraphics[width=#2\linewidth]{\aoneasset{#1}}}{\aonemissing{#1}{#5}}
 \caption{#3}\label{#4}
 \end{figure}}
 \newcommand{\aonetable}[4]{%
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{#2}\label{#3}
 \IfFileExists{\aoneasset{#1}}{\small\begin{adjustbox}{max width=\linewidth}\input{\aoneasset{#1}}\end{adjustbox}}{\aonemissing{#1}{#4}}
@@ -75,7 +95,7 @@ Báo cáo này nộp cho mốc A1.1 (tập dữ liệu và giao thức thí nghi
 \end{itemize}
 Bảng~\ref{tab:a1-compliance} chỉ ra mục nào của báo cáo đáp ứng từng yêu cầu của đề.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Đối chiếu yêu cầu của đề (mục 3.1, 4, 5 trong đề) với nội dung báo cáo.}
 \label{tab:a1-compliance}
@@ -129,7 +149,7 @@ Food-101 không có giấy phép chuẩn: trường \texttt{license} trong datas
 Đề yêu cầu một tập ảnh công khai, tối thiểu 10 lớp và từ vài nghìn ảnh train trở lên. Food-101 được chọn theo bốn tiêu chí:
 \begin{itemize}
 \item \textbf{Đủ lớn và đủ khó.} 101 lớp, 75\,750 ảnh train chính thức. Bài toán thuộc loại phân loại chi tiết (\emph{fine-grained}): cùng một món có thể trông rất khác nhau, còn nhiều món khác nhau lại trông gần giống nhau.
-\item \textbf{Không trùng ảnh với ImageNet.} Tiny-ImageNet, Imagenette và các tập con của ImageNet bị loại, vì mô hình pretrained trên ImageNet đã thấy chính những ảnh đó, khiến so sánh scratch với pretrained bị lệch.
+\item \textbf{Không trùng ảnh với ImageNet.} Tiny-ImageNet, Imagenette và các tập con của ImageNet bị loại, vì ảnh của chúng lấy từ ImageNet và phần lớn nằm trong tập train mà mô hình pretrained đã học, khiến so sánh scratch với pretrained bị lệch.
 \item \textbf{Hợp với mô hình pretrained.} Ảnh tự nhiên, cỡ vài trăm pixel, dùng thẳng ở độ phân giải 224 px. CIFAR-100 (ảnh \(32\times32\)) phải phóng to gấp 7 lần nên bị loại.
 \item \textbf{Vừa ngân sách.} Với khoảng 68\,000 ảnh train ở 224 px, ước tính (chưa đo) cho thấy train từ đầu vài chục epoch trên một GPU L4 vẫn nằm trong ngân sách (Mục~\ref{sec:a1-infra}). Oxford Flowers-102 quá nhỏ (10 ảnh train mỗi lớp) để chế độ scratch có ý nghĩa; Stanford Cars bị loại vì torchvision không còn tải được tập này: đường dẫn gốc của Stanford đã hỏng và hàm tải báo lỗi, nên phải dựng dữ liệu thủ công từ nguồn khác.
 \end{itemize}
@@ -139,7 +159,7 @@ Food-101 không có giấy phép chuẩn: trường \texttt{license} trong datas
 \section{Chia train, validation, test}\label{sec:a1-split}
 Split test chính thức được giữ nguyên. Validation được tách từ split train chính thức: 10\% mỗi lớp, phân tầng theo nhãn (\texttt{train\_test\_split(stratify=...)}, seed 42). Bảng~\ref{tab:a1-split} ghi số ảnh của từng tập.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Ba tập dùng trong A1. Mọi lớp có cùng số ảnh trong mỗi tập.}
 \label{tab:a1-split}
@@ -173,7 +193,15 @@ Ngoài ba tập trên, evaluator \texttt{train\_eval} đọc một tập con ph�
 \aonefigure{eda/class_counts.png}{1.0}{Số ảnh mỗi lớp trong train, validation và test.}{fig:a1-counts}{scripts/a1/eda.py}
 \aonefigure{eda/image_sizes.png}{1.0}{Kích thước ảnh gốc: phân bố rộng--cao, cạnh ngắn (vạch đỏ là 256 px của bản đã thu nhỏ) và tỉ lệ khung.}{fig:a1-sizes}{scripts/a1/eda.py}
 \aonetable{eda/stats.tex}{Thống kê ảnh gốc và mean/std theo kênh RGB.}{tab:a1-stats}{scripts/a1/eda.py}
-\aonefigure{eda/samples.jpg}{0.8}{Ảnh train của một số lớp, sau bước Resize(256) + CenterCrop(224) dùng khi đánh giá.}{fig:a1-samples}{scripts/a1/eda.py}
+% Lưới ảnh mẫu cao 8 hàng: cắt đôi và đặt hai nửa cạnh nhau để hình không chiếm cả trang.
+\begin{figure}[!htbp]
+\centering
+\IfFileExists{\aoneasset{eda/samples.jpg}}{%
+\adjincludegraphics[width=0.49\linewidth,trim={0 {.5\height} 0 0},clip]{\aoneasset{eda/samples.jpg}}\hfill
+\adjincludegraphics[width=0.49\linewidth,trim={0 0 0 {.5\height}},clip]{\aoneasset{eda/samples.jpg}}%
+}{\aonemissing{eda/samples.jpg}{scripts/a1/eda.py}}
+\caption{Ảnh train của một số lớp, sau bước Resize(256) + CenterCrop(224) dùng khi đánh giá. Bên trái: bốn lớp đầu; bên phải: bốn lớp sau.}\label{fig:a1-samples}
+\end{figure}
 
 \textbf{Nhận xét.}
 \begin{itemize}
@@ -191,7 +219,7 @@ Giống MNIST ở E1 và E2, \textbf{mọi mô hình và mọi chế độ dùng
 
 \textbf{Tiền xử lý một lần} (\texttt{scripts/a1/prepare\_data.py}). Ảnh được chuyển sang RGB, cạnh ngắn được thu về 256 px (giữ tỉ lệ, nội suy bicubic, ảnh vốn nhỏ hơn thì giữ nguyên) và lưu JPEG chất lượng 90 vào \texttt{data/food101\_256/}. Mục đích là tốc độ: giải mã ảnh gốc cạnh dài 512 px ở tốc độ train tốn nhiều CPU hơn, và nếu DataLoader không theo kịp thì GPU phải chờ dữ liệu; tốc độ thực tế sẽ được đo trước khi chạy chính thức. Ảnh 256 px vẫn đủ cho cả hai phép cắt 224 px ở Bảng~\ref{tab:a1-pipeline}.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Pipeline dữ liệu dùng chung, theo đúng thứ tự áp dụng (\texttt{TRAIN\_STEPS}, \texttt{EVAL\_STEPS} trong \texttt{scripts/a1/make\_configs.py}).}
 \label{tab:a1-pipeline}
@@ -223,7 +251,7 @@ Các phép biến đổi hình học ở mức vừa phải. \texttt{RandomResiz
 \section{Mô hình}\label{sec:a1-models}
 Hai mô hình lấy từ thư viện timm~\cite{wightman2019timm} (bản 1.0.30), có số tham số và chi phí tính toán gần nhau, và cùng được pretrain chỉ trên ImageNet-1k, để nguồn pretrain không làm lệch phép so sánh (Bảng~\ref{tab:a1-models}). Head phân loại được thay bằng một lớp tuyến tính 101 lớp, khởi tạo ngẫu nhiên.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Hai mô hình. Số tham số tính với head 101 lớp. MAC cho một ảnh \(224\times224\), đếm bằng \texttt{FlopCounterMode} với attention tính bằng phép nhân ma trận thường (\texttt{timm.layers.set\_fused\_attn(False)}): bộ đếm không ghi nhận kernel attention gộp (SDPA), nên để mặc định sẽ thiếu khoảng 0.36 GMAC của DeiT-S.}
 \label{tab:a1-models}
@@ -252,7 +280,7 @@ y &= \sigma\big(F(x) + P(x)\big),
 \end{equation}
 trong đó \(W_1\) là tích chập \(1\times1\) thu số kênh về \(c\), \(W_2\) là tích chập \(3\times3\) giữ \(c\) kênh với bước nhảy \(s\), \(W_3\) là tích chập \(1\times1\) mở rộng lên \(4c\) kênh. Nhánh tắt \(P\) là ánh xạ đồng nhất, trừ khối đầu của mỗi tầng: ở đó số kênh hoặc độ phân giải thay đổi nên \(P\) là tích chập \(1\times1\) bước nhảy \(s\) kèm BatchNorm. Bước nhảy 2 đặt ở tích chập \(3\times3\) (biến thể thường gọi là ResNet v1.5, mặc định trong timm và torchvision), không ở tích chập \(1\times1\) đầu khối như bài báo gốc.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Kiến trúc ResNet-50. Mỗi dòng ``\([\cdot]\times n\)'' là \(n\) khối bottleneck; bước nhảy 2 ở khối đầu của tầng. Phần tô xám là phần bị đóng băng ở chế độ partial.}
 \label{tab:a1-resnet}
@@ -275,7 +303,7 @@ tổng & & & 23\,714\,981 \\
 \end{adjustbox}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
 \begin{adjustbox}{max width=\linewidth}
 \begin{tikzpicture}[
@@ -318,7 +346,7 @@ với \(z_{12}^{0}\) là token CLS sau khối cuối. MSA có \(h=6\) head, mỗ
 \end{equation}
 trong đó \(Q,K,V\) lấy từ một phép chiếu chung \(384\to3\cdot384\). MLP là \texttt{Linear} \(384\to1536\), GELU, \texttt{Linear} \(1536\to384\).
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Kiến trúc DeiT-S. Phần tô xám là phần bị đóng băng ở chế độ partial.}
 \label{tab:a1-deit}
@@ -342,7 +370,7 @@ tổng & & & 21\,704\,549 \\
 
 Mỗi khối có 1\,774\,464 tham số: MSA 591\,360 (phép chiếu \(Q,K,V\) 443\,520 và \(W_O\) 147\,840), MLP 1\,181\,568, hai LayerNorm 1\,536. Với \(N=197\), hai phép nhân ma trận của attention (\(QK^{\top}\) và nhân với \(V\)) chỉ chiếm khoảng 7.9\% MAC của một khối; phần lớn chi phí nằm ở các phép chiếu tuyến tính và MLP.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
 \begin{adjustbox}{max width=\linewidth}
 \begin{tikzpicture}[
@@ -378,7 +406,7 @@ Trọng số \texttt{fb\_in1k} được train chỉ trên ImageNet-1k và là b�
 \section{Chế độ huấn luyện}\label{sec:a1-modes}
 \texttt{models/a1/classifier.py} hiện thực bốn chế độ; Bảng~\ref{tab:a1-modes} ghi định nghĩa và số tham số được học của mỗi mô hình ở từng chế độ.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Bốn chế độ huấn luyện. ``Nửa đầu'' tính theo độ sâu: ResNet-50 đóng băng stem cùng \texttt{layer1}--\texttt{layer2}, DeiT-S đóng băng patch embedding, token CLS, positional embedding và khối 0--5.}
 \label{tab:a1-modes}
@@ -406,7 +434,7 @@ full & có & không & 23\,714\,981 (100\%) & 21\,704\,549 (100\%) \\
 \section{Giao thức thí nghiệm}\label{sec:a1-protocol}
 Ma trận thí nghiệm gồm \textbf{8 run}: 2 mô hình \(\times\) 4 chế độ, mỗi run train một lần với seed 42 trên toàn bộ tập train (Bảng~\ref{tab:a1-protocol}). Tất cả cấu hình được sinh bởi \texttt{scripts/a1/make\_configs.py} vào \texttt{configs/a1/}.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Siêu tham số riêng theo chế độ, dùng cho cả hai mô hình. Learning rate là giá trị khởi đầu, sẽ được kiểm tra trên validation trước khi chạy chính thức.}
 \label{tab:a1-protocol}
@@ -451,7 +479,7 @@ Mục này cố định trước khi chạy: đo đại lượng nào, trên t�
 \end{itemize}
 
 \subsection{Đại lượng đo}
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Các đại lượng báo cáo cho mỗi run và cách đo.}
 \label{tab:a1-metrics}
@@ -501,7 +529,7 @@ Hai run được chấm trên \emph{cùng} các ảnh test, nên chênh lệch g
 Ngưỡng 1 điểm là một lựa chọn thận trọng, không rút ra từ dữ liệu. Nếu thời gian cho phép, chạy thêm seed cho vài cấu hình chính sẽ thay ngưỡng này bằng một độ dao động đo được.
 
 \subsection{Các so sánh được định trước}
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Mười một so sánh theo kế hoạch, gắn với bốn câu hỏi ở Mục~\ref{sec:a1-goals}. Kiểm định McNemar áp dụng cho mười cặp đầu; so sánh thứ mười một (chênh của hai chênh lệch) chỉ có khoảng bootstrap.}
 \label{tab:a1-compare}
