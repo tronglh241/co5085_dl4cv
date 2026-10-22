@@ -11,9 +11,10 @@
 \usepackage{graphicx}
 \usepackage[table]{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{positioning,fit,arrows.meta}
+\usetikzlibrary{positioning,fit,arrows.meta,calc}
 \usepackage{enumitem}
 \usepackage{caption}
+\usepackage{placeins}
 \usepackage[hidelinks]{hyperref}
 
 \captionsetup{font=small,labelfont=bf}
@@ -86,13 +87,13 @@
 % Chỗ cần điền khi đã có số liệu thật; xoá trước khi nộp.
 \newcommand{\todo}[1]{\textcolor{red!70!black}{\textit{[Cần điền: #1]}}}
 
-\section{Tóm tắt và đối chiếu với yêu cầu của đề}\label{sec:a1-summary}
-Báo cáo A1.1: chốt tập dữ liệu, hai mô hình và giao thức thí nghiệm của bài tập lớn A1. A1 so sánh một mạng tích chập với một Transformer thị giác trên cùng một tập ảnh lớn, mỗi mô hình ở bốn chế độ huấn luyện.
+\section{Tóm tắt}\label{sec:a1-summary}
+Báo cáo A1.1: chốt tập dữ liệu, hai mô hình và giao thức thí nghiệm của bài tập lớn A1. Bài tập lớn A1 so sánh một mạng tích chập với một Transformer thị giác trên cùng một tập ảnh lớn, mỗi mô hình ở bốn chế độ huấn luyện.
 
 \begin{itemize}
-\item \textbf{Tập dữ liệu.} Food-101, 101 lớp món ăn. Sau khi tách train, validation và test có 68\,175, 7\,575 và 25\,250 ảnh (Mục~\ref{sec:a1-split}).
+\item \textbf{Tập dữ liệu.} Food-101, 101 lớp món ăn. Sau khi tách train, validation và test có 68\,175, 7\,575 và 25\,250 ảnh (Mục~\ref{sec:a1-dataset}, \ref{sec:a1-split}).
 \item \textbf{Mô hình.} ResNet-50 (\texttt{microsoft/resnet-50}) cho CNN và DeiT-S (\texttt{facebook/deit-small-patch16-224}) cho Transformer, cả hai là bản công bố trên Hugging Face, có trọng số ImageNet-1k. Chế độ scratch không nạp trọng số đó (Mục~\ref{sec:a1-models}).
-\item \textbf{Chế độ huấn luyện.} Train từ đầu (\emph{scratch}), chỉ train đầu phân loại (\emph{head}), đóng băng nửa đầu mạng (\emph{partial}) và finetune toàn bộ (\emph{full}). Hai mô hình nhân bốn chế độ thành 8 run, seed 42 (Mục~\ref{sec:a1-modes}, \ref{sec:a1-protocol}).
+\item \textbf{Chế độ huấn luyện.} Train từ đầu (\emph{scratch}), chỉ train classification head (\emph{head}), đóng băng nửa đầu mạng (\emph{partial}) và finetune toàn bộ (\emph{full}). Hai mô hình nhân bốn chế độ thành 8 run, seed 42 (Mục~\ref{sec:a1-modes}).
 \item \textbf{Tiền xử lý.} Một pipeline tăng cường và chuẩn hoá, dùng chung cho mọi mô hình và mọi chế độ (Mục~\ref{sec:a1-preproc}).
 \end{itemize}
 
@@ -110,7 +111,7 @@ Food-101 & \href{https://huggingface.co/datasets/ethz/food101}{huggingface.co/\a
 \addlinespace
 ResNet-50 & \href{https://huggingface.co/microsoft/resnet-50}{huggingface.co/\allowbreak microsoft/\allowbreak resnet-50} & ResNet v1.5 (bước nhảy 2 ở tích chập \(3\times3\)), pretrain trên ImageNet-1k ở \(224\times224\); thẻ mô tả không nêu công thức huấn luyện hay accuracy (Mục~\ref{sec:a1-models}) \\
 \addlinespace
-DeiT-S & \href{https://huggingface.co/facebook/deit-small-patch16-224}{huggingface.co/\allowbreak facebook/\allowbreak deit-small-\allowbreak patch16-224} & DeiT-small không chưng cất, pretrain và finetune trên ImageNet-1k ở \(224\times224\), top-1 79.9\% theo thẻ mô tả \\
+DeiT-S & \href{https://huggingface.co/facebook/deit-small-patch16-224}{huggingface.co/\allowbreak facebook/\allowbreak deit-small-\allowbreak patch16-224} & DeiT-small không có token chưng cất, train trên ImageNet-1k ở \(224\times224\), top-1 79.8\% theo bài báo DeiT \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -118,38 +119,8 @@ DeiT-S & \href{https://huggingface.co/facebook/deit-small-patch16-224}{huggingfa
 \label{tab:a1-links}
 \end{table}
 
-\begin{table}[!htbp]
-\centering
-\small
-\begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{p{0.36\linewidth}p{0.46\linewidth}l}
-\toprule
-Yêu cầu của đề & Cách báo cáo đáp ứng & Mục \\
-\midrule
-Tập ảnh công khai, ít nhất 10 lớp, vài nghìn ảnh train; không dùng MNIST, Fashion-MNIST hay CIFAR-10 & Food-101 có 101 lớp và 68\,175 ảnh train, công khai, không thuộc ba tập bị loại & \ref{sec:a1-dataset} \\
-\addlinespace
-Nêu giấy phép & Không có giấy phép mở; ảnh thuộc Foodspotting và chỉ được dùng cho học tập, nghiên cứu & Bảng~\ref{tab:a1-links} \\
-\addlinespace
-Nêu lý do chọn tập & Bốn tiêu chí chọn, kèm các tập đã loại và lý do loại & \ref{sec:a1-reason} \\
-\addlinespace
-Mô tả cách chia tập & Giữ test chính thức; validation là 10\% train, phân tầng theo lớp, seed 42; mọi run dùng chung split & \ref{sec:a1-split} \\
-\addlinespace
-Mô tả augmentation & Một pipeline lúc train, một pipeline lúc đánh giá, và cách chuẩn hoá & \ref{sec:a1-preproc} \\
-\addlinespace
-Nêu CNN và Transformer sẽ train & ResNet-50 và DeiT-S: kiến trúc, số tham số và chi phí tính toán & \ref{sec:a1-models} \\
-\addlinespace
-Kế hoạch train từ đầu, dùng pretrained và đóng băng & Bốn chế độ, phần mạng bị đóng băng, 8 run và siêu tham số & \ref{sec:a1-modes}, \ref{sec:a1-protocol} \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
-\caption{Đối chiếu yêu cầu của đề với nội dung báo cáo.}
-\label{tab:a1-compliance}
-\end{table}
-
 \section{Mục tiêu}\label{sec:a1-goals}
-Bài tập A1 so sánh một mạng tích chập (CNN) và một Transformer thị giác (ViT) trên một tập ảnh đủ lớn và đủ khó để khác biệt giữa hai họ kiến trúc, và giữa các cách dùng trọng số pretrained, có ý nghĩa. Bài chọn \textbf{Food-101} (101 món ăn, 101\,000 ảnh), \textbf{ResNet-50} cho họ CNN và \textbf{DeiT-S} cho họ Transformer. Mỗi mô hình được huấn luyện theo bốn chế độ: từ đầu (\emph{scratch}), và ba cách dùng trọng số pretrained ImageNet-1k là chỉ train đầu phân loại (\emph{head}), đóng băng nửa đầu mạng (\emph{partial}) và finetune toàn bộ (\emph{full}).
-
-Từ đó, báo cáo A1.2 sẽ so sánh bốn nội dung: (1) CNN và ViT khi train từ đầu; (2) lợi ích của pretrain đối với mỗi họ; (3) mức accuracy mất đi khi đóng băng một phần hoặc toàn bộ mạng; (4) chi phí tính toán của từng cấu hình (thời gian, bộ nhớ, số tham số được học, tốc độ suy luận).
+Bài tập lớn A1 so sánh một mạng tích chập (CNN) và một Vision Transformer (ViT) trên một tập ảnh đủ lớn và đủ khó để khác biệt giữa hai họ kiến trúc, và giữa các cách dùng trọng số pretrained, có ý nghĩa. Bài chọn \textbf{Food-101} (101 món ăn, 101\,000 ảnh), \textbf{ResNet-50} cho họ CNN và \textbf{DeiT-S} cho họ Transformer. Mỗi mô hình được huấn luyện theo bốn chế độ: từ đầu (\emph{scratch}), và ba cách dùng trọng số pretrained ImageNet-1k là chỉ train classification head (\emph{head}), đóng băng nửa đầu mạng (\emph{partial}) và finetune toàn bộ (\emph{full}).
 
 \section{Tập dữ liệu}\label{sec:a1-dataset}\label{sec:a1-reason}
 Food-101 gồm 101 lớp món ăn, mỗi lớp 1\,000 ảnh (750 ảnh train và 250 ảnh test theo split chính thức), cạnh dài nhất của ảnh không quá 512 px. Ảnh test đã được kiểm tra thủ công; ảnh train cố ý để nguyên nên còn nhiễu, chủ yếu là màu quá gắt và đôi khi sai nhãn.
@@ -159,7 +130,7 @@ Food-101 được chọn vì bốn lý do:
 \item \textbf{Đủ lớn và đủ khó.} 101 lớp, 75\,750 ảnh train chính thức; bài toán phân loại chi tiết, nhiều món khác nhau trông gần giống nhau.
 \item \textbf{Không trùng với ImageNet.} Tiny-ImageNet, Imagenette và các tập con của ImageNet bị loại vì ảnh của chúng nằm trong dữ liệu mà mô hình pretrained đã học, làm lệch so sánh scratch với pretrained.
 \item \textbf{Hợp với mô hình pretrained.} Ảnh tự nhiên, dùng được ở độ phân giải 224 px; CIFAR-100 (\(32\times32\)) phải phóng to gấp 7 lần nên bị loại.
-\item \textbf{Vừa ngân sách.} Khoảng 68\,000 ảnh train đủ nhỏ để train từ đầu trên một GPU L4 (Mục~\ref{sec:a1-infra}).
+\item \textbf{Vừa ngân sách.} Khoảng 68\,000 ảnh train đủ nhỏ để train từ đầu trên một GPU L4.
 \end{itemize}
 
 Lưu ý: ImageNet-1k có sẵn một số lớp món ăn trùng hoặc gần với Food-101, nên trọng số pretrained có lợi thế ngữ nghĩa ở các lớp này; A1.2 sẽ xem accuracy từng lớp có phản ánh điều đó không.
@@ -193,7 +164,13 @@ test & 25\,250 & 250 & split test chính thức \\
 Kích thước ảnh được đo trên toàn bộ 101\,000 ảnh gốc, trước khi thu nhỏ; mean và std theo kênh được tính trên toàn bộ 68\,175 ảnh train, sau bước cắt cố định (Hình~\ref{fig:a1-counts}--\ref{fig:a1-samples}, Bảng~\ref{tab:a1-stats}).
 
 \aonefigure{eda/class_counts.png}{1.0}{Số ảnh mỗi lớp trong train, validation và test.}{fig:a1-counts}{scripts/a1/eda.py}
-\aonefigure{eda/image_sizes.png}{1.0}{Kích thước ảnh gốc: phân bố rộng--cao, cạnh ngắn (vạch đỏ là 256 px của bản đã thu nhỏ) và tỉ lệ khung.}{fig:a1-sizes}{scripts/a1/eda.py}
+\begin{figure}[!htbp]
+\centering
+% Bỏ biểu đồ đầu của ảnh gốc: cắt 310 pt (khoảng 33\% bề rộng) bên trái.
+\IfFileExists{\aoneasset{eda/image_sizes.png}}{%
+\includegraphics[width=0.75\linewidth,trim=310pt 0pt 0pt 0pt,clip]{\aoneasset{eda/image_sizes.png}}}{\aonemissing{eda/image_sizes.png}{}}
+\caption{Kích thước ảnh gốc. Trái: số ảnh theo độ dài cạnh ngắn (vạch đỏ là 256 px, mức đổi cạnh ngắn trước khi cắt). Phải: số ảnh theo tỉ lệ khung (rộng/cao).}\label{fig:a1-sizes}
+\end{figure}
 \aonetable{eda/stats.tex}{Thống kê ảnh gốc và mean/std theo kênh RGB.}{tab:a1-stats}{scripts/a1/eda.py}
 % Lưới ảnh mẫu cao 8 hàng: cắt đôi và đặt hai nửa cạnh nhau để hình không chiếm cả trang.
 \begin{figure}[!htbp]
@@ -210,7 +187,7 @@ Kích thước ảnh được đo trên toàn bộ 101\,000 ảnh gốc, trướ
 \item \textbf{Cân bằng lớp.} Mỗi lớp có đúng 675 ảnh train, 75 ảnh validation và 250 ảnh test (Hình~\ref{fig:a1-counts}), nên không cần trọng số lớp.
 \item \textbf{Kích thước.} Cạnh dài luôn là 512 px. Theo Hình~\ref{fig:a1-sizes}, khoảng 63\% ảnh là ảnh vuông \(512\times512\) và khoảng 27\% có cạnh ngắn 384 px (khung 4:3); các tỉ lệ này đọc từ biểu đồ nên chỉ xấp xỉ. Chỉ 44 ảnh (0.04\%) có cạnh ngắn dưới 256 px, được phóng lên khi đổi cạnh ngắn về 256 px, và quá ít để ảnh hưởng kết quả. Phép cắt giữa bỏ phần rìa của ảnh, đáng kể nhất với ảnh có khung dài (tỉ lệ đến 4.2), nhưng các ảnh này rất hiếm.
 \item \textbf{Chế độ màu.} 100\,997 ảnh RGB và 3 ảnh xám (chuyển sang RGB khi tiền xử lý).
-\item \textbf{Màu sắc.} Mean RGB là \((0.557, 0.442, 0.327)\), std khoảng 0.26: ảnh món ăn nghiêng về đỏ hơn ImageNet \((0.485, 0.456, 0.406)\). Sau chuẩn hoá mean \(=\) std \(=0.5\), std chỉ còn khoảng 0.52, nhỏ hơn hai lần so với lúc pretrain (Mục~\ref{sec:a1-preproc}).
+\item \textbf{Màu sắc.} Mean RGB là \((0.557, 0.442, 0.327)\), std khoảng 0.26: ảnh món ăn nghiêng về đỏ hơn ImageNet \((0.485, 0.456, 0.406)\).
 \item \textbf{Nhiễu nhãn} (Hình~\ref{fig:a1-samples}). Ảnh chụp trong nhà hàng nên ánh sáng, góc chụp và nền rất khác nhau. Trong 48 ảnh mẫu có ít nhất hai ảnh mà nhãn không ứng với chủ thể rõ ràng (ảnh thứ hai của \emph{bibimbap} chủ yếu là há cảo; ảnh thứ ba của \emph{grilled cheese sandwich} không thấy bánh) và vài ảnh có màu rất gắt, đúng như tác giả mô tả. Mẫu quá nhỏ để ước lượng tỉ lệ nhiễu.
 \item \textbf{Cặp lớp dễ nhầm}: các món gần nhau như \emph{prime rib}, \emph{steak}; sẽ được đo ở A1.2 bằng ma trận nhầm lẫn (Mục~\ref{sec:a1-eval}).
 \end{itemize}
@@ -220,7 +197,7 @@ Mọi mô hình và mọi chế độ dùng chung một pipeline dữ liệu, gi
 
 \textbf{Cắt cố định, áp dụng một lần cho mọi ảnh.} Mọi ảnh của cả ba tập (train, validation, test) được xử lý đúng một lần theo cùng một cách: chuyển sang RGB, đổi cạnh ngắn về 256 px (giữ tỉ lệ, nội suy bicubic; ảnh nhỏ hơn được phóng lên), rồi cắt phần giữa \(224\times224\) và lưu lại dạng JPEG.
 
-Sau bước đó, chỉ tập train được tăng cường dữ liệu (Bảng~\ref{tab:a1-pipeline}); validation và test chỉ được chuẩn hoá.
+Sau bước đó, chỉ tập train được tăng cường dữ liệu (Bảng~\ref{tab:a1-pipeline}, Hình~\ref{fig:a1-aug}); validation và test chỉ được chuẩn hoá.
 
 \begin{table}[!htbp]
 \centering
@@ -244,7 +221,9 @@ Chuẩn hoá & Đưa về tensor trong \([0,1]\), rồi trừ mean 0.5 và chia 
 \aonefigure{eda/augmentation.jpg}{1.0}{Cột đầu: ảnh sau bước cắt cố định. Các cột sau: cùng ảnh qua các phép tăng cường của pipeline train sáu lần.}{fig:a1-aug}{scripts/a1/eda.py}
 
 \section{Mô hình}\label{sec:a1-models}
-Hai mô hình dùng trọng số công bố trên Hugging Face (Bảng~\ref{tab:a1-links}), có số tham số và chi phí tính toán gần nhau, và cùng được pretrain chỉ trên ImageNet-1k để nguồn pretrain không làm lệch so sánh (Bảng~\ref{tab:a1-models}). Đầu phân loại được thay bằng một lớp tuyến tính 101 lớp, khởi tạo ngẫu nhiên. Số tham số và kích thước đầu ra dưới đây được đo trực tiếp trên mô hình.
+Cả hai mô hình có cùng một khung: một \textbf{feature extractor} biến ảnh thành một vector đặc trưng mô tả nội dung ảnh, và một \textbf{classification head} biến vector đó thành 101 điểm số, mỗi điểm cho một món. Khác nhau ở feature extractor: ResNet-50 là mạng tích chập, quét ảnh bằng các filter nhỏ và thu nhỏ ảnh dần qua từng stage; DeiT-S là Transformer, cắt ảnh thành các patch rồi cho mọi patch trao đổi thông tin với nhau bằng self-attention. Mục~\ref{sec:a1-resnet} và~\ref{sec:a1-deit} trình bày cấu trúc của từng mô hình và chức năng của các lớp trong đó.
+
+Hai mô hình dùng trọng số công bố trên Hugging Face (Bảng~\ref{tab:a1-links}), có số tham số và chi phí tính toán gần nhau, và cùng được pretrain chỉ trên ImageNet-1k để nguồn pretrain không làm lệch so sánh (Bảng~\ref{tab:a1-models}). Classification head được thay bằng một linear layer 101 đầu ra, khởi tạo ngẫu nhiên. Số tham số và kích thước đầu ra dưới đây được đo trực tiếp trên mô hình.
 
 \begin{table}[!htbp]
 \centering
@@ -259,206 +238,236 @@ Transformer & \texttt{facebook/deit-small-patch16-224} & 22\,050\,664 & 21\,704\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\caption{Hai mô hình. Số tham số của bản Hugging Face (đầu phân loại 1000 lớp của ImageNet) và của mô hình dùng trong bài (đầu 101 lớp cho Food-101); hai số chênh nhau đúng bằng phần chênh của đầu phân loại. MAC cho một ảnh \(224\times224\), đếm bằng bộ đếm phép tính của PyTorch với attention được tính bằng các phép nhân ma trận riêng lẻ: bộ đếm không ghi nhận kernel attention gộp, nên nếu dùng kernel đó sẽ thiếu khoảng 0.36 GMAC của DeiT-S.}
+\caption{Hai mô hình. Số tham số của bản Hugging Face (classification head 1000 lớp của ImageNet) và của mô hình dùng trong bài (101 lớp cho Food-101); hai số chênh nhau đúng bằng phần chênh của classification head.}
 \label{tab:a1-models}
 \end{table}
 
-\subsection{ResNet-50}
-ResNet-50 gồm một stem, bốn tầng khối \emph{bottleneck} có kết nối tắt, global average pooling và một lớp tuyến tính (Bảng~\ref{tab:a1-resnet}, Hình~\ref{fig:a1-resnet}). Mỗi khối bottleneck gồm ba tích chập (\(1\times1\) thu số kênh, \(3\times3\), rồi \(1\times1\) mở rộng số kênh gấp 4), mỗi tích chập kèm BatchNorm; hai tích chập đầu có ReLU ngay sau, còn ReLU thứ ba đặt sau phép cộng với kết nối tắt. Kết nối tắt là ánh xạ đồng nhất, trừ khối đầu của mỗi tầng, nơi nó là một tích chập \(1\times1\) kèm BatchNorm: ở tầng 1 chỉ để khớp số kênh (64 lên 256), ở tầng 2--4 để khớp cả số kênh lẫn độ phân giải. Ở khối đầu của tầng 2--4, bước nhảy 2 đặt ở tích chập \(3\times3\) (biến thể ResNet v1.5, cũng là biến thể của bản Microsoft); tầng 1 giữ nguyên độ phân giải vì stem đã giảm bằng maxpool.
+\FloatBarrier
+\subsection{ResNet-50}\label{sec:a1-resnet}
+ResNet-50 gồm một \emph{stem} (convolution \(7\times7\) và max pooling, thu ảnh từ \(224\times224\) xuống \(56\times56\)), bốn \emph{stage} gồm 3, 4, 6 và 3 \emph{bottleneck block}, rồi global average pooling và một fully connected layer 101 đầu ra (Hình~\ref{fig:a1-resnet}). Từ stage 2, mỗi stage giảm kích thước ảnh một nửa (còn 28, 14, rồi 7) và tăng gấp đôi số kênh (từ 256 lên 2048).
 
-\begin{table}[!htbp]
-\centering
-\small
-\begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{lllr}
-\toprule
-Tầng & Cấu hình & Đầu ra (\(C\times H\times W\)) & Tham số \\
-\midrule
-\rowcolor{black!8} stem & conv \(7\times7\), 64, stride 2; maxpool \(3\times3\), stride 2 & \(64\times56\times56\) & 9\,536 \\
-\rowcolor{black!8} tầng 1 & \(\left[1{\times}1, 64;\ 3{\times}3, 64;\ 1{\times}1, 256\right]\times3\) & \(256\times56\times56\) & 215\,808 \\
-\rowcolor{black!8} tầng 2 & \(\left[1{\times}1, 128;\ 3{\times}3, 128;\ 1{\times}1, 512\right]\times4\) & \(512\times28\times28\) & 1\,219\,584 \\
-tầng 3 & \(\left[1{\times}1, 256;\ 3{\times}3, 256;\ 1{\times}1, 1024\right]\times6\) & \(1024\times14\times14\) & 7\,098\,368 \\
-tầng 4 & \(\left[1{\times}1, 512;\ 3{\times}3, 512;\ 1{\times}1, 2048\right]\times3\) & \(2048\times7\times7\) & 14\,964\,736 \\
-head & global average pooling; lớp tuyến tính \(2048\to101\) & 101 & 206\,949 \\
-\midrule
-tổng & & & 23\,714\,981 \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
-\caption{Kiến trúc ResNet-50. Mỗi dòng ``\([\cdot]\times n\)'' là \(n\) khối bottleneck; bước nhảy 2 ở khối đầu của tầng 2--4. Phần tô xám là phần bị đóng băng ở chế độ partial.}
-\label{tab:a1-resnet}
-\end{table}
+Các layer trong ResNet-50 và chức năng của chúng:
+\begin{itemize}
+\item \textbf{Convolution:} trượt các filter nhỏ trên ảnh để phát hiện đặc trưng cục bộ như cạnh, màu, kết cấu; convolution có stride 2 làm ảnh nhỏ đi một nửa.
+\item \textbf{Max pooling:} giữ giá trị lớn nhất trong mỗi vùng \(3\times3\), dùng ở stem để thu nhỏ ảnh một nửa.
+\item \textbf{Batch normalization (BatchNorm):} đặt sau mỗi convolution, chuẩn hoá từng kênh theo trung bình và độ lệch chuẩn của cả batch, giúp train ổn định và nhanh hơn.
+\item \textbf{ReLU (activation function):} hàm kích hoạt phi tuyến, giữ số dương và đặt số âm về 0; thiếu nó, cả mạng chỉ là một phép biến đổi tuyến tính.
+\item \textbf{Residual connection} (\emph{skip connection}): cộng đầu vào của block vào đầu ra, để block chỉ cần học phần thay đổi; nhờ vậy mạng 50 layer vẫn train được.
+\item \textbf{Global average pooling:} lấy trung bình mỗi kênh trên toàn ảnh, biến feature map \(2048\times7\times7\) thành một vector 2048 số.
+\item \textbf{Fully connected layer và softmax:} fully connected layer biến vector 2048 số thành 101 điểm số (logit); softmax đổi chúng thành xác suất của 101 món.
+\end{itemize}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
 \centering
 \begin{adjustbox}{max width=\linewidth}
 \begin{tikzpicture}[
-  box/.style={draw, rounded corners=2pt, align=center, font=\scriptsize, minimum height=1.1cm, text width=1.6cm, inner sep=2pt},
-  frozen/.style={box, fill=black!8},
-  arrow/.style={-{Stealth[length=4pt]}},
-  node distance=0.32cm]
-\node[box] (in) {ảnh\\\(3{\times}224{\times}224\)};
-\node[frozen, right=of in] (stem) {stem\\conv \(7{\times}7\)/2\\maxpool/2};
-\node[frozen, right=of stem] (l1) {tầng 1\\3 khối\\\(256{\times}56^2\)};
-\node[frozen, right=of l1] (l2) {tầng 2\\4 khối\\\(512{\times}28^2\)};
-\node[box, right=of l2] (l3) {tầng 3\\6 khối\\\(1024{\times}14^2\)};
-\node[box, right=of l3] (l4) {tầng 4\\3 khối\\\(2048{\times}7^2\)};
-\node[box, right=of l4] (gap) {global avg\\pool\\2048};
-\node[box, right=of gap] (fc) {lớp tuyến tính\\101 lớp};
-\foreach \a/\b in {in/stem, stem/l1, l1/l2, l2/l3, l3/l4, l4/gap, gap/fc} \draw[arrow] (\a) -- (\b);
-\node[draw, dashed, rounded corners=3pt, fit=(stem)(l2), inner sep=4pt, label={[font=\scriptsize]below:đóng băng ở chế độ partial}] {};
+  pill/.style={draw, rounded corners=9pt, very thick, minimum height=4.9cm, minimum width=0.9cm, inner sep=2pt, font=\footnotesize},
+  io/.style={align=center, font=\footnotesize},
+  arrow/.style={-{Stealth[length=5pt]}, thick},
+  lab/.style={rotate=90, font=\scriptsize, fill=white, inner sep=1pt},
+  cnt/.style={font=\footnotesize, above=2pt},
+  node distance=0.95cm]
+\definecolor{cstem}{RGB}{252,222,190}\definecolor{bstem}{RGB}{244,164,96}
+\definecolor{c1}{RGB}{223,226,168}\definecolor{b1}{RGB}{165,163,90}
+\definecolor{c2}{RGB}{255,200,246}\definecolor{b2}{RGB}{240,110,225}
+\definecolor{c3}{RGB}{205,238,255}\definecolor{b3}{RGB}{110,165,238}
+\definecolor{c4}{RGB}{196,247,196}\definecolor{b4}{RGB}{80,224,80}
+\definecolor{cfc}{RGB}{248,180,180}\definecolor{bfc}{RGB}{238,102,102}
+\node[io] (in) {INPUT\\FRAMES};
+\node[pill, fill=cstem, draw=bstem, right=of in] (stem) {\rotatebox{90}{7$\times$7 conv, 64 stride 2}};
+\node[pill, fill=c1, draw=b1, right=of stem] (l1) {\begin{tabular}{@{}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{}}\rotatebox{90}{1$\times$1 conv, 64} & \rotatebox{90}{3$\times$3 conv, 64} & \rotatebox{90}{1$\times$1 conv, 256}\end{tabular}};
+\node[pill, fill=c2, draw=b2, right=of l1] (l2) {\begin{tabular}{@{}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{}}\rotatebox{90}{1$\times$1 conv, 128} & \rotatebox{90}{3$\times$3 conv, 128} & \rotatebox{90}{1$\times$1 conv, 512}\end{tabular}};
+\node[pill, fill=c3, draw=b3, right=of l2] (l3) {\begin{tabular}{@{}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{}}\rotatebox{90}{1$\times$1 conv, 256} & \rotatebox{90}{3$\times$3 conv, 256} & \rotatebox{90}{1$\times$1 conv, 1024}\end{tabular}};
+\node[pill, fill=c4, draw=b4, right=of l3] (l4) {\begin{tabular}{@{}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{}}\rotatebox{90}{1$\times$1 conv, 512} & \rotatebox{90}{3$\times$3 conv, 512} & \rotatebox{90}{1$\times$1 conv, 2048}\end{tabular}};
+\node[pill, fill=cfc, draw=bfc, right=of l4] (fc) {\rotatebox{90}{101 fc, softmax}};
+\node[io, right=of fc] (out) {PREDICTED\\SUBJECT};
+\draw[arrow] (in) -- (stem);
+\draw[arrow] (stem) -- (l1) node[midway, lab] {maxPool};
+\draw[arrow] (l1) -- (l2);
+\draw[arrow] (l2) -- (l3);
+\draw[arrow] (l3) -- (l4);
+\draw[arrow] (l4) -- (fc) node[midway, lab] {avgPool};
+\draw[arrow] (fc) -- (out);
+\node[cnt] at (l1.north) {($\times$3)};
+\node[cnt] at (l2.north) {($\times$4)};
+\node[cnt] at (l3.north) {($\times$6)};
+\node[cnt] at (l4.north) {($\times$3)};
+\node[font=\bfseries\normalsize, below=0.9cm of stem] (c0) {1};
+\node[font=\bfseries\normalsize, below=0.9cm of l1] (c1n) {9};
+\node[font=\bfseries\normalsize, below=0.9cm of l2] (c2n) {12};
+\node[font=\bfseries\normalsize, below=0.9cm of l3] (c3n) {18};
+\node[font=\bfseries\normalsize, below=0.9cm of l4] (c4n) {9};
+\node[font=\bfseries\normalsize, below=0.9cm of fc] (c5n) {1};
+\foreach \a/\b in {c0/c1n, c1n/c2n, c2n/c3n, c3n/c4n, c4n/c5n} \node[font=\bfseries\normalsize] at ($(\a)!0.5!(\b)$) {+};
+\node[font=\bfseries\normalsize, right=0.35cm of c5n] {= 50 layers};
 \end{tikzpicture}
 \end{adjustbox}
-\caption{Luồng dữ liệu qua ResNet-50: độ phân giải giảm từ \(224\) xuống \(7\) trong khi số kênh tăng từ 64 lên 2048.}
+\caption{Kiến trúc ResNet-50: mỗi hộp là một stage, ghi các convolution của một bottleneck block và số lần lặp (\(\times n\)); hàng dưới đếm số layer có trọng số của từng phần. Ở chế độ partial, stem, stage 1 và stage 2 (hộp thứ nhất đến thứ ba) bị đóng băng; classification head có 101 đầu ra.}
 \label{fig:a1-resnet}
 \end{figure}
 
-Tham số dồn về cuối mạng (tầng 3 và 4 chiếm 93.0\%, stem đến tầng 2 chỉ 6.1\%), trong khi MAC chia khá đều giữa các tầng (stem và tầng 1--4 lần lượt chiếm 2.9, 16.3, 25.1, 35.8 và 19.8\%); nửa đầu mạng vì vậy chiếm 44\% MAC nhưng chỉ 6.1\% tham số. Thẻ mô tả của Microsoft không nêu công thức huấn luyện hay accuracy. Bộ trọng số này cho đầu ra giống hệt bản \texttt{resnet50.a1\_in1k} của thư viện timm (đã đối chiếu trực tiếp), vốn được train bằng công thức mạnh của timm và có top-1 trên ImageNet-1k ở \(224\times224\) là 80.38\%; con số này gần với 79.9\% của DeiT-S nên hai mô hình được pretrain ở chất lượng tương đương.
+Các layer này được ghép thành \emph{bottleneck block} (Hình~\ref{fig:a1-block}): convolution \(1\times1\) đầu giảm số kênh (ví dụ 256 xuống 64) để convolution \(3\times3\) chạy trên ít kênh cho rẻ, rồi convolution \(1\times1\) cuối tăng lại gấp 4; ở block đầu mỗi stage, residual connection dùng thêm một convolution \(1\times1\) (\emph{projection shortcut}) để khớp kích thước.
 
-\subsection{DeiT-S}
-DeiT-S dùng kiến trúc Vision Transformer ở cấu hình nhỏ (patch 16, 12 khối, 384 chiều, 6 head); điểm mới của DeiT nằm ở công thức huấn luyện, giúp ViT đạt accuracy tốt khi chỉ train trên ImageNet-1k. Ảnh được cắt thành 196 patch \(16\times16\), mỗi patch được chiếu tuyến tính lên một vector 384 chiều; một token CLS và positional embedding học được được thêm vào, rồi chuỗi 197 token đi qua 12 khối Transformer. Mỗi khối gồm hai phần, mỗi phần có LayerNorm đứng trước và kết nối tắt: multi-head self-attention (6 head, mỗi head 64 chiều) và MLP (\(384\to1536\to384\), hàm kích hoạt GELU). Đầu phân loại đọc token CLS sau khối cuối.
-
-\begin{table}[!htbp]
-\centering
-\small
-\begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{lllr}
-\toprule
-Thành phần & Cấu hình & Đầu ra (\(N\times D\)) & Tham số \\
-\midrule
-\rowcolor{black!8} patch embedding & conv \(16\times16\), stride 16, \(3\to384\) & \(196\times384\) & 295\,296 \\
-\rowcolor{black!8} CLS, positional emb. & token \(1\times384\); \(E_{\mathrm{pos}}\in\mathbb{R}^{197\times384}\) & \(197\times384\) & 76\,032 \\
-\rowcolor{black!8} khối 0--5 & \(6\times\) [LN; MSA 6 head \(\times\) 64; LN; MLP \(384\to1536\to384\)] & \(197\times384\) & 10\,646\,784 \\
-khối 6--11 & như trên & \(197\times384\) & 10\,646\,784 \\
-head & LN; lớp tuyến tính \(384\to101\) trên token CLS & 101 & 39\,653 \\
-\midrule
-tổng & & & 21\,704\,549 \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
-\caption{Kiến trúc DeiT-S. Phần tô xám là phần bị đóng băng ở chế độ partial.}
-\label{tab:a1-deit}
-\end{table}
-
-Mỗi khối có 1\,774\,464 tham số (MSA 591\,360, MLP 1\,181\,568, hai LayerNorm 1\,536). Với \(N=197\), hai phép nhân ma trận của attention chỉ chiếm khoảng 7.9\% MAC của một khối; phần lớn chi phí nằm ở các phép chiếu và MLP.
-
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
 \centering
 \begin{adjustbox}{max width=\linewidth}
 \begin{tikzpicture}[
-  box/.style={draw, rounded corners=2pt, align=center, font=\scriptsize, minimum height=1.1cm, text width=1.55cm, inner sep=2pt},
-  frozen/.style={box, fill=black!8},
-  arrow/.style={-{Stealth[length=4pt]}},
-  node distance=0.32cm]
-\node[box] (in) {ảnh\\\(3{\times}224{\times}224\)};
-\node[frozen, right=of in] (pe) {patch embed\\conv \(16{\times}16\)/16\\\(196{\times}384\)};
-\node[frozen, right=of pe] (pos) {+ CLS\\+ \(E_{\mathrm{pos}}\)\\\(197{\times}384\)};
-\node[frozen, right=of pos] (b1) {khối 0--5\\LN, MSA\\LN, MLP};
-\node[box, right=of b1] (b2) {khối 6--11\\LN, MSA\\LN, MLP};
-\node[box, right=of b2] (ln) {LN\\lấy token\\CLS};
-\node[box, right=of ln] (head) {đầu phân loại\\101 lớp};
-\foreach \a/\b in {in/pe, pe/pos, pos/b1, b1/b2, b2/ln, ln/head} \draw[arrow] (\a) -- (\b);
-\node[draw, dashed, rounded corners=3pt, fit=(pe)(b1), inner sep=4pt, label={[font=\scriptsize]below:đóng băng ở chế độ partial}] {};
+  op/.style={draw, rounded corners=3pt, minimum height=0.8cm, font=\footnotesize, fill=black!6, align=center},
+  bn/.style={draw, rounded corners=3pt, minimum height=0.8cm, font=\footnotesize, fill=yellow!20},
+  act/.style={font=\footnotesize},
+  arrow/.style={-{Stealth[length=4pt]}, thick},
+  node distance=0.28cm]
+\node (x) {\(x\)};
+\node[op, right=of x] (c1) {\(1{\times}1\), 64};
+\node[bn, right=of c1] (b1) {BN};
+\node[act, right=of b1] (r1) {ReLU};
+\node[op, right=of r1] (c2) {\(3{\times}3\), 64};
+\node[bn, right=of c2] (b2) {BN};
+\node[act, right=of b2] (r2) {ReLU};
+\node[op, right=of r2] (c3) {\(1{\times}1\), 256};
+\node[bn, right=of c3] (b3) {BN};
+\node[draw, circle, inner sep=1pt, right=0.4cm of b3] (add) {\(+\)};
+\node[act, right=of add] (r3) {ReLU};
+\foreach \a/\b in {x/c1, c1/b1, b1/r1, r1/c2, c2/b2, b2/r2, r2/c3, c3/b3, b3/add, add/r3} \draw[arrow] (\a) -- (\b);
+\draw[arrow] (x.north) -- ++(0,0.75) -| node[near start, above, font=\footnotesize] {residual connection (identity)} (add.north);
 \end{tikzpicture}
 \end{adjustbox}
-\caption{Luồng dữ liệu qua DeiT-S: 197 token \(\times\) 384 chiều được giữ nguyên qua cả 12 khối.}
+\caption{Bottleneck block của ResNet-50 (ví dụ block thứ hai của stage 1, \(x\) có 256 kênh): ba convolution, mỗi convolution theo sau là BatchNorm (BN); đầu vào \(x\) được cộng vào đầu ra trước ReLU cuối. Ở block đầu của mỗi stage, nhánh residual connection là một convolution \(1{\times}1\) kèm BatchNorm thay cho phép chép nguyên (identity).}
+\label{fig:a1-block}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{DeiT-S}\label{sec:a1-deit}
+DeiT-S (\emph{Data-efficient image Transformer}, bản small) là một Vision Transformer cỡ nhỏ: 12 Transformer block, mỗi token 384 chiều, multi-head self-attention 6 head. Điểm mới của DeiT là cách huấn luyện giúp Transformer đạt accuracy tốt khi chỉ train trên ImageNet-1k. Ảnh \(224\times224\) được chia thành 196 patch \(16\times16\), mỗi patch được chiếu thành một token 384 chiều (\emph{patch embedding}); thêm class token (CLS) và positional embedding, chuỗi 197 token đi qua 12 Transformer block với kích thước không đổi; cuối cùng class token qua LayerNorm và một fully connected layer cho ra 101 điểm số (Hình~\ref{fig:a1-deit}).
+
+Các layer trong DeiT-S và chức năng của chúng:
+\begin{itemize}
+\item \textbf{Patch embedding:} một convolution \(16\times16\) stride 16, tương đương một linear projection, biến mỗi patch thành một vector 384 chiều (một token).
+\item \textbf{Class token (CLS) và positional embedding:} class token là một vector học được, thêm vào đầu chuỗi để gom thông tin của cả ảnh cho bước phân loại; positional embedding cộng vào từng token để mô hình biết mỗi patch nằm ở đâu.
+\item \textbf{Layer normalization (LayerNorm):} chuẩn hoá từng token theo chính các giá trị của token đó, không phụ thuộc batch.
+\item \textbf{Multi-head self-attention:} cho mỗi token lấy thông tin từ mọi token khác, với trọng số tuỳ mức độ liên quan; nhờ vậy một patch ``nhìn'' được toàn ảnh ngay từ block đầu. 6 head chạy song song, mỗi head có thể chú ý đến một kiểu quan hệ khác nhau.
+\item \textbf{MLP:} hai linear layer (384 lên 1536 rồi về 384) với activation function GELU, một phiên bản mềm của ReLU, xử lý riêng từng token.
+\item \textbf{Residual connection:} như ở ResNet-50, cộng đầu vào của mỗi phần vào đầu ra của nó.
+\item \textbf{Fully connected layer và softmax:} biến class token thành 101 điểm số (logit) rồi thành xác suất.
+\end{itemize}
+
+\begin{figure}[!htb]
+\centering
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[
+  pill/.style={draw, rounded corners=9pt, very thick, minimum height=4.3cm, minimum width=0.9cm, inner sep=2pt, font=\footnotesize},
+  io/.style={align=center, font=\footnotesize},
+  arrow/.style={-{Stealth[length=5pt]}, thick},
+  lab/.style={rotate=90, font=\scriptsize, fill=white, inner sep=1pt, align=center},
+  cnt/.style={font=\footnotesize, above=2pt},
+  node distance=1.1cm]
+\definecolor{cstem}{RGB}{252,222,190}\definecolor{bstem}{RGB}{244,164,96}
+\definecolor{c3}{RGB}{205,238,255}\definecolor{b3}{RGB}{110,165,238}
+\definecolor{c4}{RGB}{196,247,196}\definecolor{b4}{RGB}{80,224,80}
+\definecolor{cfc}{RGB}{248,180,180}\definecolor{bfc}{RGB}{238,102,102}
+\node[io] (in) {INPUT\\FRAMES};
+\node[pill, fill=cstem, draw=bstem, right=0.95cm of in] (pe) {\begin{tabular}{@{}c@{}}\rotatebox{90}{16$\times$16 conv, 384 stride 16}\end{tabular}};
+\node[pill, fill=c3, draw=b3, right=of pe] (b1) {\begin{tabular}{@{}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{}}\rotatebox{90}{LayerNorm} & \rotatebox{90}{self-attention, 6 head} & \rotatebox{90}{LayerNorm} & \rotatebox{90}{MLP, 1536}\end{tabular}};
+\node[pill, fill=c4, draw=b4, right=0.95cm of b1] (b2) {\begin{tabular}{@{}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{\hspace{0.55em}}c@{}}\rotatebox{90}{LayerNorm} & \rotatebox{90}{self-attention, 6 head} & \rotatebox{90}{LayerNorm} & \rotatebox{90}{MLP, 1536}\end{tabular}};
+\node[pill, fill=cfc, draw=bfc, right=of b2] (fc) {\begin{tabular}{@{}c@{}}\rotatebox{90}{LN, 101 fc, softmax}\end{tabular}};
+\node[io, right=0.95cm of fc] (out) {PREDICTED\\SUBJECT};
+\draw[arrow] (in) -- (pe);
+\draw[arrow] (pe) -- (b1) node[midway, lab] {+ CLS, + pos. emb.};
+\draw[arrow] (b1) -- (b2);
+\draw[arrow] (b2) -- (fc) node[midway, lab] {class token};
+\draw[arrow] (fc) -- (out);
+\node[cnt] at (b1.north) {($\times$6)};
+\node[cnt] at (b2.north) {($\times$6)};
+\node[font=\bfseries\normalsize, below=0.6cm of pe] (c0) {1};
+\node[font=\bfseries\normalsize, below=0.6cm of b1] (c1n) {24};
+\node[font=\bfseries\normalsize, below=0.6cm of b2] (c2n) {24};
+\node[font=\bfseries\normalsize, below=0.6cm of fc] (c3n) {1};
+\foreach \a/\b in {c0/c1n, c1n/c2n, c2n/c3n} \node[font=\bfseries\normalsize] at ($(\a)!0.5!(\b)$) {+};
+\node[font=\bfseries\normalsize, right=0.35cm of c3n] {= 50 layers};
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Kiến trúc DeiT-S: hộp đầu là patch embedding (chia ảnh thành 196 patch \(16{\times}16\), chiếu mỗi patch thành 384 số); hai hộp giữa là 12 Transformer block giống nhau (\(\times 6\) mỗi hộp); hộp cuối phân loại từ class token. Hàng dưới đếm các layer có trọng số (convolution và linear layer, không tính LayerNorm): mỗi block có 4 linear layer. Ở chế độ partial, patch embedding và 6 block đầu (hộp thứ nhất và thứ hai) bị đóng băng; classification head có 101 đầu ra.}
 \label{fig:a1-deit}
 \end{figure}
 
-Theo thẻ mô tả của Facebook, đây là bản DeiT-small không chưng cất, chỉ dùng dữ liệu ImageNet-1k ở \(224\times224\), top-1 79.9\%. Bản này cho đầu ra trùng với bản \texttt{fb\_in1k} của thư viện timm đến sai số làm tròn (chênh lệch logit cỡ \(10^{-5}\), do hai cài đặt đặt hằng số epsilon của LayerNorm khác nhau).
+Các layer này được ghép thành \emph{Transformer block} (Hình~\ref{fig:a1-deit-block}): multi-head self-attention rồi MLP, mỗi phần có LayerNorm đứng trước và một residual connection.
+
+\begin{figure}[!htb]
+\centering
+\begin{adjustbox}{max width=\linewidth}
+\begin{tikzpicture}[
+  op/.style={draw, rounded corners=3pt, minimum height=0.8cm, font=\footnotesize, fill=black!6, align=center},
+  ln/.style={draw, rounded corners=3pt, minimum height=0.8cm, font=\footnotesize, fill=cyan!12},
+  arrow/.style={-{Stealth[length=4pt]}, thick},
+  node distance=0.32cm]
+\node (x) {\(x\)};
+\node[ln, right=0.8cm of x] (n1) {LayerNorm};
+\node[op, right=of n1] (att) {multi-head\\self-attention};
+\node[draw, circle, inner sep=1pt, right=0.4cm of att] (a1) {\(+\)};
+\node[ln, right=1.0cm of a1] (n2) {LayerNorm};
+\node[op, right=of n2] (mlp) {MLP\\\(384\to1536\to384\)};
+\node[draw, circle, inner sep=1pt, right=0.4cm of mlp] (a2) {\(+\)};
+\node[right=0.5cm of a2] (y) {output};
+\coordinate (b1) at ($(x.east)!0.5!(n1.west)$);
+\coordinate (b2) at ($(a1.east)!0.5!(n2.west)$);
+\draw[arrow] (x) -- (n1);
+\draw[arrow] (n1) -- (att);
+\draw[arrow] (att) -- (a1);
+\draw[arrow] (a1) -- (n2);
+\draw[arrow] (n2) -- (mlp);
+\draw[arrow] (mlp) -- (a2);
+\draw[arrow] (a2) -- (y);
+\fill (b1) circle (1.5pt);
+\fill (b2) circle (1.5pt);
+\draw[arrow] (b1) -- ++(0,0.8) -| node[near start, above, font=\footnotesize] {residual connection} (a1.north);
+\draw[arrow] (b2) -- ++(0,0.8) -| node[near start, above, font=\footnotesize] {residual connection} (a2.north);
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Một Transformer block của DeiT-S (\(x\) là chuỗi 197 token \(\times\) 384): LayerNorm đứng trước multi-head self-attention và MLP, và đầu vào của mỗi phần được cộng vào đầu ra của nó (residual connection).}
+\label{fig:a1-deit-block}
+\end{figure}
+
+\FloatBarrier
 
 \section{Chế độ huấn luyện}\label{sec:a1-modes}
-Bảng~\ref{tab:a1-modes} ghi định nghĩa bốn chế độ huấn luyện và số tham số được học của mỗi mô hình ở từng chế độ.
+Mỗi mô hình được huấn luyện theo bốn chế độ, khác nhau ở trọng số khởi tạo và phần mạng được cập nhật (Bảng~\ref{tab:a1-modes}). Hai mô hình nhân bốn chế độ thành 8 run, mỗi run train một lần với seed 42 trên toàn bộ tập train; dữ liệu, split, hàm loss và optimizer giống nhau ở cả bốn chế độ.
 
 \begin{table}[!htbp]
 \centering
 \small
 \begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{lllrr}
+\begin{tabular}{lllrrr}
 \toprule
-Chế độ & Pretrained & Đóng băng & ResNet-50 trainable & DeiT-S trainable \\
+Chế độ & Khởi tạo & Phần được học & Epoch dự tính & ResNet-50 trainable & DeiT-S trainable \\
 \midrule
-scratch & không & không & 23\,714\,981 (100\%) & 21\,704\,549 (100\%) \\
-head & có & mọi thứ trừ head & 206\,949 (0.9\%) & 38\,885 (0.2\%) \\
-partial & có & nửa đầu & 22\,270\,053 (93.9\%) & 10\,686\,437 (49.2\%) \\
-full & có & không & 23\,714\,981 (100\%) & 21\,704\,549 (100\%) \\
+scratch & ngẫu nhiên & toàn bộ mạng & 40 & 23\,714\,981 (100\%) & 21\,704\,549 (100\%) \\
+head & pretrained & chỉ classification head & 10 & 206\,949 (0.9\%) & 38\,885 (0.2\%) \\
+partial & pretrained & nửa sau của mạng & 15 & 22\,270\,053 (93.9\%) & 10\,686\,437 (49.2\%) \\
+full & pretrained & toàn bộ mạng & 15 & 23\,714\,981 (100\%) & 21\,704\,549 (100\%) \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\caption{Bốn chế độ huấn luyện. ``Nửa đầu'' tính theo độ sâu: ResNet-50 đóng băng stem cùng tầng 1--tầng 2, DeiT-S đóng băng patch embedding, token CLS, positional embedding và khối 0--5.}
+\caption{Bốn chế độ huấn luyện, số epoch dự tính và số tham số được học.}
 \label{tab:a1-modes}
 \end{table}
 
-\textbf{Bất đối xứng của chế độ partial.} Cùng là ``đóng băng nửa đầu theo độ sâu'', nhưng ResNet-50 vẫn học 93.9\% tham số, vì tham số của nó dồn ở tầng 3 và tầng 4, trong khi DeiT-S chỉ học 49.2\%, vì 12 khối của nó có cùng kích thước. Chúng tôi giữ định nghĩa theo độ sâu, vì nó ứng với câu hỏi ``giữ nguyên các đặc trưng cấp thấp'', và luôn báo cáo số tham số trainable bên cạnh kết quả để người đọc thấy rõ khác biệt này.
+\textbf{Scratch (train từ đầu).} Mô hình khởi tạo ngẫu nhiên, không dùng trọng số pretrained, và mọi tham số đều được học. Đây là mốc cho biết mô hình học được gì chỉ từ khoảng 68\,000 ảnh Food-101, và dùng để đo pretrain giúp được bao nhiêu. Chế độ này có ngân sách epoch dài nhất (40 epoch) vì phải học mọi thứ từ đầu.
 
-\textbf{BatchNorm trong phần đóng băng.} Đóng băng trọng số là chưa đủ: ở chế độ train, BatchNorm vẫn cập nhật trung bình và phương sai chạy. Vì vậy các lớp BatchNorm có toàn bộ tham số bị đóng băng được đặt lại về chế độ eval khi huấn luyện. Lần chạy thử cho thấy sau hai epoch ở chế độ head, mọi tensor của ResNet-50 ngoài lớp tuyến tính cuối, kể cả thống kê BatchNorm, giữ nguyên giá trị pretrained.
+\textbf{Head (chỉ train classification head).} Mô hình nạp trọng số pretrained ImageNet-1k, classification head được thay bằng một linear layer 101 đầu ra khởi tạo ngẫu nhiên, và \emph{chỉ layer này được học}; mọi phần còn lại bị đóng băng. Mô hình dùng nguyên các đặc trưng đã học từ ImageNet và chỉ học cách đọc chúng cho 101 món, nên chỉ có 0.9\% (ResNet-50) và 0.2\% (DeiT-S) số tham số được cập nhật. Đây là chế độ rẻ nhất và cho biết các đặc trưng pretrained đã tốt đến đâu với Food-101.
 
-\textbf{Weight decay và stochastic depth.} Weight decay chỉ áp lên trọng số của các lớp tuyến tính và tích chập; bias, tham số chuẩn hoá, token CLS và positional embedding không bị decay. Stochastic depth (drop path) đặt 0.1 cho scratch và full, và 0 cho head và partial: bỏ ngẫu nhiên các khối đã đóng băng chỉ làm nhiễu đặc trưng cố định mà không giúp học thêm.
+\textbf{Partial (đóng băng nửa đầu).} Mô hình nạp trọng số pretrained, nửa đầu của mạng (tính theo độ sâu) bị đóng băng, còn nửa sau và classification head được học. Nửa đầu giữ các đặc trưng cấp thấp như cạnh và kết cấu; nửa sau được điều chỉnh cho món ăn. Với ResNet-50, phần đóng băng gồm stem, stage 1 và stage 2; với DeiT-S, gồm patch embedding, class token, positional embedding và 6 Transformer block đầu. Vì ResNet-50 dồn tham số ở hai stage cuối còn 12 block của DeiT-S có cùng kích thước, cùng là ``nửa đầu'' nhưng ResNet-50 vẫn học 93.9\% tham số còn DeiT-S học 49.2\%.
 
-\section{Giao thức thí nghiệm}\label{sec:a1-protocol}
-Ma trận thí nghiệm gồm \textbf{8 run}: 2 mô hình \(\times\) 4 chế độ, mỗi run train một lần với seed 42 trên toàn bộ tập train (Bảng~\ref{tab:a1-protocol}). Cấu hình của từng run được sinh tự động từ một định nghĩa duy nhất, nên hai run chỉ khác nhau đúng ở những điểm nêu trong các bảng của báo cáo.
+\textbf{Full (finetune toàn bộ).} Mô hình nạp trọng số pretrained rồi cập nhật \emph{mọi} tham số với learning rate nhỏ, nên các đặc trưng pretrained được điều chỉnh dần cho Food-101. Đây là cách dùng thông dụng nhất của pretrain và thường cho accuracy cao nhất, với chi phí tính toán bằng chế độ scratch trên mỗi epoch nhưng cần ít epoch hơn (15).
 
-\begin{table}[!htbp]
-\centering
-\small
-\begin{tabular}{lrrrrr}
-\toprule
-Chế độ & Epoch & LR đỉnh & Warmup (epoch) & Drop path & Clip gradient \\
-\midrule
-scratch & 40 & \(5\times10^{-4}\) & 5 & 0.1 & 1.0 \\
-head & 10 & \(1\times10^{-3}\) & 1 & 0 & -- \\
-partial & 15 & \(2\times10^{-4}\) & 1 & 0 & -- \\
-full & 15 & \(1\times10^{-4}\) & 1 & 0.1 & -- \\
-\bottomrule
-\end{tabular}
-\caption{Siêu tham số riêng theo chế độ, dùng cho cả hai mô hình. Learning rate là giá trị khởi đầu, sẽ được kiểm tra trên validation trước khi chạy chính thức.}
-\label{tab:a1-protocol}
-\end{table}
+\section{Đánh giá}\label{sec:a1-eval}
+Cả 8 run được đánh giá theo cùng một quy trình:
+\begin{itemize}
+\item \textbf{Chọn epoch và dùng test:} Sau mỗi epoch, mô hình được đánh giá trên validation (7\,575 ảnh) và epoch có validation accuracy cao nhất được giữ lại (nếu bằng nhau thì lấy epoch sớm hơn). Sau khi train xong, checkpoint đó được đánh giá \emph{đúng một lần} trên test (25\,250 ảnh). Mọi quyết định khác, như kiểm tra learning rate hay chọn mô hình để phân tích lỗi, cũng chỉ dựa trên validation.
+\item \textbf{Chỉ số chất lượng:} Test accuracy là chỉ số chính. Ngoài ra báo cáo macro precision, recall và F1 (trung bình trên 101 lớp), accuracy của từng lớp, và validation accuracy tại epoch được giữ để so với test.
+\item \textbf{Chỉ số chi phí:} Số tham số được học, thời gian mỗi epoch, bộ nhớ GPU đỉnh khi train, và tốc độ suy luận (ảnh/giây).
+\item \textbf{Phân tích lỗi:} Trên mô hình CNN và mô hình Transformer có validation accuracy cao nhất, vẽ confusion matrix, liệt kê 15 cặp lớp bị nhầm nhiều nhất, và xem các ảnh bị đoán sai với độ tự tin cao nhất để biết đó là nhầm giữa các món giống nhau hay do nhãn sai.
+\item \textbf{Các so sánh:} Kết quả được đọc theo bốn nội dung ở Mục~\ref{sec:a1-goals}: (1) DeiT-S với ResNet-50 trong từng chế độ; (2) full với scratch cho từng mô hình, để đo pretrain giúp được bao nhiêu, và so mức tăng đó giữa hai mô hình; (3) head và partial với full cho từng mô hình, để đo accuracy mất đi khi đóng băng; (4) chi phí của từng cấu hình, đọc cạnh accuracy.
+\end{itemize}
 
-Phần dùng chung cho mọi run: AdamW với weight decay 0.05, batch 128, cross-entropy với label smoothing 0.1, autocast bfloat16 trên GPU, và bố trí bộ nhớ theo thứ tự kênh cuối (\emph{channels-last}) cho ResNet-50. Learning rate tăng tuyến tính trong \(W\) bước đầu rồi giảm theo cosine về 0, cập nhật sau mỗi bước tối ưu:
-\begin{equation}
-\eta_t=
-\begin{cases}
-\eta_{\max}\,\dfrac{t+1}{W}, & t<W,\\[0.6em]
-\eta_{\max}\,\dfrac{1}{2}\left(1+\cos\dfrac{\pi\,(t-W)}{T-W}\right), & t\ge W,
-\end{cases}
-\end{equation}
-với \(T\) là tổng số bước (số epoch \(\times\) 532 bước mỗi epoch) và \(W\) là số epoch warmup \(\times\) 532.
-
-\textbf{Chọn checkpoint và dừng.} Sau mỗi epoch, mô hình được đánh giá trên validation, và checkpoint có validation accuracy cao nhất được giữ lại. Không dùng early stopping: lịch cosine cần chạy hết để learning rate về 0. Một bản sao lưu đầy đủ (mô hình, optimizer, scheduler, trạng thái ngẫu nhiên) được ghi mỗi epoch, nên run bị ngắt có thể chạy tiếp đúng từ chỗ dừng.
-
-\textbf{Ngân sách epoch.} Scratch được 40 epoch, các chế độ pretrained 10--15 epoch. So sánh trong A1 vì vậy là so sánh \emph{dưới ngân sách cố định}, không phải giữa các mô hình đã hội tụ hoàn toàn; thời gian train được báo cáo cùng accuracy để thấy rõ đánh đổi.
-
-\textbf{Kiểm tra learning rate.} Trước khi chạy chính thức, learning rate của scratch và full được thử ngắn (2--3 epoch) trên validation. Tập test không được dùng ở bước này. Mỗi lần thử là một run riêng, ghi vào thư mục riêng và không bao giờ được dùng làm run chính.
-
-\section{Chiến lược đánh giá}\label{sec:a1-eval}
-Mọi quyết định (chọn epoch, kiểm tra learning rate, chọn mô hình để phân tích lỗi) dựa trên validation; mỗi run giữ epoch có validation accuracy cao nhất và được đánh giá trên test đúng một lần, với cùng 25\,250 ảnh test và không tăng cường dữ liệu. Đại lượng chính là test accuracy; ngoài ra báo cáo macro precision, recall, F1, accuracy từng lớp, chi phí (tham số trainable, thời gian mỗi epoch, bộ nhớ GPU đỉnh, tốc độ suy luận) và các cặp lớp bị nhầm nhiều nhất.
-
-Mỗi cấu hình chỉ chạy một lần (seed 42), nên báo cáo chỉ định lượng được sai số do tập test hữu hạn: khoảng \(\pm0.44\) điểm accuracy ở mức tin cậy 95\% khi accuracy khoảng 85\%. Hai run được so sánh theo cặp trên cùng các ảnh test, bằng khoảng tin cậy bootstrap và kiểm định McNemar có hiệu chỉnh Holm. Một chênh lệch chỉ được coi là rõ ràng khi khoảng tin cậy không chứa 0 và chênh lệch tối thiểu 1 điểm accuracy; chênh lệch nhỏ hơn chỉ được mô tả, không dùng làm luận cứ.
-
-Chỉ mười một so sánh định trước ở Bảng~\ref{tab:a1-compare} được kiểm định; các so sánh khác chỉ mô tả và được ghi rõ là phát sinh sau khi xem kết quả. Mỗi so sánh là hiệu accuracy trên test giữa hai run, riêng so sánh cuối là hiệu của hai hiệu. Chi phí (nội dung 4 ở Mục~\ref{sec:a1-goals}) không được kiểm định vì thời gian, bộ nhớ và số tham số là các đại lượng đo trực tiếp, không có sai số lấy mẫu trên tập test; chúng được báo cáo cạnh accuracy.
-
-\begin{table}[!htbp]
-\centering
-\small
-\begin{tabular}{llr}
-\toprule
-Nội dung & Phép so sánh & Số cặp \\
-\midrule
-1. CNN so với ViT & DeiT-S so với ResNet-50, trong từng chế độ & 4 \\
-2. Giá trị của pretrain & full so với scratch, riêng từng mô hình & 2 \\
- & mức tăng nhờ pretrain của DeiT-S so với của ResNet-50 & 1 \\
-3. Giá của việc đóng băng & head và partial so với full, riêng từng mô hình & 4 \\
-\midrule
-Tổng & & 11 \\
-\bottomrule
-\end{tabular}
-\caption{Mười một so sánh được kiểm định, thuộc ba nội dung đầu ở Mục~\ref{sec:a1-goals}.}
-\label{tab:a1-compare}
-\end{table}
-
-Cần đọc kết quả kèm các hạn chế: scratch được nhiều epoch hơn (40 so với 10--15), nên khoảng cách đo được không phóng đại giá trị của pretrain; nhiễu nhãn khiến validation có thể thấp hơn test; và chuẩn hoá lệch lúc pretrain (Mục~\ref{sec:a1-preproc}) có thể làm thấp kết quả của head và partial.
-
-\section{Phần cứng và ngân sách}\label{sec:a1-infra}
-Thí nghiệm chạy trên Modal, mỗi run là một container với một GPU NVIDIA L4 (24 GB), 8 nhân CPU và 16 GB RAM. Ngân sách tối đa là \$20, với đơn giá ước tính khoảng \$1.3--1.6 mỗi giờ cho GPU, CPU và bộ nhớ. Mốc A1.1 chưa có số đo tốc độ. Ước tính sơ bộ dựa trên giả định khoảng 800 ảnh/giây khi train (chưa kiểm chứng) là khoảng 4 GPU-giờ cho 8 run, tức khoảng \$6; nếu tốc độ thực chỉ bằng một nửa thì khoảng \$10--13, vẫn trong ngân sách. Trước khi chạy chính thức, tốc độ train, tốc độ suy luận và bộ nhớ đỉnh của từng mô hình ở từng chế độ sẽ được đo trên chính GPU đó, rồi số epoch ở Bảng~\ref{tab:a1-protocol} được chốt theo kết quả đo và ghi vào báo cáo A1.2.
 \end{document}
