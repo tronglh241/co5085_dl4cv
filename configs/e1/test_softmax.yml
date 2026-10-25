@@ -78,7 +78,7 @@ loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e1/softmax/261012054343/best_epoch_33_loss=0.2891.pt'"
+    path: "'checkpoints/e1/softmax/261020005115/best_epoch_45_loss=0.2894.pt'"
 
 seed: 42
 

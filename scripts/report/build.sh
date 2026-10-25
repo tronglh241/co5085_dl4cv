@@ -6,7 +6,6 @@ cd "$(dirname "$0")/../.."
 texfiles=(
   reports/exercises.tex
   reports/assignment_1.tex
-  reports/a1.1_assignment.tex
   reports/assignment_2.tex
 )
 
@@ -19,6 +18,6 @@ for texfile in "${texfiles[@]}"; do
     echo "skip missing $texfile" >&2
     continue
   fi
-  latexindent -y='defaultIndent: "    "' -w "$texfile" && rm -f "${texfile%.*}".bak*
+  latexindent -y='defaultIndent: "    "' -s -wd "$texfile" && rm -f "${texfile%.*}".bak*
   latexmk -lualatex -shell-escape -silent -interaction=batchmode -cd "$texfile"
 done

@@ -1,10 +1,13 @@
 '''Exploratory data analysis of Food-101 for A1.1 and the A1 page.
 
-Writes into --out (default docs/assets/a1/eda):
-    class_counts.csv / .png  images per class in train, val and test
+Writes figures into --out (default docs/assets/a1/eda):
+    class_counts.png         images per class in train, val and test
     image_sizes.png          width, height and shorter side of the original images
-    samples.jpg              a few train images of a few classes
-    augmentation.jpg         one image through the shared train pipeline several times
+    samples.png              a few train images of a few classes
+    augmentation.png         one image through the shared train pipeline several times
+
+Writes tables and values into --results-dir (default reports/results/a1/eda):
+    class_counts.csv         the same counts as class_counts.png
     summary.json / .md       totals, size statistics, image modes, channel mean/std
     splits.tex, stats.tex    the same numbers as booktabs tables for reports/a1.tex
 
@@ -52,11 +55,11 @@ def load_splits(root):
     return {split: Food101(root, split=split) for split in SPLITS}
 
 
-def class_counts(splits, out):
+def class_counts(splits, out, results):
     classes = splits['train'].classes
     counts = {split: Counter(dataset.targets) for split, dataset in splits.items()}
 
-    with (out / 'class_counts.csv').open('w', newline='') as handle:
+    with (results / 'class_counts.csv').open('w', newline='') as handle:
         writer = csv.writer(handle)
         writer.writerow(['class', *SPLITS])
         for index, name in enumerate(classes):
@@ -74,7 +77,7 @@ def class_counts(splits, out):
     axis.set_title('Images per class')
     axis.legend(fontsize=8, loc='lower right')
     figure.tight_layout()
-    figure.savefig(out / 'class_counts.png', dpi=150)
+    figure.savefig(out / 'class_counts.png', dpi=300)
     plt.close(figure)
 
     return {
@@ -146,7 +149,7 @@ def image_sizes(raw_root, workers, out, sample_size=0, seed=0):
     axes[2].set_xlabel('Width / height')
     axes[2].set_title('Aspect ratio')
     figure.tight_layout()
-    figure.savefig(out / 'image_sizes.png', dpi=150)
+    figure.savefig(out / 'image_sizes.png', dpi=300)
     plt.close(figure)
 
     return {
@@ -181,8 +184,8 @@ def samples(dataset, out, classes_shown=8, per_class=6, seed=0):
                 axis.imshow(crop(dataset.load_image(picks[col])))
         axes[row][0].set_title(dataset.classes[label].replace('_', ' '), fontsize=8, loc='left')
     figure.tight_layout()
-    # Photos compress far better as JPEG: about 10x smaller than PNG here.
-    figure.savefig(out / 'samples.jpg', dpi=150, pil_kwargs={'quality': 88})
+    # PNG keeps the rendered photo grid lossless.
+    figure.savefig(out / 'samples.png', dpi=200)
     plt.close(figure)
 
 
@@ -207,7 +210,7 @@ def augmentation(dataset, out, images=4, versions=6, seed=0):
         axes[0][col].set_title(f'train #{col}', fontsize=8)
     figure.suptitle('RandomResizedCrop(0.8-1) + flip + rotate 15° + ColorJitter + translate 10%', fontsize=9)
     figure.tight_layout()
-    figure.savefig(out / 'augmentation.jpg', dpi=150, pil_kwargs={'quality': 88})
+    figure.savefig(out / 'augmentation.png', dpi=200)
     plt.close(figure)
 
 
@@ -227,8 +230,8 @@ def channel_stats(dataset, workers, sample_size=0, seed=0):
     return {'sample_images': len(picks), 'mean': mean.tolist(), 'std': std.tolist()}
 
 
-def write_summary(summary, out):
-    (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+def write_summary(summary, results):
+    (results / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
 
     counts = summary['splits']
     lines = [
@@ -261,7 +264,7 @@ def write_summary(summary, out):
         f'Pipeline normalizes with mean {MEAN}, std {STD}; ImageNet weights expect mean {IMAGENET_MEAN}, '
         f'std {IMAGENET_STD}.',
     ]
-    (out / 'summary.md').write_text('\n'.join(lines) + '\n')
+    (results / 'summary.md').write_text('\n'.join(lines) + '\n')
 
 
 def _n(value):
@@ -269,7 +272,7 @@ def _n(value):
     return f'{value:,}'.replace(',', '\\,')
 
 
-def write_tex(summary, out):
+def write_tex(summary, results):
     '''Booktabs tables that reports/a1.tex pulls in with \\input.'''
     rows = []
     for split in SPLITS:
@@ -278,7 +281,7 @@ def write_tex(summary, out):
             else f"{info['per_class_min']}--{info['per_class_max']}"
         rows.append(f'{split} & {_n(info["images"])} & {per_class} \\\\')
     total = sum(summary['splits'][split]['images'] for split in SPLITS)
-    (out / 'splits.tex').write_text('\n'.join([
+    (results / 'splits.tex').write_text('\n'.join([
         r'\begin{tabular}{lrr}',
         r'\toprule',
         r'Tập & Số ảnh & Ảnh/lớp \\',
@@ -317,14 +320,17 @@ def write_tex(summary, out):
         r'\end{tabular}',
         '',
     ]
-    (out / 'stats.tex').write_text('\n'.join(lines))
+    (results / 'stats.tex').write_text('\n'.join(lines))
 
 
 def main():
     parser = argparse.ArgumentParser(description='Food-101 EDA for A1.')
     parser.add_argument('--root', default='data/food101_256', help='prepared copy the models train on')
     parser.add_argument('--raw', default='data/', help='original download; skip size statistics if missing')
-    parser.add_argument('--out', default=str(_repo_root / 'docs' / 'assets' / 'a1' / 'eda'))
+    parser.add_argument('--out', default=str(_repo_root / 'docs' / 'assets' / 'a1' / 'eda'),
+                        help='figure directory')
+    parser.add_argument('--results-dir', default=str(_repo_root / 'reports' / 'results' / 'a1' / 'eda'),
+                        help='CSV and LaTeX table directory')
     parser.add_argument('--workers', type=int, default=32, help='threads reading images')
     parser.add_argument('--stats-sample', type=int, default=0, help='train images for the mean/std; 0 for all')
     parser.add_argument('--size-sample', type=int, default=0, help='original images measured; 0 for all')
@@ -332,8 +338,10 @@ def main():
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    results = Path(args.results_dir)
+    results.mkdir(parents=True, exist_ok=True)
     splits = load_splits(args.root)
-    summary = {'splits': class_counts(splits, out)}
+    summary = {'splits': class_counts(splits, out, results)}
     print('class counts done', flush=True)
 
     if (Path(args.raw) / 'food-101' / 'images').is_dir():
@@ -347,10 +355,11 @@ def main():
     augmentation(splits['train'], out)
     print('augmentation done', flush=True)
     summary['channels'] = channel_stats(splits['train'], args.workers, args.stats_sample)
-    write_summary(summary, out)
-    write_tex(summary, out)
-    print((out / 'summary.md').read_text())
-    print(f'wrote EDA to {out}')
+    write_summary(summary, results)
+    write_tex(summary, results)
+    print((results / 'summary.md').read_text())
+    print(f'wrote EDA figures to {out}')
+    print(f'wrote EDA tables to {results}')
 
 
 if __name__ == '__main__':

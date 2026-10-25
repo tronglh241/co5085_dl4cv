@@ -1,0 +1,14 @@
+43f739b0b0013fbe3c401344ca7632bb  logs/e1/train_cnn/261020005935/events.out.tfevents.1792457975.0f547765e76e.5630.0
+3acf66c76240377c18e8813c5c1dea25  logs/e1/train_cnn_aug/261020010144/events.out.tfevents.1792458104.0f547765e76e.5631.0
+a646704b2a838865aa784b183191d3e8  logs/e1/train_mlp/261020005517/events.out.tfevents.1792457717.0f547765e76e.5628.0
+0514b51d3175f4438d4f8cf10dc5b8ee  logs/e1/train_mlp_aug/261020005725/events.out.tfevents.1792457845.0f547765e76e.5629.0
+dc46e949dc344fb8c23630592309e6e4  logs/e1/train_softmax/261020005115/events.out.tfevents.1792457475.0f547765e76e.5626.0
+36d970afcac1916069f630dcd750fdfa  logs/e1/train_softmax_aug/261020005311/events.out.tfevents.1792457591.0f547765e76e.5627.0
+2af8df53ac2aa8a429ad1e5d2db0a66f  logs/e2/train_cnnstem_scratch/261013032411/events.out.tfevents.1791861851.modal.4.0
+6b120bbd518ce97a32f3eb2d7bef6330  logs/e2/train_cnnstem_torch/261013032411/events.out.tfevents.1791861851.modal.4.0
+75d08dd207d3ba8d73f722c7fb5fb061  logs/e2/train_patch7_scratch/261013032423/events.out.tfevents.1791861863.modal.4.0
+50d8bca3aa12667b2ac9395941c583ae  logs/e2/train_patch_overlap_scratch/261013032440/events.out.tfevents.1791861880.modal.4.0
+14818cff7df43cf1c3ac9a46bbea9d0a  logs/e2/train_patch_scratch/261013031822/events.out.tfevents.1791861502.modal.4.0
+246f02895a9d9d1ea51fb236e4f0cf3a  logs/e2/train_patch_torch/261013031834/events.out.tfevents.1791861514.modal.4.0
+201cabd5879a2fa52b1bbf00d799b76f  logs/e2/train_row_scratch/261013032303/events.out.tfevents.1791861783.modal.4.0
+b65da0a0e3d9e613691a70b7ef16ff1e  logs/e2/train_row_torch/261013032408/events.out.tfevents.1791861848.modal.4.0

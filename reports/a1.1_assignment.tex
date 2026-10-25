@@ -50,7 +50,6 @@
 \renewcommand{\refname}{Tài liệu tham khảo}
 
 \title{%
-  \includegraphics[width=2.6cm]{images/logo.png}\\[1em]
   \textbf{Bài tập lớn A1: CNN và Transformer}\\[0.4em]
   \normalsize CO5085 Học sâu và ứng dụng trong thị giác máy tính, học kỳ 261 (2026--2027)}
 \author{%
@@ -68,9 +67,11 @@
 \let\oldsection\section
 \renewcommand{\section}{\clearpage\oldsection}
 
-% Hình và bảng số liệu nằm trong docs/assets/a1/ (đường dẫn tương đối với reports/, nơi build biên dịch);
-% nếu chưa có thì in một dòng nhắc thay vì lỗi biên dịch.
+% Hình nằm trong docs/assets/a1/, bảng số liệu nằm trong reports/results/a1/
+% (đường dẫn tương đối với reports/, nơi build biên dịch); nếu chưa có thì in
+% một dòng nhắc thay vì lỗi biên dịch.
 \newcommand{\aoneasset}[1]{../docs/assets/a1/#1}
+\newcommand{\aoneresult}[1]{../reports/results/a1/#1}
 \newcommand{\aonemissing}[2]{\textit{[Hình hoặc bảng này chưa có.]}}
 % Khi chưa có hình, vẫn đánh số và đặt nhãn để \ref trong bài không thành ``??''.
 \newcommand{\aonefigure}[5]{%
@@ -82,7 +83,7 @@
 \newcommand{\aonetable}[4]{%
 \begin{table}[!htbp]
 \centering
-\IfFileExists{\aoneasset{#1}}{\small\begin{adjustbox}{max width=\linewidth}\input{\aoneasset{#1}}\end{adjustbox}}{\aonemissing{#1}{#4}}
+\IfFileExists{\aoneresult{#1}}{\small\begin{adjustbox}{max width=\linewidth}\input{\aoneresult{#1}}\end{adjustbox}}{\aonemissing{#1}{#4}}
 \caption{#2}\label{#3}
 \end{table}}
 % Chỗ cần điền khi đã có số liệu thật; xoá trước khi nộp.
@@ -176,10 +177,10 @@ Kích thước ảnh được đo trên toàn bộ 101\,000 ảnh gốc, trướ
 % Lưới ảnh mẫu cao 8 hàng: cắt đôi và đặt hai nửa cạnh nhau để hình không chiếm cả trang.
 \begin{figure}[!htbp]
 \centering
-\IfFileExists{\aoneasset{eda/samples.jpg}}{%
-\adjincludegraphics[width=0.49\linewidth,trim={0 {.5\height} 0 0},clip]{\aoneasset{eda/samples.jpg}}\hfill
-\adjincludegraphics[width=0.49\linewidth,trim={0 0 0 {.5\height}},clip]{\aoneasset{eda/samples.jpg}}%
-}{\aonemissing{eda/samples.jpg}{scripts/a1/eda.py}}
+\IfFileExists{\aoneasset{eda/samples.png}}{%
+\adjincludegraphics[width=0.49\linewidth,trim={0 {.5\height} 0 0},clip]{\aoneasset{eda/samples.png}}\hfill
+\adjincludegraphics[width=0.49\linewidth,trim={0 0 0 {.5\height}},clip]{\aoneasset{eda/samples.png}}%
+}{\aonemissing{eda/samples.png}{scripts/a1/eda.py}}
 \caption{Ảnh train của một số lớp, sau bước cắt cố định. Bên trái: bốn lớp đầu; bên phải: bốn lớp sau.}\label{fig:a1-samples}
 \end{figure}
 
@@ -219,7 +220,7 @@ Chuẩn hoá & Đưa về tensor trong \([0,1]\), rồi trừ mean 0.5 và chia 
 \label{tab:a1-pipeline}
 \end{table}
 
-\aonefigure{eda/augmentation.jpg}{1.0}{Cột đầu: ảnh sau bước cắt cố định. Các cột sau: cùng ảnh qua các phép tăng cường của pipeline train sáu lần.}{fig:a1-aug}{scripts/a1/eda.py}
+\aonefigure{eda/augmentation.png}{1.0}{Cột đầu: ảnh sau bước cắt cố định. Các cột sau: cùng ảnh qua các phép tăng cường của pipeline train sáu lần.}{fig:a1-aug}{scripts/a1/eda.py}
 
 \section{Mô hình}\label{sec:a1-models}
 Cả hai mô hình có cùng một khung: một \textbf{feature extractor} biến ảnh thành một vector đặc trưng mô tả nội dung ảnh, và một \textbf{classification head} biến vector đó thành 101 điểm số, mỗi điểm cho một món. Khác nhau ở feature extractor: ResNet-50 là mạng tích chập, quét ảnh bằng các filter nhỏ và thu nhỏ ảnh dần qua từng stage; DeiT-S là Transformer, cắt ảnh thành các patch rồi cho mọi patch trao đổi thông tin với nhau bằng self-attention. Mục~\ref{sec:a1-resnet} và~\ref{sec:a1-deit} trình bày cấu trúc của từng mô hình và chức năng của các lớp trong đó.

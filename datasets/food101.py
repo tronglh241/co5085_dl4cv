@@ -54,7 +54,7 @@ class Food101(_TorchvisionFood101):
         if fraction < 1 and split != 'train':
             raise ValueError('fraction only subsamples the train split; val and test stay whole')
 
-        super().__init__(root, split='test' if split == 'test' else 'train', **kwargs)
+        super().__init__(root, split='test' if split == 'test' else 'train', download=True, **kwargs)
 
         if split == 'test':
             self.indices = None

@@ -79,7 +79,7 @@ loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e1/mlp/261012054744/best_epoch_6_loss=0.0873.pt'"
+    path: "'checkpoints/e1/mlp/261020005517/best_epoch_6_loss=0.0884.pt'"
 
 seed: 42
 

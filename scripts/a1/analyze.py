@@ -130,7 +130,7 @@ def throughput(evaluator, warmup=5, repeats=30):
     return repeats * images.shape[0] / (time.perf_counter() - start)
 
 
-def evaluate(run, checkpoint, out_dir):
+def evaluate(run, checkpoint, results_dir):
     cfg = CfgNode.load(_repo_root / 'configs' / 'a1' / f'test_{run}.yml')
     cfg.loader.path = str(checkpoint)
     cfg.loader.attach(cfg.evaluator, cfg)
@@ -151,7 +151,7 @@ def evaluate(run, checkpoint, out_dir):
     result['images_per_s'] = throughput(cfg.evaluator)
 
     dataset = cfg.evaluator.data.dataset
-    path = out_dir / 'predictions' / f'{run}.csv'
+    path = results_dir / 'predictions' / f'{run}.csv'
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('w', newline='') as handle:
         writer = csv.writer(handle)
@@ -170,8 +170,8 @@ def _fmt(value, digits=4):
     return f'{value:.{digits}f}'
 
 
-def write_tables(records, out_dir):
-    with (out_dir / 'results_a1.csv').open('w', newline='') as handle:
+def write_tables(records, results_dir):
+    with (results_dir / 'results_a1.csv').open('w', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=COLUMNS)
         writer.writeheader()
         for record in records:
@@ -210,20 +210,20 @@ def write_tables(records, out_dir):
             cell(record['images_per_s'], digits=0),
         )) + r' \\')
     lines += [r'\bottomrule', r'\end{tabular}', '']
-    (out_dir / 'results_a1.tex').write_text('\n'.join(lines))
+    (results_dir / 'results_a1.tex').write_text('\n'.join(lines))
 
 
-def load_correct(run, out_dir):
+def load_correct(run, results_dir):
     '''(ids, boolean array) of the per-image predictions evaluate() wrote for this run.'''
     ids, correct = [], []
-    with (out_dir / 'predictions' / f'{run}.csv').open(newline='') as handle:
+    with (results_dir / 'predictions' / f'{run}.csv').open(newline='') as handle:
         for row in csv.DictReader(handle):
             ids.append(row['id'])
             correct.append(row['label'] == row['pred'])
     return ids, np.array(correct, dtype=bool)
 
 
-def write_per_class(records, classes, out_dir):
+def write_per_class(records, classes, results_dir):
     '''Test accuracy of every class (rows) for every run (columns).'''
     columns = {}
     for record in records:
@@ -231,18 +231,18 @@ def write_per_class(records, classes, out_dir):
         totals = matrix.sum(axis=1)
         columns[record['run']] = np.divide(np.diag(matrix), totals, out=np.zeros_like(totals), where=totals > 0)
 
-    with (out_dir / 'per_class.csv').open('w', newline='') as handle:
+    with (results_dir / 'per_class.csv').open('w', newline='') as handle:
         writer = csv.writer(handle)
         writer.writerow(['class', *columns])
         for index in range(len(next(iter(columns.values())))):
             writer.writerow([_class_name(classes, index), *(f'{values[index]:.4f}' for values in columns.values())])
 
 
-def write_significance(records, out_dir):
+def write_significance(records, results_dir):
     '''Paired comparisons on the planned contrasts; every run must share the same test images.'''
     correct, reference = {}, None
     for record in records:
-        ids, vector = load_correct(record['run'], out_dir)
+        ids, vector = load_correct(record['run'], results_dir)
         if reference is None:
             reference = ids
         elif ids != reference:
@@ -254,7 +254,7 @@ def write_significance(records, out_dir):
         print('skip significance: no planned comparison has all its runs')
         return
 
-    write_comparisons(rows, out_dir / 'significance.csv', out_dir / 'significance.tex')
+    write_comparisons(rows, results_dir / 'significance.csv', results_dir / 'significance.tex')
     for row in rows:
         print(f"{row['comparison']:55} {row['diff_pts']:+6.2f} pts "
               f"[{row['ci_low_pts']:+.2f}, {row['ci_high_pts']:+.2f}] {row['verdict']}")
@@ -277,7 +277,7 @@ def plot_curves(records, out_dir):
         axis.set_ylabel('Val accuracy')
         axis.legend(fontsize=8)
     figure.tight_layout()
-    figure.savefig(out_dir / 'curves_a1.png', dpi=150)
+    figure.savefig(out_dir / 'curves_a1.png', dpi=300)
     plt.close(figure)
 
 
@@ -295,7 +295,7 @@ def plot_cost(records, out_dir):
     axis.set_ylabel('Test accuracy (%)')
     axis.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=8, frameon=False)
     figure.tight_layout()
-    figure.savefig(out_dir / 'cost_a1.png', dpi=150)
+    figure.savefig(out_dir / 'cost_a1.png', dpi=300)
     plt.close(figure)
 
 
@@ -319,13 +319,13 @@ def plot_confused_pairs(record, classes, out_dir, top=15):
     axis.set_xlabel('Test images')
     axis.set_title(f"{record['run']}: most confused pairs (true → predicted)", fontsize=9)
     figure.tight_layout()
-    figure.savefig(out_dir / f"confused_{record['run']}.png", dpi=150)
+    figure.savefig(out_dir / f"confused_{record['run']}.png", dpi=300)
     plt.close(figure)
 
 
-def plot_errors(record, dataset, out_dir, rows=3, cols=6):
+def plot_errors(record, dataset, images_dir, results_dir, rows=3, cols=6):
     '''The most confident mistakes: label noise, look-alike dishes, or real model errors?'''
-    path = out_dir / 'predictions' / f"{record['run']}.csv"
+    path = results_dir / 'predictions' / f"{record['run']}.csv"
     with path.open(newline='') as handle:
         wrong = [row for row in csv.DictReader(handle) if row['label'] != row['pred']]
     wrong.sort(key=lambda row: -float(row['confidence']))
@@ -341,17 +341,22 @@ def plot_errors(record, dataset, out_dir, rows=3, cols=6):
     for axis in axes.flat:
         axis.set_axis_off()
     figure.tight_layout()
-    figure.savefig(out_dir / f"errors_{record['run']}.png", dpi=150)
+    figure.savefig(images_dir / f"errors_{record['run']}.png", dpi=300)
     plt.close(figure)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Compare the A1 runs.')
     parser.add_argument('--runs', default=None, help='a set from runs.json or comma-separated run names')
-    parser.add_argument('--out-dir', default=str(_repo_root / 'docs' / 'assets' / 'a1'))
+    parser.add_argument('--out-dir', default=str(_repo_root / 'docs' / 'assets' / 'a1'),
+                        help='figure directory')
+    parser.add_argument('--results-dir', default=str(_repo_root / 'reports' / 'results' / 'a1'),
+                        help='CSV, LaTeX table and prediction directory')
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    results_dir = Path(args.results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     records = []
     dataset = None
@@ -361,7 +366,7 @@ def main():
             print(f'skip {run}: no best_*.pt')
             continue
         print(f'analyze {run} <- {checkpoint.relative_to(_repo_root)}')
-        result, dataset = evaluate(run, checkpoint, out_dir)
+        result, dataset = evaluate(run, checkpoint, results_dir)
         series = read_series(run, checkpoint)
         total, trainable = count_params(info)
         matrix = result['confusion_matrix']
@@ -384,9 +389,9 @@ def main():
     if not records:
         raise SystemExit('no finished runs to analyze')
 
-    write_tables(records, out_dir)
-    write_per_class(records, dataset.classes, out_dir)
-    write_significance(records, out_dir)
+    write_tables(records, results_dir)
+    write_per_class(records, dataset.classes, results_dir)
+    write_significance(records, results_dir)
     plot_curves(records, out_dir)
     plot_cost(records, out_dir)
 
@@ -396,9 +401,10 @@ def main():
         if candidates:
             best = max(candidates, key=lambda record: record['val_acc'])
             plot_confused_pairs(best, dataset.classes, out_dir)
-            plot_errors(best, dataset, out_dir)
+            plot_errors(best, dataset, out_dir, results_dir)
 
-    print(f'wrote results, significance, per-class tables and figures to {out_dir}')
+    print(f'wrote tables and predictions to {results_dir}')
+    print(f'wrote figures to {out_dir}')
 
 
 if __name__ == '__main__':

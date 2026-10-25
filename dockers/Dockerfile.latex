@@ -1,4 +1,4 @@
-FROM texlive/texlive:latest-medium
+FROM texlive/texlive:latest-medium@sha256:c451d81d69a35763154d7e67d86c73bb047ef383be71a14b2fa37857cd9ec09f
 
 ARG UID=1000
 ARG GID=1000
@@ -13,7 +13,7 @@ RUN EXISTING=$(getent passwd ${UID} | cut -d: -f1 || true); \
         useradd -m -u ${UID} -g ${GID} -s /bin/bash ${UNAME}; \
     fi
 
-RUN tlmgr update --self && tlmgr install minted
+RUN tlmgr update --self && tlmgr install minted placeins
 
 RUN apt update && apt install -y --no-install-recommends python3-pip \
     && rm -rf /var/lib/apt/lists/* \

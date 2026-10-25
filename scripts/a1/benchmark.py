@@ -6,7 +6,8 @@ Run once on the target GPU before fixing epoch counts:
     python scripts/a1/benchmark.py --loader-root data/food101_256 --workers 8
 
 Next to the CSV it writes benchmark.tex (speed and memory) and budget.tex
-(hours and cost per run) for reports/a1.tex.
+(hours and cost per run) for reports/a1.tex, all under reports/results/a1/ by
+default.
 
 The model part feeds one synthetic batch repeatedly, so the DataLoader does not
 cap the numbers. --loader-root times the training DataLoader alone; if it is
@@ -182,7 +183,7 @@ def main():
     parser.add_argument('--warmup', type=int, default=10)
     parser.add_argument('--steps', type=int, default=30)
     parser.add_argument('--usd-per-hour', type=float, default=1.5, help='GPU + CPU + memory price')
-    parser.add_argument('--out', default=str(_repo_root / 'docs' / 'assets' / 'a1' / 'benchmark.csv'))
+    parser.add_argument('--out', default=str(_repo_root / 'reports' / 'results' / 'a1' / 'benchmark.csv'))
     parser.add_argument('--loader-root', default=None, help='also time the training DataLoader on this folder')
     parser.add_argument('--workers', type=int, default=8)
     args = parser.parse_args()

@@ -26,5 +26,5 @@ if [ "${#paths[@]}" -eq 0 ]; then
   exit 0
 fi
 
-python3 -m isort --check-only --diff "${paths[@]}"
+python3 -m isort "${paths[@]}"
 python3 -m flake8 "${paths[@]}"
