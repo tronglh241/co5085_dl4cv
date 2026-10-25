@@ -1,0 +1,16 @@
+run: softmax_aug
+model: models.e1.softmax.SoftmaxClassifier
+variant: aug
+params: 7850
+checkpoint: checkpoints/e1/softmax_aug/261020005311/best_epoch_33_loss=0.5790.pt
+
+SoftmaxClassifier(
+  (net): Sequential(
+    (0): Flatten(start_dim=1, end_dim=-1)
+    (1): Linear(in_features=784, out_features=10, bias=True)
+  )
+)
+
+parameters:
+net.1.weight                             (10, 784)                7840
+net.1.bias                               (10,)                    10

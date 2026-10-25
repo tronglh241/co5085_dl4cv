@@ -1,0 +1,24 @@
+run: mlp_aug
+model: models.e1.mlp.MLPClassifier
+variant: aug
+params: 235146
+checkpoint: checkpoints/e1/mlp_aug/261020005725/best_epoch_102_loss=0.0357.pt
+
+MLPClassifier(
+  (net): Sequential(
+    (0): Flatten(start_dim=1, end_dim=-1)
+    (1): Linear(in_features=784, out_features=256, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=256, out_features=128, bias=True)
+    (4): ReLU(inplace=True)
+    (5): Linear(in_features=128, out_features=10, bias=True)
+  )
+)
+
+parameters:
+net.1.weight                             (256, 784)               200704
+net.1.bias                               (256,)                   256
+net.3.weight                             (128, 256)               32768
+net.3.bias                               (128,)                   128
+net.5.weight                             (10, 128)                1280
+net.5.bias                               (10,)                    10

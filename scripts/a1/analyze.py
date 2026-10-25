@@ -260,7 +260,7 @@ def write_significance(records, results_dir):
               f"[{row['ci_low_pts']:+.2f}, {row['ci_high_pts']:+.2f}] {row['verdict']}")
 
 
-def plot_curves(records, out_dir):
+def plot_curves(records, figures_dir):
     core = [record for record in records if record['set'] == 'core' and record['series']]
     models = sorted({record['model'] for record in core})
     if not models:
@@ -277,11 +277,11 @@ def plot_curves(records, out_dir):
         axis.set_ylabel('Val accuracy')
         axis.legend(fontsize=8)
     figure.tight_layout()
-    figure.savefig(out_dir / 'curves_a1.png', dpi=300)
+    figure.savefig(figures_dir / 'curves_a1.png', dpi=300)
     plt.close(figure)
 
 
-def plot_cost(records, out_dir):
+def plot_cost(records, figures_dir):
     points = [record for record in records if record['set'] == 'core'
               and record['train_time_min'] is not None and record['test_acc'] is not None]
     if not points:
@@ -295,7 +295,7 @@ def plot_cost(records, out_dir):
     axis.set_ylabel('Test accuracy (%)')
     axis.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=8, frameon=False)
     figure.tight_layout()
-    figure.savefig(out_dir / 'cost_a1.png', dpi=300)
+    figure.savefig(figures_dir / 'cost_a1.png', dpi=300)
     plt.close(figure)
 
 
@@ -303,7 +303,7 @@ def _class_name(classes, index):
     return classes[index] if index < len(classes) else str(index)
 
 
-def plot_confused_pairs(record, classes, out_dir, top=15):
+def plot_confused_pairs(record, classes, figures_dir, top=15):
     counts = record['result']['confusion_matrix'].cpu().numpy().copy()
     np.fill_diagonal(counts, 0)
     order = np.argsort(counts, axis=None)[::-1][:top]
@@ -319,7 +319,7 @@ def plot_confused_pairs(record, classes, out_dir, top=15):
     axis.set_xlabel('Test images')
     axis.set_title(f"{record['run']}: most confused pairs (true → predicted)", fontsize=9)
     figure.tight_layout()
-    figure.savefig(out_dir / f"confused_{record['run']}.png", dpi=300)
+    figure.savefig(figures_dir / f"confused_{record['run']}.png", dpi=300)
     plt.close(figure)
 
 
@@ -348,13 +348,13 @@ def plot_errors(record, dataset, images_dir, results_dir, rows=3, cols=6):
 def main():
     parser = argparse.ArgumentParser(description='Compare the A1 runs.')
     parser.add_argument('--runs', default=None, help='a set from runs.json or comma-separated run names')
-    parser.add_argument('--out-dir', default=str(_repo_root / 'docs' / 'assets' / 'a1'),
+    parser.add_argument('--figures-dir', default=str(_repo_root / 'docs' / 'assets' / 'a1'),
                         help='figure directory')
     parser.add_argument('--results-dir', default=str(_repo_root / 'reports' / 'results' / 'a1'),
                         help='CSV, LaTeX table and prediction directory')
     args = parser.parse_args()
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    figures_dir = Path(args.figures_dir)
+    figures_dir.mkdir(parents=True, exist_ok=True)
     results_dir = Path(args.results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -392,19 +392,19 @@ def main():
     write_tables(records, results_dir)
     write_per_class(records, dataset.classes, results_dir)
     write_significance(records, results_dir)
-    plot_curves(records, out_dir)
-    plot_cost(records, out_dir)
+    plot_curves(records, figures_dir)
+    plot_cost(records, figures_dir)
 
     # Error analysis on the best CNN and the best Transformer (chosen on val, not test).
     for model in sorted({record['model'] for record in records}):
         candidates = [record for record in records if record['model'] == model and record['val_acc'] is not None]
         if candidates:
             best = max(candidates, key=lambda record: record['val_acc'])
-            plot_confused_pairs(best, dataset.classes, out_dir)
-            plot_errors(best, dataset, out_dir, results_dir)
+            plot_confused_pairs(best, dataset.classes, figures_dir)
+            plot_errors(best, dataset, figures_dir, results_dir)
 
     print(f'wrote tables and predictions to {results_dir}')
-    print(f'wrote figures to {out_dir}')
+    print(f'wrote figures to {figures_dir}')
 
 
 if __name__ == '__main__':

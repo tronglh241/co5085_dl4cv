@@ -14,6 +14,11 @@
 \setsansfont{Latin Modern Sans}
 \setmonofont{Latin Modern Mono}
 
+% TODO: remove when done
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\figph}[2]{\fbox{\parbox[c][#1][c]{0.92\linewidth}{\centering\textcolor{gray}{[Chỗ chèn hình: #2]}}}}
+\DeclareMathOperator{\softmax}{softmax}
+
 \begin{document}
 \begin{titlepage}
     \begin{center}
@@ -64,20 +69,403 @@
 \tableofcontents
 \newpage
 
-\section*{Liêm chính học thuật}
-\addcontentsline{toc}{section}{Liêm chính học thuật}
-
 \section{Giới thiệu}
+\label{sec:intro}
 
-\section{Thiết lập thực nghiệm chung}
+Báo cáo này khảo sát và so sánh hiệu suất của các mô hình học sâu thông qua ba bài tập E1--E3. Để tạo điều kiện thuận lợi để đối chiếu trực tiếp các phương pháp tiếp cận khác nhau, chúng tôi sử dụng chung một tập ảnh nhỏ cho cả ba bài tập. Toàn bộ mã nguồn, tài liệu và kết quả chi tiết của các thực nghiệm được lưu trữ và công khai tại các địa chỉ sau:
+\begin{itemize}
+    \item Repository: \url{https://github.com/tronglh241/co5085_excersises_and_assignments}
+    \item Pages: \url{https://tronglh241.github.io/co5085_excersises_and_assignments}
+\end{itemize}
 
-\section{E1 Phân loại ảnh: Softmax, MLP, CNN}
+Nội dung chính của các bài tập được triển khai như sau:
+\begin{itemize}
+    \item \textbf{Bài E1 (Mục~\ref{sec:e1}):} So sánh ba bộ phân loại cơ bản gồm softmax, Multilayer Perceptron (MLP) và Convolutional Neural Network (CNN), được đánh giá trong cả hai trường hợp có và không có kỹ thuật tăng cường dữ liệu.
+    \item \textbf{Bài E2 (Mục~\ref{sec:e2}):} Xây dựng bộ phân loại dựa trên cơ chế Multi-Head Self-Attention (MSA), trong đó, chúng tôi hiện thực MSA từ đầu để đối chiếu với module sẵn có của PyTorch, đồng thời khảo sát các phương pháp chuyển đổi ảnh thành chuỗi token khác nhau.
+    \item \textbf{Bài E3 (Mục~\ref{sec:e3}):} Xem xét ảnh dưới góc độ dữ liệu chuỗi để huấn luyện các mô hình hồi quy Long Short-Term Memory (LSTM) và Gated Recurrent Unit (GRU), sau đó so sánh kết quả với các mô hình không hồi quy đã khảo sát ở bài E1.
+\end{itemize}
 
-\section{E2 Transformer: MSA và tokenization}
+Mục tiêu của báo cáo không dừng lại ở việc liệt kê accuracy của từng mô hình, mà tập trung giải thích nguyên nhân dẫn đến sự khác biệt về hiệu suất thông qua số lượng tham số, đường cong học và phân tích chi tiết các trường hợp phân loại sai.
 
-\section{E3 LSTM và GRU trên chuỗi ảnh}
+Phần còn lại của báo cáo được tổ chức như sau: Mục~\ref{sec:data} mô tả dữ liệu, phương pháp tiền xử lý và đánh giá dùng chung; thiết lập huấn luyện riêng của mỗi bài được trình bày trong mục tương ứng; Mục~\ref{sec:summary} tổng hợp so sánh tổng quan giữa các bài trước khi đi đến phần kết luận.
+
+\section{Dữ liệu và phương pháp đánh giá}
+\label{sec:data}
+
+\subsection{Tập dữ liệu và cách chia}
+\label{sec:split}
+
+Trong bài này, chúng tôi sử dụng MNIST, tập dữ liệu chuẩn gồm các ảnh chữ số viết tay dạng xám với kích thước $28\times28$ điểm ảnh, gồm 10 lớp từ 0 đến 9. Bộ dữ liệu gốc bao gồm $60\,000$ ảnh huấn luyện và $10\,000$ ảnh kiểm thử chính thức. Việc lựa chọn MNIST dựa trên ba lý do chính:
+\begin{itemize}
+    \item \textbf{Tốc độ huấn luyện:} Kích thước ảnh nhỏ và chỉ có một kênh giúp rút ngắn thời gian huấn luyện, tạo điều kiện thử nghiệm nhiều biến thể cấu trúc.
+    \item \textbf{Tính chuẩn hóa:} Là một bộ dữ liệu tham chiếu phổ biến, MNIST giúp dễ dàng đối chiếu, so sánh kết quả của các mô hình.
+    \item \textbf{Sự cân bằng dữ liệu:} Các lớp trong MNIST có phân bố số lượng tương đối đồng đều, giúp độ đo accuracy phản ánh trung thực hiệu suất tổng thể của mô hình mà không bị ảnh hưởng bởi hiện tượng mất cân bằng lớp.
+\end{itemize}
+
+Từ $60\,000$ ảnh huấn luyện gốc, chúng tôi tách thành $50\,000$ ảnh cho tập huấn luyện và $10\,000$ ảnh cho tập kiểm định theo phương pháp phân tầng (stratified splitting) để duy trì tỷ lệ các lớp đồng đều giữa các tập. Quá trình chia dữ liệu được thực hiện duy nhất một lần nhằm đảm bảo mọi mô hình trong các bài tập E1, E2 và E3 đều được huấn luyện và đánh giá trên cùng một tập dữ liệu. Tập kiểm thử chính thức được giữ nguyên hoàn toàn tách biệt khỏi quá trình huấn luyện. Số lượng ảnh của từng lớp được thể hiện trong Bảng~\ref{tab:class-dist}, phân bố của các lớp được thể hiện trong Hình~\ref{fig:class-balance}, trong khi Hình~\ref{fig:samples} minh họa một số mẫu dữ liệu từ các lớp khác nhau.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{../docs/assets/shared/class_balance.png}
+    \caption{Biểu đồ thể hiện sự phân bố số lượng mẫu dữ liệu giữa các lớp trong tập dữ liệu MNIST, minh họa tính cân bằng dữ liệu.}
+    \label{fig:class-balance}
+\end{figure}
+
+\begin{table}[t]
+    \centering
+    \caption{Số lượng ảnh của từng lớp trong các tập dữ liệu.}
+    \label{tab:class-dist}
+    \small
+    \begin{tabular}{lrrr}
+        \toprule
+        Lớp  & Huấn luyện & Kiểm định & Kiểm thử \\
+        \midrule
+        0    & 4\,936     & 987       & 980      \\
+        1    & 5\,618     & 1\,124    & 1\,135   \\
+        2    & 4\,965     & 993       & 1\,032   \\
+        3    & 5\,109     & 1\,022    & 1\,010   \\
+        4    & 4\,868     & 974       & 982      \\
+        5    & 4\,518     & 903       & 892      \\
+        6    & 4\,932     & 986       & 958      \\
+        7    & 5\,221     & 1\,044    & 1\,028   \\
+        8    & 4\,876     & 975       & 974      \\
+        9    & 4\,957     & 992       & 1\,009   \\
+        \midrule
+        Tổng & 50\,000    & 10\,000   & 10\,000  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../docs/assets/shared/mnist_samples}
+    \caption{Một số ảnh mẫu từ tập dữ liệu MNIST.}
+    \label{fig:samples}
+\end{figure}
+
+\subsection{Tiền xử lý và tăng cường dữ liệu}
+\label{sec:preprocess}
+
+Trước khi đưa vào mô hình, mỗi ảnh được chuyển thành tensor với giá trị điểm ảnh nằm trong khoảng $[0,1]$, sau đó được chuẩn hóa dựa trên giá trị trung bình và độ lệch chuẩn được tính trên tập con huấn luyện:
+\begin{equation}
+    \tilde{x} = \frac{x - 0{,}1308}{0{,}3082}.
+\end{equation}
+Bước chuẩn hóa này đưa đầu vào về phân phối có trung bình gần $0$ và độ lệch chuẩn gần $1$, giúp quá trình tối ưu hóa trọng số diễn ra ổn định hơn. Đây là phương pháp tiền xử lý cơ bản được áp dụng xuyên suốt cho tất cả các mô hình.
+
+Trong các thí nghiệm có sử dụng tăng cường dữ liệu, chúng tôi bổ sung phép biến đổi \texttt{RandomAffine(10, translate=(0.1, 0.1))} vào dữ liệu huấn luyện. Phép biến đổi này xoay ảnh một góc ngẫu nhiên trong khoảng $[-10^\circ, 10^\circ]$ và tịnh tiến ngẫu nhiên tối đa $10\%$ kích thước ảnh theo mỗi chiều. Phép biến đổi được áp dụng theo hình thức trực tuyến: mỗi khi một ảnh được nạp từ tập huấn luyện, các tham số xoay và dịch chuyển được sinh ngẫu nhiên lại, giúp mô hình tiếp cận các biến thể khác nhau của cùng một mẫu ở mỗi epoch. Bảng~\ref{tab:pipeline} tóm tắt quy trình tiền xử lý, trong khi Hình~\ref{fig:aug-examples} minh họa kết quả thực tế của phép tăng cường.
+
+Kỹ thuật tăng cường dữ liệu chỉ được thực hiện trên các batch dùng để cập nhật trọng số trong quá trình huấn luyện. Khi tiến hành đánh giá, toàn bộ dữ liệu ở cả ba tập huấn luyện, kiểm định và kiểm thử đều được đưa vào mô hình dưới dạng ảnh gốc. Nhờ vậy, mọi chỉ số đánh giá trong báo cáo đều được đo lường trên dữ liệu sạch, đảm bảo tính khách quan khi so sánh giữa các thiết lập thí nghiệm.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../docs/assets/shared/mnist_augmentation}
+    \caption{Ảnh gốc và các phiên bản sau khi áp dụng \texttt{RandomAffine(10, translate=(0.1, 0.1))}.}
+    \label{fig:aug-examples}
+\end{figure}
+
+\begin{table}[t]
+    \centering
+    \caption{Quy trình tiền xử lý áp dụng cho dữ liệu huấn luyện.}
+    \label{tab:pipeline}
+    \small
+    \begin{tabular}{llcc}
+        \toprule
+        Bước & Phép biến đổi                                   & Không tăng cường & Có tăng cường \\
+        \midrule
+        1    & \texttt{RandomAffine(10, translate=(0.1, 0.1))} & không            & có            \\
+        2    & \texttt{ToTensor()}                             & có               & có            \\
+        3    & \texttt{Normalize(0.1308, 0.3082)}              & có               & có            \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Phương pháp đánh giá}
+\label{sec:eval}
+
+\paragraph{Quy trình đánh giá.} Ba tập dữ liệu đóng các vai trò độc lập trong quá trình thực nghiệm:
+\begin{itemize}
+    \item \textbf{Tập huấn luyện} được sử dụng trực tiếp để cập nhật trọng số của mô hình.
+    \item \textbf{Tập kiểm định} hỗ trợ theo dõi tiến trình huấn luyện, điều chỉnh tốc độ học, quyết định thời điểm dừng sớm và lựa chọn checkpoint tốt nhất.
+    \item \textbf{Tập kiểm thử} chỉ được sử dụng một lần duy nhất ở giai đoạn cuối trên checkpoint đã được chọn qua tập kiểm định, đảm bảo kết quả đánh giá cuối cùng không bị ảnh hưởng bởi quá trình tinh chỉnh mô hình.
+\end{itemize}
+Chi tiết về điều chỉnh tốc độ học, điều kiện dừng và tiêu chí chọn checkpoint cho từng bài tập cụ thể sẽ được trình bày ở phần thiết lập huấn luyện tương ứng.
+
+\paragraph{Các độ đo hiệu suất.} Gọi $K=10$ là tổng số lớp và $C_{ij}$ là số lượng mẫu thuộc lớp thật $i$ nhưng được mô hình dự đoán thành lớp $j$. Độ đo cốt lõi được sử dụng là $\mathrm{accuracy}$, phản ánh tỷ lệ mẫu được phân loại đúng. Bên cạnh đó, để đánh giá chi tiết khả năng nhận diện của mô hình trên từng lớp riêng lẻ, chúng tôi tính toán các chỉ số $\mathrm{precision}_c$, $\mathrm{recall}_c$ và $\mathrm{F1}_c$ cho từng lớp $c$, sau đó lấy giá trị trung bình trên toàn bộ $K$ lớp:
+\begin{align}
+    \mathrm{accuracy}    & = \frac{\sum_{c=1}^{K} C_{cc}}{\sum_{i=1}^{K}\sum_{j=1}^{K} C_{ij}},                           \\
+    \mathrm{precision}_c & = \frac{C_{cc}}{\sum_{i=1}^{K} C_{ic}}, \quad
+    \mathrm{recall}_c = \frac{C_{cc}}{\sum_{j=1}^{K} C_{cj}},                                                             \\
+    \mathrm{F1}_c        & = \frac{2\,\mathrm{precision}_c\,\mathrm{recall}_c}{\mathrm{precision}_c + \mathrm{recall}_c},
+\end{align}
+Đồng thời, ma trận nhầm lẫn và các trường hợp phân loại sai thực tế cũng được phân tích.
+
+\paragraph{Nguyên tắc so sánh công bằng.} Để đảm bảo tính khách quan, các yếu tố ngoài kiến trúc mô hình đều được cố định:
+\begin{itemize}
+    \item Tất cả mô hình sử dụng chung một tập dữ liệu phân tầng đã chia ở Mục~\ref{sec:split} và chuỗi tiền xử lý ở Mục~\ref{sec:preprocess}.
+    \item Trong cùng một bài tập, các mô hình sử dụng cùng một thuật toán tối ưu hóa, tốc độ học ban đầu, bộ lập lịch, tiêu chí dừng và seed khởi tạo. Các biến thể không tăng cường và có tăng cường chỉ khác biệt duy nhất ở bước áp dụng \texttt{RandomAffine}.
+    \item Việc tinh chỉnh siêu tham số chỉ dựa trên tập kiểm định, tuyệt đối không dùng tập kiểm thử để lựa chọn mô hình.
+\end{itemize}
+Dù thiết lập huấn luyện có thể khác biệt giữa ba bài E1, E2 và E3 nhằm phù hợp với đặc thù của từng họ kiến trúc, nhưng các điều kiện vẫn được đảm bảo luôn giữ đồng nhất trong phạm vi từng bài.
+
+\subsection{Khả năng tái lập}
+\label{sec:repro}
+
+Để đảm bảo khả năng tái lập kết quả, mỗi thí nghiệm được quản lý thông qua một tệp cấu hình YAML riêng biệt, khai báo chi tiết các thông tin cốt lõi như dữ liệu, kiến trúc mô hình, thuật toán tối ưu hóa, hàm mất mát và một số tiện ích khác. Toàn bộ mã nguồn, cấu hình và hướng dẫn chi tiết để tái hiện thí nghiệm được lưu trữ công khai tại Github như đã đề cập ở Mục~\ref{sec:intro}.
+
+\section{E1: Softmax, MLP và CNN}
+\label{sec:e1}
+
+\subsection{Mô hình}
+Softmax và MLP nhận vector làm phẳng $x\in\mathbb{R}^{784}$; CNN nhận ảnh $1\times28\times28$. Mỗi kiến trúc được huấn luyện ở hai biến thể: không tăng cường (``base'') và có tăng cường (``aug''), với cùng kiến trúc.
+
+\paragraph{Softmax.} Một phép ánh xạ tuyến tính rồi softmax:
+\begin{equation}
+    \hat{y} = \softmax(Wx + b),\qquad W\in\mathbb{R}^{10\times784},\ b\in\mathbb{R}^{10},
+\end{equation}
+với hàm mất mát cross-entropy $\mathcal{L} = -\sum_{c} y_c \log \hat{y}_c$. Mô hình có $7\,850$ tham số và học một ``mẫu'' tuyến tính cho mỗi lớp.
+
+\paragraph{MLP.} Hai tầng ẩn $784\rightarrow256\rightarrow128\rightarrow10$ với kích hoạt ReLU, đầu ra softmax (qua cross-entropy), tổng cộng $235\,146$ tham số.
+
+\paragraph{CNN.} Hai khối tích chập--ReLU--max pooling rồi đầu phân loại: Conv($1\!\to\!16$, $3\times3$, padding 1) $\rightarrow$ ReLU $\rightarrow$ MaxPool($2$) $\rightarrow$ Conv($16\!\to\!32$, $3\times3$, padding 1) $\rightarrow$ ReLU $\rightarrow$ MaxPool($2$) $\rightarrow$ Flatten ($32\times7\times7=1568$) $\rightarrow$ Linear($1568\!\to\!128$) $\rightarrow$ ReLU $\rightarrow$ Linear($128\!\to\!10$). Không dùng batch norm hay dropout. Mô hình có $206\,922$ tham số, trong đó các lớp tích chập chỉ chiếm $160+4\,640=4\,800$ tham số ($\approx2{,}3\%$) và tầng Linear đầu tiên chiếm $200\,832$ ($\approx97\%$).
+
+\begin{table}[t]
+    \centering
+    \caption{Kiến trúc các mô hình E1.}
+    \label{tab:e1-arch}
+    \small
+    \begin{tabular}{lp{8.2cm}r}
+        \toprule
+        Mô hình & Các tầng                                                                                                & Số tham số \\
+        \midrule
+        Softmax & Linear(784$\to$10)                                                                                      & 7\,850     \\
+        MLP     & Linear(784$\to$256)--ReLU--Linear(256$\to$128)--ReLU--Linear(128$\to$10)                                & 235\,146   \\
+        CNN     & Conv(1$\to$16)--ReLU--Pool--Conv(16$\to$32)--ReLU--Pool--Linear(1568$\to$128)--ReLU--Linear(128$\to$10) & 206\,922   \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Thiết lập huấn luyện}
+Cả sáu lượt chạy dùng cùng thiết lập: tối ưu hóa Adam với tốc độ học $10^{-3}$ (không weight decay), batch size $64$, hàm mất mát cross-entropy, tối đa $1000$ epoch. Tốc độ học được giảm $10$ lần (\texttt{ReduceLROnPlateau}, \texttt{patience}$=10$) khi loss kiểm định không cải thiện; huấn luyện dừng sớm khi loss kiểm định không cải thiện sau $20$ epoch. Checkpoint tốt nhất được chọn theo \textbf{loss kiểm định nhỏ nhất}, và độ chính xác kiểm tra được báo cáo tại epoch đó. Vòng lặp huấn luyện (forward $\rightarrow$ loss $\rightarrow$ \texttt{backward()} $\rightarrow$ \texttt{optimizer.step()}) do nhóm tự cài đặt trong \texttt{common/engine/trainer.py} \todo{xác nhận}. Hạt giống: $42$.
+
+\subsection{Kết quả}
+Bảng~\ref{tab:e1-results} tóm tắt sáu lượt chạy. Khoảng cách tổng quát hóa được định nghĩa là độ chính xác huấn luyện trừ độ chính xác kiểm định (đều trên ảnh không tăng cường).
+
+\begin{table}[t]
+    \centering
+    \caption{Kết quả E1 trên MNIST (độ chính xác theo \%, tất cả được đánh giá trên ảnh không tăng cường).}
+    \label{tab:e1-results}
+    \small
+    \begin{tabular}{llrrrrrrr}
+        \toprule
+        Mô hình & Biến thể & Tham số  & Epoch tốt nhất & Train & Val   & Test  & Gap       & F1    \\
+        \midrule
+        Softmax & base     & 7\,850   & 45             & 94,00 & 92,28 & 92,58 & 1,72      & 92,47 \\
+        Softmax & aug      & 7\,850   & 33             & 83,81 & 83,82 & 85,12 & $-0{,}01$ & 84,92 \\
+        MLP     & base     & 235\,146 & 6              & 99,26 & 97,58 & 97,68 & 1,68      & 97,66 \\
+        MLP     & aug      & 235\,146 & 102            & 99,69 & 98,99 & 99,07 & 0,70      & 99,06 \\
+        CNN     & base     & 206\,922 & 7              & 99,68 & 98,73 & 98,85 & 0,95      & 98,84 \\
+        CNN     & aug      & 206\,922 & 72             & 99,93 & 99,41 & 99,50 & 0,52      & 99,50 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \figph{5cm}{Đường cong loss và accuracy (train/val) của sáu lượt chạy, mỗi mô hình một ô, so sánh base và aug}
+    \caption{Đường cong học của E1. \todo{chú thích nêu kết luận: các lượt chạy base đạt loss kiểm định nhỏ nhất sau khoảng 6--7 epoch rồi quá khớp; các lượt aug tiếp tục cải thiện trong hàng chục epoch.}}
+    \label{fig:e1-curves}
+\end{figure}
+
+\subsection{Phân tích lỗi}
+Bảng~\ref{tab:e1-errors} cho số ảnh kiểm tra bị phân loại sai, tính từ các ma trận nhầm lẫn (confusion matrix).
+
+\begin{table}[t]
+    \centering
+    \caption{Số ảnh kiểm tra bị phân loại sai (trên tổng 10\,000).}
+    \label{tab:e1-errors}
+    \begin{tabular}{lrrr}
+        \toprule
+        Mô hình & Base & Aug    & Thay đổi \\
+        \midrule
+        Softmax & 742  & 1\,488 & $+100\%$ \\
+        MLP     & 232  & 93     & $-60\%$  \\
+        CNN     & 115  & 50     & $-57\%$  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \figph{6cm}{Lưới 2$\times$3 ma trận nhầm lẫn: softmax/MLP/CNN, base và aug}
+    \caption{Ma trận nhầm lẫn trên tập kiểm tra. \todo{chú thích.}}
+    \label{fig:e1-cm}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \figph{4cm}{Một số ảnh bị phân loại sai, kèm nhãn thật/dự đoán, ví dụ 9$\to$4, 5$\to$3, 7$\to$2 của CNN}
+    \caption{Một số mẫu bị phân loại sai. \todo{chú thích.}}
+    \label{fig:e1-samples}
+\end{figure}
+
+\paragraph{Softmax.} Lỗi phân tán trên nhiều cặp lớp, và recall thấp nhất ở các chữ số có cấu trúc phức tạp: $5$ ($87{,}3\%$), $8$ ($88{,}3\%$), $2$ ($89{,}3\%$), so với $98{,}1\%$ của chữ số $1$. Các nhầm lẫn lớn nhất là $5\to3$ (36), $2\to8$ (35) và $7\to9$ (30): những cặp giống nhau về hình dạng mà một mẫu tuyến tính cho mỗi lớp khó phân biệt. Với biến thể aug, recall của chữ số $5$ giảm mạnh xuống $65{,}1\%$ và chữ số $1$ trở thành lớp ``hút'': có $1\,428$ ảnh bị dự đoán là $1$ trong khi chỉ có $1\,135$ ảnh thật (so với $1\,157$ khi không tăng cường). Hiện tượng tương tự xảy ra với chữ số $4$ ($985\to1\,199$ lượt dự đoán). Điều này phù hợp với việc nét bị dịch chuyển hoặc xoay trông giống một nét mảnh, nghiêng và khớp với mẫu của lớp $1$.
+
+\paragraph{MLP.} Các nhầm lẫn chính ở bản base là $4\to9$ (22/982 ảnh), $6\to5$ (15) và $7\to2$ (13); với tăng cường chúng giảm còn lần lượt $8$, $3$ và $6$.
+
+\paragraph{CNN.} Lỗi ít và rải rác; các cặp lặp lại là $9\leftrightarrow4$, $9\to7$, $5\to3$ và $7\to2$ (tối đa $8$ ảnh mỗi cặp ở bản base và tối đa $6$ ảnh ở bản aug). Quan sát Hình~\ref{fig:e1-samples}, \todo{nhận xét xem các lỗi còn lại có phải chữ viết thực sự mơ hồ không}. Các cặp $4/9$, $5/3$ và $7/2$ xuất hiện trong nhóm nhầm lẫn hàng đầu của hầu hết các mô hình, cho thấy đây là những cặp khó về bản chất; kiến trúc tốt hơn và tăng cường dữ liệu giảm số lỗi mà gần như không đổi \emph{những cặp nào} khó.
+
+\subsection{Thảo luận}
+\paragraph{Kiến trúc quan trọng hơn số tham số.} CNN có ít tham số hơn MLP khoảng $12\%$ ($206\,922$ so với $235\,146$) nhưng chỉ mắc khoảng một nửa số lỗi trong cả hai thiết lập ($115$ so với $232$ khi không tăng cường; $50$ so với $93$ khi tăng cường). Hơn nữa, các lớp tích chập chỉ chiếm khoảng $2{,}3\%$ tham số của CNN, phần lớn tham số nằm ở tầng Linear đầu tiên của đầu phân loại; lợi thế của CNN vì vậy đến từ thiên kiến quy nạp (inductive bias) --- trường tiếp nhận cục bộ, chia sẻ trọng số và pooling mang lại tính ổn định với phép dịch chuyển --- chứ không phải từ dung lượng. MLP phải học những tính chất này từ dữ liệu.
+
+\paragraph{Tăng cường dữ liệu tương tác với dung lượng mô hình.} Với MLP và CNN, tăng cường giảm số lỗi kiểm tra lần lượt $60\%$ và $57\%$, thu hẹp khoảng cách huấn luyện--kiểm định (MLP $1{,}68\to0{,}70$, CNN $0{,}95\to0{,}52$ điểm) và làm chậm quá khớp: epoch tốt nhất dời từ $6$ lên $102$ (MLP) và từ $7$ lên $72$ (CNN), đổi lại thời gian huấn luyện dài hơn nhiều. Do epoch tốt nhất được chọn theo loss kiểm định và có bộ lập lịch giảm tốc độ học, những con số này phản ánh cả động lực huấn luyện chứ không chỉ độ khó của dữ liệu. Với softmax, hiệu ứng ngược lại: độ chính xác kiểm tra giảm từ $92{,}58\%$ xuống $85{,}12\%$. Đáng chú ý, độ chính xác \emph{huấn luyện} (trên ảnh sạch) cũng giảm từ $94{,}0\%$ xuống $83{,}8\%$ và khoảng cách gần bằng $0$, nghĩa là mô hình \textbf{underfitting}. Mô hình tuyến tính tính điểm $w_c^\top x$ với mỗi trọng số gắn với một vị trí điểm ảnh cố định nên không thể hấp thụ phép dịch tới $\approx3$ điểm ảnh; dữ liệu tăng cường vượt quá dung lượng của nó.
+
+\paragraph{Tăng cường dữ liệu thay thế một phần thiên kiến kiến trúc.} MLP có tăng cường ($99{,}07\%$) cao hơn CNN không tăng cường ($98{,}85\%$) $22$ ảnh. Chênh lệch này nhỏ so với nhiễu lấy mẫu của tập kiểm tra $10\,000$ ảnh, nên chúng tôi chỉ kết luận hai mô hình ``tương đương''; \todo{tùy chọn: thêm kiểm định McNemar nếu lưu được dự đoán từng mẫu}. Dưới cùng điều kiện tăng cường, CNN vẫn tốt hơn MLP rõ rệt ($0{,}43$ điểm, $43$ ảnh).
+
+\paragraph{Kiểm định so với kiểm tra.} Độ chính xác kiểm tra cao hơn kiểm định ở cả sáu lượt ($0{,}1$--$0{,}3$ điểm, riêng softmax-aug là $1{,}3$ điểm). Một giải thích khả dĩ là tập kiểm định lấy từ phần huấn luyện gốc còn tập kiểm tra là tập chính thức, vốn hơi dễ hơn đối với các mô hình yếu. \todo{kiểm chứng trước khi giữ câu này, hoặc xóa.}
+
+\paragraph{Hạn chế.} Mỗi cấu hình chỉ chạy một lần (seed $42$), chỉ thử một mức tăng cường và chưa tinh chỉnh siêu tham số kỹ. \todo{cập nhật nếu có chạy nhiều seed.}
+
+\section{E2: Transformer --- MSA và các cách tạo token}
+\label{sec:e2}
+
+\subsection{Multi-Head Self-Attention}
+Cho chuỗi token $X\in\mathbb{R}^{N\times d}$ ($N$ token, chiều $d=d_{\text{model}}$), $h$ đầu và $d_k=d/h$, đầu thứ $i$ tính
+\begin{align}
+    Q_i             & = XW_i^Q,\quad K_i = XW_i^K,\quad V_i = XW_i^V,                \\
+    \mathrm{head}_i & = \softmax\!\left(\frac{Q_iK_i^{\top}}{\sqrt{d_k}}\right)V_i,  \\
+    \mathrm{MSA}(X) & = \mathrm{Concat}(\mathrm{head}_1,\dots,\mathrm{head}_h)\,W^O,
+\end{align}
+với $W_i^Q,W_i^K,W_i^V\in\mathbb{R}^{d\times d_k}$ và $W^O\in\mathbb{R}^{d\times d}$. Ma trận attention có kích thước $N\times N$ cho mỗi đầu, nên chi phí thời gian tăng theo $O(N^2 d)$ và bộ nhớ theo $O(hN^2)$; điều này quan trọng khi so sánh các cách tạo token.
+
+\paragraph{Bản tự cài đặt.} \todo{mô tả: Linear gộp hay tách cho Q/K/V, reshape thành $(B,h,N,d_k)$, dùng einsum/matmul cho $QK^\top$, scale, softmax, ghép các đầu, phép chiếu đầu ra, dropout.} Bản này không dùng \texttt{nn.MultiheadAttention} hay \texttt{nn.TransformerEncoder*}.
+
+\paragraph{Bản PyTorch.} Cùng bộ phân loại nhưng thay MSA bằng \texttt{nn.MultiheadAttention} \todo{hoặc TransformerEncoderLayer} để đối chiếu.
+
+\paragraph{Kiểm tra tính đúng đắn.} Chúng tôi sao chép trọng số từ module PyTorch sang module tự cài đặt (lưu ý \texttt{in\_proj\_weight} của PyTorch gộp $W^Q,W^K,W^V$), đưa cùng một đầu vào ngẫu nhiên qua cả hai và so sánh đầu ra: chênh lệch tuyệt đối lớn nhất là \todo{giá trị, ví dụ $\sim10^{-6}$ với float32}. \todo{nói rõ có kiểm tra cả attention weights và gradient không.}
+
+\subsection{Kiến trúc bộ phân loại}
+Token được chiếu tuyến tính lên $d_{\text{model}}=\todo{d}$, cộng mã hóa vị trí (\todo{học được/sin-cos}), rồi qua $L=\todo{L}$ khối encoder (\todo{pre/post-LayerNorm}, MSA $h=\todo{h}$ đầu, FFN chiều \todo{$d_{ff}$}, kết nối residual, dropout \todo{p}). Đầu phân loại áp dụng lên \todo{token CLS / trung bình các token}.
+
+\subsection{Thiết lập huấn luyện}
+\todo{tối ưu hóa, tốc độ học, bộ lập lịch, batch size, dừng sớm, tăng cường dữ liệu có hay không, seed. Nhắc rõ nếu khác E1.}
+
+\subsection{Các cách tạo token}
+Chúng tôi triển khai năm cách tạo token:
+\begin{itemize}
+    \item \textbf{Hàng (row)}: mỗi hàng ảnh là một token, $N=28$ token chiều $28$.
+    \item \textbf{Patch $4\times4$}: các ô lưới không chồng lấn, $N=(28/4)^2=49$ token chiều $16$.
+    \item \textbf{Patch $7\times7$}: $N=(28/7)^2=16$ token chiều $49$.
+    \item \textbf{Patch $4\times4$ chồng lấn}: patch $4\times4$ với bước (stride) \todo{s}, cho $N=\todo{N}$ token chiều $16$.
+    \item \textbf{CNN-stem}: một CNN nhỏ (\todo{kiến trúc}) trích bản đồ đặc trưng $C\times H'\times W'$; mỗi vị trí không gian là một token, $N=H'W'=\todo{N}$, chiều $C=\todo{C}$.
+\end{itemize}
+\todo{nói rõ có dùng token CLS không và loại mã hóa vị trí cho từng cách.} Bảng~\ref{tab:e2-tokens} liệt kê số token.
+
+\begin{table}[t]
+    \centering
+    \caption{Số token $N$ và chiều token của từng cách tạo token.}
+    \label{tab:e2-tokens}
+    \begin{tabular}{lrr}
+        \toprule
+        Cách tạo token             & $N$     & Chiều token \\
+        \midrule
+        Hàng                       & 28      & 28          \\
+        Patch $4\times4$           & 49      & 16          \\
+        Patch $7\times7$           & 16      & 49          \\
+        Patch $4\times4$ chồng lấn & \todo{} & 16          \\
+        CNN-stem                   & \todo{} & \todo{}     \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Kết quả}
+\paragraph{(i) MSA tự cài đặt so với PyTorch.} Bảng~\ref{tab:e2-msa} so sánh hai bản cài đặt dưới cùng cách tạo token (\todo{tên cách tạo token}).
+
+\begin{table}[t]
+    \centering
+    \caption{MSA tự cài đặt so với PyTorch (cách tạo token: \todo{tên}).}
+    \label{tab:e2-msa}
+    \begin{tabular}{lrrrr}
+        \toprule
+        MSA        & Tham số & Test acc (\%) & Thời gian/epoch (s) & Epoch tốt nhất \\
+        \midrule
+        Tự cài đặt & \todo{} & \todo{}       & \todo{}             & \todo{}        \\
+        PyTorch    & \todo{} & \todo{}       & \todo{}             & \todo{}        \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{(ii) So sánh các cách tạo token.}
+\begin{table}[t]
+    \centering
+    \caption{So sánh các cách tạo token (MSA: \todo{tự cài đặt/PyTorch}).}
+    \label{tab:e2-tok}
+    \small
+    \begin{tabular}{lrrrrrr}
+        \toprule
+        Cách tạo token             & $N$     & Tham số & Train   & Val     & Test    & Thời gian/epoch (s) \\
+        \midrule
+        Hàng                       & 28      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
+        Patch $4\times4$           & 49      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
+        Patch $7\times7$           & 16      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
+        Patch $4\times4$ chồng lấn & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
+        CNN-stem                   & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \figph{5cm}{Đường cong học của các cách tạo token (và MSA tự cài đặt so với PyTorch)}
+    \caption{Đường cong học của E2. \todo{chú thích.}}
+    \label{fig:e2-curves}
+\end{figure}
+
+\subsection{Thảo luận}
+\todo{Viết sau khi có số liệu. Gợi ý: (1) MSA tự cài đặt và PyTorch cho độ chính xác tương đương, giải thích chênh lệch tốc độ nếu có; (2) cách tạo token là một dạng thiên kiến quy nạp: patch đưa tính cục bộ vào, hàng giao cho attention tự học cấu trúc không gian, CNN-stem mang thiên kiến tích chập; (3) liên hệ thời gian đo được với chi phí $O(N^2d)$ (patch $4$ vs.\ $7$ vs.\ chồng lấn); (4) so sánh với CNN/MLP của E1; (5) hạn chế.}
+
+\section{E3: LSTM và GRU trên chuỗi ảnh}
+\label{sec:e3}
+\todo{Sẽ viết sau khi có kết quả E3 (hạn nộp 09/11/2026).}
+
+\section{So sánh tổng hợp}
+\label{sec:summary}
+\begin{table}[t]
+    \centering
+    \caption{Tất cả mô hình trên MNIST (độ chính xác kiểm tra, \%).}
+    \label{tab:master}
+    \begin{tabular}{llrrr}
+        \toprule
+        Bài & Mô hình                     & Tham số  & Test acc & Thời gian/epoch (s) \\
+        \midrule
+        E1  & Softmax (aug)               & 7\,850   & 85,12    & \todo{}             \\
+        E1  & MLP (aug)                   & 235\,146 & 99,07    & \todo{}             \\
+        E1  & CNN (aug)                   & 206\,922 & 99,50    & \todo{}             \\
+        E2  & \todo{Transformer tốt nhất} & \todo{}  & \todo{}  & \todo{}             \\
+        E3  & \todo{LSTM/GRU tốt nhất}    & \todo{}  & \todo{}  & \todo{}             \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\todo{Thảo luận độ chính xác so với tham số so với thời gian, và thiên kiến quy nạp nào phù hợp nhất với MNIST.}
 
 \section{Kết luận}
+\begin{itemize}
+    \item Kiến trúc quan trọng hơn số tham số: CNN vượt MLP dù ít tham số hơn.
+    \item Tăng cường dữ liệu tương tác với dung lượng mô hình: giảm khoảng $60\%$ số lỗi của MLP và CNN nhưng làm hại softmax vì mô hình này underfitting.
+    \item Tăng cường dữ liệu thay thế được một phần thiên kiến kiến trúc (MLP aug $\approx$ CNN base).
+    \item \todo{Kết luận E2.}
+    \item \todo{Kết luận E3.}
+\end{itemize}
+\paragraph{Hạn chế.} \todo{một seed, tập dữ liệu nhỏ, tinh chỉnh hạn chế, một mức tăng cường.}
+
+\appendix
+\section{Siêu tham số chi tiết}
+\todo{Bảng đầy đủ tối ưu hóa, tốc độ học, bộ lập lịch, batch size, số epoch, seed, kích thước mô hình của từng bài.}
+
+\section{Việc sử dụng công cụ AI}
+\todo{Khai báo trung thực: đã dùng công cụ AI nào, vào việc gì (ví dụ trao đổi hướng phân tích, chỉnh ngữ pháp, gợi ý soạn thảo). Theo quy định môn học, AI chỉ được dùng hỗ trợ, phải ghi rõ, và nhóm phải hiểu và bảo vệ được mã nguồn và số liệu.}
+
+\section{Repository}
+GitHub: \todo{URL} \quad GitHub Pages: \todo{URL} \quad Commit/tag nộp: \todo{hash}
 
 \addcontentsline{toc}{section}{Tài liệu}
 \bibliographystyle{plain}
