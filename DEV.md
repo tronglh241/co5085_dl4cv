@@ -94,15 +94,15 @@ Maintainers regenerate the manifests after changing the shared assets, and commi
 bash scripts/artifacts/checksums.sh generate
 ```
 
-**1.7 Generate report assets**
+**1.7 Generate report and site assets**
 
-Generates the figures and CSV values used by the report. Start the experiment container and run the generator inside it:
+Generates the figures and CSV values used by the report and the GitHub Pages site. Start the experiment container and run the generator inside it:
 
 ```bash
 bash scripts/generate.sh all
 ```
 
-Checkpoints and logs must already be present, and each test config must point to its best checkpoint. Figures go to `reports/images/` and values to `reports/results/`.
+Checkpoints and logs must already be present, and each test config must point to its best checkpoint. Generated figures go to `docs/assets/<exercise>/` as PNG, and values/tables go to `reports/results/<exercise>/`. The docs site publishes only files under `docs/`, so reports include figures from `../docs/assets/...`; numeric tables stay outside the published site.
 
 ### 2. Preview GitHub Pages
 

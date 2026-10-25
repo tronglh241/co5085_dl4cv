@@ -19,8 +19,8 @@ from tensorboard.backend.event_processing import event_accumulator
 from common.config.config import CfgNode
 from common.metrics.confusion_matrix import ConfusionMatrix
 
-RESULTS_DIR = _repo_root / 'reports' / 'results'
-IMAGES = _repo_root / 'reports' / 'images' / 'e1'
+RESULTS_DIR = _repo_root / 'reports' / 'results' / 'e1'
+IMAGES = _repo_root / 'docs' / 'assets' / 'e1'
 STAMP_FORMAT = '%y%m%d%H%M%S'
 MAX_STAMP_GAP_S = 60
 MEAN = 0.1308
@@ -274,9 +274,9 @@ def print_table(columns, rows):
         print('  '.join(value.ljust(widths[index]) for index, value in enumerate(line)))
 
 
-def save_pdf(figure, path):
+def save_png(figure, path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(path, bbox_inches='tight')
+    figure.savefig(path, bbox_inches='tight', dpi=300)
     plt.close(figure)
 
 
@@ -373,7 +373,7 @@ def _plot_curves(records):
             axis.legend(fontsize=7, ncol=2)
 
     figure.tight_layout()
-    save_pdf(figure, IMAGES / 'curves.pdf')
+    save_png(figure, IMAGES / 'curves.png')
 
 
 def _plot_confusion(records):
@@ -388,7 +388,7 @@ def _plot_confusion(records):
     for axis, record in zip(axes[0], selected):
         draw_confusion(axis, record['result']['confusion_matrix'].cpu().numpy(), record['run'])
     figure.tight_layout()
-    save_pdf(figure, IMAGES / 'confusion.pdf')
+    save_png(figure, IMAGES / 'confusion.png')
 
 
 def _plot_errors(records):
@@ -408,7 +408,7 @@ def _plot_errors(records):
     for axis in axes.flat[len(errors):]:
         axis.set_axis_off()
     figure.tight_layout()
-    save_pdf(figure, IMAGES / 'errors.pdf')
+    save_png(figure, IMAGES / 'errors.png')
 
 
 def main():

@@ -17,8 +17,8 @@ from torchvision.datasets import MNIST as TorchvisionMNIST
 
 from datasets.mnist import MNIST
 
-ASSETS = _repo_root / 'reports' / 'images' / 'shared'
-RESULTS = _repo_root / 'reports' / 'results'
+ASSETS = _repo_root / 'docs' / 'assets' / 'shared'
+RESULTS = _repo_root / 'reports' / 'results' / 'shared'
 N_CLASSES = 10
 
 
@@ -51,7 +51,7 @@ def original():
     axis.bar_label(bars, labels=[f'{len(train_raw):,}', f'{len(test_raw):,}'])
     axis.set_ylabel('images')
     figure.tight_layout()
-    figure.savefig(ASSETS / 'original_counts.pdf', bbox_inches='tight')
+    figure.savefig(ASSETS / 'original_counts.png', bbox_inches='tight', dpi=300)
     plt.close(figure)
 
     return {'original_train': len(train_raw), 'original_test': len(test_raw)}
@@ -91,14 +91,14 @@ def split_plot(train, val, test):
     bars = axis.bar(names, sizes)
     axis.bar_label(bars, labels=[f'{count:,}' for count in sizes])
     axis.set_ylabel('images')
-    figure.savefig(ASSETS / 'split_counts.pdf')
+    figure.savefig(ASSETS / 'split_counts.png', dpi=300)
     plt.close(figure)
 
     figure, axis = plt.subplots(figsize=(7, 5))
     wedges, _, _ = axis.pie([size / total for size in sizes], autopct='%1.1f%%', startangle=90)
     axis.legend(wedges, names, loc='lower center', bbox_to_anchor=(0.5, -0.18), ncol=3)
     figure.tight_layout()
-    figure.savefig(ASSETS / 'split_share.pdf', bbox_inches='tight')
+    figure.savefig(ASSETS / 'split_share.png', bbox_inches='tight', dpi=300)
     plt.close(figure)
 
 
@@ -152,7 +152,7 @@ def sample_grid(train, per_digit=8):
         axes[digit, 0].set_ylabel(str(digit), rotation=0, labelpad=12, fontsize=12)
 
     figure.tight_layout()
-    figure.savefig(ASSETS / 'samples.pdf')
+    figure.savefig(ASSETS / 'samples.png', dpi=300)
     plt.close(figure)
 
 
@@ -171,7 +171,7 @@ def augmentation(train):
         axis.set_axis_off()
     axes[1, 0].set_title('RandomAffine(10, translate=0.1)', fontsize=9)
     figure.tight_layout()
-    figure.savefig(ASSETS / 'augmentation.pdf')
+    figure.savefig(ASSETS / 'augmentation.png', dpi=300)
     plt.close(figure)
 
 
@@ -203,7 +203,7 @@ def class_balance(train, val, test):
     axis.set_xticks(list(range(N_CLASSES)))
     axis.legend(loc='lower center', bbox_to_anchor=(0.5, -0.18), ncol=3)
     figure.tight_layout()
-    figure.savefig(ASSETS / 'class_balance.pdf', bbox_inches='tight')
+    figure.savefig(ASSETS / 'class_balance.png', bbox_inches='tight', dpi=300)
     plt.close(figure)
 
     return {'counts': counts, 'ratio': ratio}

@@ -10,6 +10,7 @@ if _repo_root not in sys.path:
 from common.config.config import CfgNode
 from common.config.validate import validate_train_config
 from common.seed import set_seed
+from common.stamp import is_stamp
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -20,6 +21,17 @@ if __name__ == '__main__':
     set_seed(cfg.get('seed', 42))
     cfg = cfg.eval()
     validate_train_config(cfg)
+
+    # Resuming continues the run folder of the checkpoint, so its curves and
+    # checkpoints are not split across two stamps.
+    if 'loader' in cfg and cfg.loader.path:
+        stamp = Path(cfg.loader.path).parent.name
+        if is_stamp(stamp):
+            for key in ('best_checkpoint', 'backup_checkpoint'):
+                if key in cfg:
+                    cfg[key].use_stamp(stamp)
+            if 'logging' in cfg and 'tensorboard' in cfg.logging:
+                cfg.logging.tensorboard.use_stamp(stamp)
 
     if 'loader' in cfg:
         cfg.loader.attach(cfg.trainer, cfg)
@@ -50,17 +62,25 @@ if __name__ == '__main__':
     if 'best_checkpoint' in cfg:
         cfg.best_checkpoint.attach(cfg.trainer, cfg)
 
-    if 'backup_checkpoint' in cfg:
-        cfg.backup_checkpoint.attach(cfg.trainer, cfg)
-        shutil.copy(args.config, cfg.backup_checkpoint.dirname)
-
     if 'lr_scheduler' in cfg:
         cfg.lr_scheduler.attach(cfg.trainer)
 
     if 'early_stopping' in cfg:
         cfg.early_stopping.attach(cfg.trainer)
 
+    # Attached after every handler that changes state on EPOCH_COMPLETED, so the
+    # backup holds the scheduler and early stopping as stepped for this epoch.
+    if 'backup_checkpoint' in cfg:
+        cfg.backup_checkpoint.attach(cfg.trainer, cfg)
+        # Keep the config next to the backups. Checkpoint folders are otherwise
+        # created on the first save, so make this one now.
+        cfg.backup_checkpoint.dirname.mkdir(parents=True, exist_ok=True)
+        shutil.copy(args.config, cfg.backup_checkpoint.dirname)
+
     if 'timer' in cfg:
         cfg.timer.attach(cfg.trainer)
+
+    if 'memory' in cfg:
+        cfg.memory.attach(cfg.trainer)
 
     cfg.trainer.run()

@@ -242,7 +242,7 @@ def main():
     _check_training_path()
     _check_token_coverage()
     _check_shapes()
-    out_dir = Path(_repo_root) / 'reports' / 'results'
+    out_dir = Path(_repo_root) / 'reports' / 'results' / 'e2'
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / 'msa_check.csv'
     fields = (

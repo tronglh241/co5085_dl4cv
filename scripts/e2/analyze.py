@@ -10,7 +10,6 @@ import csv
 import os
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 
 os.environ.setdefault('MPLBACKEND', 'Agg')
@@ -25,16 +24,15 @@ import torch
 
 from common.config.config import CfgNode
 from common.metrics.confusion_matrix import ConfusionMatrix
+from common.stamp import parse_stamp
 from models.e2.utils import count_params
 
 COLUMNS = (
     'Model', 'Variant', 'Params', 'Best epoch', 'Time/epoch', 'Val acc', 'Test acc', 'Images/s',
 )
-STAMP_FORMAT = '%y%m%d%H%M%S'
-# TensorBoardLogger and BestCheckpoint stamp their folders a moment apart
-# while the same config is built, so allow a small gap when pairing them.
+# TensorBoardLogger and BestCheckpoint share one stamp per run now. Runs made
+# before that stamped their folders a moment apart, so allow a small gap.
 MAX_STAMP_GAP_S = 60
-RESULTS_DIR = _repo_root / 'reports' / 'results'
 
 
 def _run_name(config_path):
@@ -48,13 +46,6 @@ def _run_name(config_path):
     raise ValueError(f'cannot parse run name from {config_path}')
 
 
-def _stamp(name):
-    try:
-        return datetime.strptime(name, STAMP_FORMAT)
-    except ValueError:
-        return None
-
-
 def _log_dir_for(run, checkpoint_path):
     '''Pick the TensorBoard run that produced checkpoint_path.
 
@@ -63,19 +54,19 @@ def _log_dir_for(run, checkpoint_path):
     root = _repo_root / 'logs' / 'e2' / f'train_{run}'
     if not root.is_dir():
         return None
-    candidates = sorted(path for path in root.iterdir() if path.is_dir() and _stamp(path.name) is not None)
+    candidates = sorted(path for path in root.iterdir() if path.is_dir() and parse_stamp(path.name) is not None)
     if not candidates:
         return None
     if checkpoint_path is None:
         return candidates[-1]
 
-    target = _stamp(Path(checkpoint_path).parent.name)
+    target = parse_stamp(Path(checkpoint_path).parent.name)
     if target is None:
         print(f'warn {run}: checkpoint folder has no timestamp, using newest log run')
         return candidates[-1]
 
-    nearest = min(candidates, key=lambda path: abs((_stamp(path.name) - target).total_seconds()))
-    gap = abs((_stamp(nearest.name) - target).total_seconds())
+    nearest = min(candidates, key=lambda path: abs((parse_stamp(path.name) - target).total_seconds()))
+    gap = abs((parse_stamp(nearest.name) - target).total_seconds())
     if gap > MAX_STAMP_GAP_S:
         print(f'warn {run}: no log run within {MAX_STAMP_GAP_S}s of checkpoint {checkpoint_path}')
         return None
@@ -265,7 +256,7 @@ def _plot_curves(groups, out_dir):
             axis.set_xlabel('Epoch')
             axis.legend(fontsize=8)
         figure.tight_layout()
-        figure.savefig(out_dir / f'curves_{family}.pdf', dpi=150)
+        figure.savefig(out_dir / f'curves_{family}.png', dpi=300)
         plt.close(figure)
 
 
@@ -285,7 +276,7 @@ def _plot_acc_vs_time(records, out_dir):
     axis.set_ylabel('Val accuracy (best-loss epoch)')
     axis.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=8, frameon=False)
     figure.tight_layout()
-    figure.savefig(out_dir / 'acc_vs_time.pdf', dpi=150)
+    figure.savefig(out_dir / 'acc_vs_time.png', dpi=300)
     plt.close(figure)
 
 
@@ -322,18 +313,22 @@ def _plot_confusion(result, label, out_dir):
     total_errors = int(counts.sum() - np.trace(counts))
     axis.set_title(f'{label}: {total_errors} errors / {int(counts.sum())}', fontsize=9)
     figure.tight_layout()
-    figure.savefig(out_dir / 'confusion_best.pdf', dpi=150)
+    figure.savefig(out_dir / 'confusion_best.png', dpi=300)
     plt.close(figure)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Compare E2 runs.')
     parser.add_argument('--configs', nargs='+', required=True)
-    parser.add_argument('--out-dir', default=str(_repo_root / 'reports' / 'images' / 'e2'))
+    parser.add_argument('--out-dir', default=str(_repo_root / 'docs' / 'assets' / 'e2'),
+                        help='figure directory')
+    parser.add_argument('--results-dir', default=str(_repo_root / 'reports' / 'results' / 'e2'),
+                        help='CSV and LaTeX table directory')
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    results_dir = Path(args.results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     records = []
     groups = {}
@@ -360,11 +355,11 @@ def main():
         })
         groups.setdefault(family, {})[variant] = {'series': stats['series']}
 
-    with (RESULTS_DIR / 'e2_results.csv').open('w', newline='') as handle:
+    with (results_dir / 'results_e2.csv').open('w', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=COLUMNS)
         writer.writeheader()
         writer.writerows(_csv_row(record) for record in records)
-    _write_latex(records, RESULTS_DIR / 'results_e2.tex')
+    _write_latex(records, results_dir / 'results_e2.tex')
     _plot_curves(groups, out_dir)
     _plot_acc_vs_time(records, out_dir)
 
@@ -372,7 +367,8 @@ def main():
     if evaluated:
         best = max(evaluated, key=lambda record: -1.0 if record['val_acc'] is None else record['val_acc'])
         _plot_confusion(best['result'], best['run'], out_dir)
-    print(f'wrote {RESULTS_DIR / "e2_results.csv"} and {RESULTS_DIR / "results_e2.tex"}')
+    print(f'wrote {results_dir / "results_e2.csv"} and {results_dir / "results_e2.tex"}')
+    print(f'wrote figures to {out_dir}')
 
 
 if __name__ == '__main__':

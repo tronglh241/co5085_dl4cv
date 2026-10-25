@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from enum import Enum
 
 import torch
@@ -17,11 +18,11 @@ ALL_EVENTS = tuple(Events)
 
 def default_prepare_batch(batch, device):
     x, y = batch
-    return x.to(device), y.to(device)
+    return x.to(device, non_blocking=True), y.to(device, non_blocking=True)
 
 
 class Engine:
-    def __init__(self, data, model, device=None, max_epochs=1):
+    def __init__(self, data, model, device=None, max_epochs=1, amp=False, channels_last=False):
         if device is None:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -29,6 +30,13 @@ class Engine:
         self.device = torch.device(device)
         self.model = model.to(self.device)
         self.max_epochs = max_epochs
+        # bf16 autocast needs no GradScaler. It is a no-op off CUDA, so the
+        # same config also runs a CPU smoke test.
+        self.amp = amp and self.device.type == 'cuda'
+        self.channels_last = channels_last
+
+        if channels_last:
+            self.model.to(memory_format=torch.channels_last)
 
         self.state = {'epoch': 0, 'iteration': 0}
         self.output = None
@@ -62,6 +70,18 @@ class Engine:
 
     def on_completed(self, handler, *args, **kwargs):
         return self.add_event_handler(Events.COMPLETED, handler, *args, **kwargs)
+
+    def autocast(self):
+        if not self.amp:
+            return nullcontext()
+
+        return torch.autocast(device_type=self.device.type, dtype=torch.bfloat16)
+
+    def to_input(self, x):
+        if self.channels_last and x.dim() == 4:
+            return x.contiguous(memory_format=torch.channels_last)
+
+        return x
 
     def _fire(self, event):
         for handler, args, kwargs in self.handlers[event]:

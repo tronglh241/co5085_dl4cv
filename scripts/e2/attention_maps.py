@@ -107,9 +107,9 @@ def main():
     stem = Path(args.config).stem
     if stem.startswith('test_'):
         stem = stem[len('test_'):]
-    out = Path(args.out) if args.out else _repo_root / 'reports' / 'images' / 'e2' / f'attn_{stem}.pdf'
+    out = Path(args.out) if args.out else _repo_root / 'docs' / 'assets' / 'e2' / f'attn_{stem}.png'
     out.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(out, dpi=150)
+    figure.savefig(out, dpi=300)
     print(f'wrote {out}')
 
 

@@ -5,6 +5,14 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{adjustbox}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta,calc}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{placeins}
 \usepackage{minted}
 \usepackage[top=2.5cm, bottom=2.0cm, left=3.0cm, right=2.0cm]{geometry}
 \usepackage{setspace}\onehalfspacing
@@ -37,7 +45,8 @@
             ~~                                                                     \\
             \hline
             \\ \\
-            \textbf{{\huge Báo cáo Bài tập lớn A1}}                                \\
+            \textbf{{\Large Báo cáo Bài tập lớn A1}}                               \\[0.5em]
+            \textbf{{\huge CNN và Transformer trên tập ảnh lớn}}                   \\
             \\ \\
             \hline
         \end{tabular}
@@ -63,6 +72,117 @@
 \newpage
 \tableofcontents
 \newpage
+
+\newcommand{\aoneasset}[1]{../docs/assets/a1/#1}
+\newcommand{\aoneresult}[1]{../reports/results/a1/#1}
+\newcommand{\aonemissing}[2]{\textit{[Hình hoặc bảng này chưa có.]}}
+\newcommand{\aonefigure}[5]{%
+    \begin{figure}[!htbp]
+        \centering
+        \IfFileExists{\aoneasset{#1}}{\includegraphics[width=#2\linewidth]{\aoneasset{#1}}}{\aonemissing{#1}{#5}}
+        \caption{#3}\label{#4}
+    \end{figure}}
+\newcommand{\aonetable}[4]{%
+    \begin{table}[!htbp]
+        \centering
+        \IfFileExists{\aoneresult{#1}}{\small\begin{adjustbox}{max width=\linewidth}\input{\aoneresult{#1}}\end{adjustbox}}{\aonemissing{#1}{#4}}
+        \caption{#2}\label{#3}
+    \end{table}}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\captionsetup{font=small,labelfont=bf}
+\captionsetup[table]{position=bottom}
+\setlist{nosep,leftmargin=*}
+\setlength{\emergencystretch}{3em}
+\clubpenalty=10000
+\widowpenalty=10000
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.7}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{12pt}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
+
+\section{Giới thiệu}
+
+\section{Tập dữ liệu}
+
+\subsection{Lựa chọn tập dữ liệu và lý do}
+
+\subsection{Giấy phép và nguồn}
+
+\subsection{Thống kê tập dữ liệu}
+\begin{table}[h]
+    \centering
+    \caption{Thống kê tập dữ liệu.}
+    \begin{tabular}{lr}
+        \toprule
+        Thuộc tính   & Giá trị \\
+        \midrule
+        Số lớp       &         \\
+        Tổng số ảnh  &         \\
+        Độ phân giải &         \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Phân chia tập dữ liệu}
+
+\subsection{Phân tích khám phá dữ liệu (EDA)}
+
+\section{Chuẩn bị dữ liệu huấn luyện}
+\subsection{Tiền xử lý}
+\todo{Resize/crop, kích thước đầu vào chung cho CNN và ViT, chuẩn hóa mean/std}
+
+\subsection{Tăng cường dữ liệu}
+\todo{Train-time vs eval-time transforms; tham số cụ thể}
+
+\subsection{Cấu hình DataLoader}
+\todo{Batch size, số workers, shuffle, pin memory; pipeline giống nhau cho mọi mô hình}
+
+\section{Cài đặt thí nghiệm}
+\subsection{Các mô hình}
+\begin{table}[h]
+    \centering
+    \caption{Các mô hình sử dụng.}
+    \begin{tabular}{llrrl}
+        \toprule
+        Họ          & Mô hình & Tham số (M) & FLOPs (G) & Nguồn pretrained \\
+        \midrule
+        CNN         &         &             &           &                  \\
+        Transformer &         &             &           &                  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Các chế độ đóng băng}
+\todo{Khối/lớp nào bị đóng băng ở mỗi mô hình}
+
+\subsection{Siêu tham số huấn luyện}
+\todo{Optimizer, LR, scheduler, epochs, early stopping, loss, seeds}
+
+\subsection{Độ đo đánh giá}
+\todo{Accuracy, macro-F1, thời gian huấn luyện, số tham số trainable $\rho$, bộ nhớ GPU đỉnh}
+
+\section{Kết quả}
+
+\section{Phân tích}
+
+\section{Thảo luận và hạn chế}
+
+\section{Kết luận}
+
+\section*{Mã nguồn và khả năng tái lập}
 
 \section*{Liêm chính học thuật}
 \addcontentsline{toc}{section}{Liêm chính học thuật}
