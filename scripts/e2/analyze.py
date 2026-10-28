@@ -221,7 +221,7 @@ def _write_latex(records, path):
     path.write_text('\n'.join(lines))
 
 
-def _plot_curves(groups, out_dir):
+def _plot_curves(groups, figures_dir):
     '''Dashed is the train split. The loss panel uses training/loss when that tag exists.'''
     for family, runs in groups.items():
         if not any(item['series'] for item in runs.values()):
@@ -256,11 +256,11 @@ def _plot_curves(groups, out_dir):
             axis.set_xlabel('Epoch')
             axis.legend(fontsize=8)
         figure.tight_layout()
-        figure.savefig(out_dir / f'curves_{family}.png', dpi=300)
+        figure.savefig(figures_dir / f'curves_{family}.png', dpi=300)
         plt.close(figure)
 
 
-def _plot_acc_vs_time(records, out_dir):
+def _plot_acc_vs_time(records, figures_dir):
     points = [item for item in records if item['time_per_epoch'] is not None and item['val_acc'] is not None]
     if not points:
         return
@@ -276,11 +276,11 @@ def _plot_acc_vs_time(records, out_dir):
     axis.set_ylabel('Val accuracy (best-loss epoch)')
     axis.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=8, frameon=False)
     figure.tight_layout()
-    figure.savefig(out_dir / 'acc_vs_time.png', dpi=300)
+    figure.savefig(figures_dir / 'acc_vs_time.png', dpi=300)
     plt.close(figure)
 
 
-def _plot_confusion(result, label, out_dir):
+def _plot_confusion(result, label, figures_dir):
     '''Row-normalised errors only.
 
     The diagonal (~1000 per class) would swamp the colour scale, so it is
@@ -313,20 +313,20 @@ def _plot_confusion(result, label, out_dir):
     total_errors = int(counts.sum() - np.trace(counts))
     axis.set_title(f'{label}: {total_errors} errors / {int(counts.sum())}', fontsize=9)
     figure.tight_layout()
-    figure.savefig(out_dir / 'confusion_best.png', dpi=300)
+    figure.savefig(figures_dir / 'confusion_best.png', dpi=300)
     plt.close(figure)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Compare E2 runs.')
     parser.add_argument('--configs', nargs='+', required=True)
-    parser.add_argument('--out-dir', default=str(_repo_root / 'docs' / 'assets' / 'e2'),
+    parser.add_argument('--figures-dir', default=str(_repo_root / 'docs' / 'assets' / 'e2'),
                         help='figure directory')
     parser.add_argument('--results-dir', default=str(_repo_root / 'reports' / 'results' / 'e2'),
                         help='CSV and LaTeX table directory')
     args = parser.parse_args()
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    figures_dir = Path(args.figures_dir)
+    figures_dir.mkdir(parents=True, exist_ok=True)
     results_dir = Path(args.results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -360,15 +360,15 @@ def main():
         writer.writeheader()
         writer.writerows(_csv_row(record) for record in records)
     _write_latex(records, results_dir / 'results_e2.tex')
-    _plot_curves(groups, out_dir)
-    _plot_acc_vs_time(records, out_dir)
+    _plot_curves(groups, figures_dir)
+    _plot_acc_vs_time(records, figures_dir)
 
     evaluated = [record for record in records if record['result'] is not None]
     if evaluated:
         best = max(evaluated, key=lambda record: -1.0 if record['val_acc'] is None else record['val_acc'])
-        _plot_confusion(best['result'], best['run'], out_dir)
+        _plot_confusion(best['result'], best['run'], figures_dir)
     print(f'wrote {results_dir / "results_e2.csv"} and {results_dir / "results_e2.tex"}')
-    print(f'wrote figures to {out_dir}')
+    print(f'wrote figures to {figures_dir}')
 
 
 if __name__ == '__main__':
