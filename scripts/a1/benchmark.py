@@ -6,7 +6,7 @@ Run once on the target GPU before fixing epoch counts:
     python scripts/a1/benchmark.py --loader-root data/food101_256 --workers 8
 
 Next to the CSV it writes benchmark.tex (speed and memory) and budget.tex
-(hours and cost per run) for reports/a1.tex, all under reports/results/a1/ by
+(hours and cost per run) for reports/assignment_1.tex, all under reports/results/a1/ by
 default.
 
 The model part feeds one synthetic batch repeatedly, so the DataLoader does not
@@ -131,7 +131,7 @@ def _tex(path, header, rows, columns):
 
 
 def write_tex(rows, priced, usd_per_hour, loader_img_s, device, out_dir):
-    '''benchmark.tex and budget.tex for reports/a1.tex.'''
+    '''benchmark.tex and budget.tex for reports/assignment_1.tex.'''
     _tex(
         out_dir / 'benchmark.tex',
         r'Model & Freeze & Trainable & Train (ảnh/s) & Eval (ảnh/s) & Bộ nhớ (GB)',

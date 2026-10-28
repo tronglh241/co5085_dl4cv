@@ -104,6 +104,19 @@ bash scripts/generate.sh all
 
 Checkpoints and logs must already be present, and each test config must point to its best checkpoint. Generated figures go to `docs/assets/<exercise>/` as PNG, and values/tables go to `reports/results/<exercise>/`. The docs site publishes only files under `docs/`, so reports include figures from `../docs/assets/...`; numeric tables stay outside the published site.
 
+**1.8 A1: prepare data, train and generate assets**
+
+Food-101 is about 5 GB, so it is downloaded on demand and kept out of git (`data/`). Run these inside the experiment container:
+
+```bash
+python scripts/a1/prepare_data.py --raw data/ --out data/food101_256
+python scripts/a1/make_configs.py
+python scripts/train.py configs/a1/train_resnet50_full.yml
+bash scripts/generate.sh a1
+```
+
+`prepare_data.py` converts each image to RGB, resizes the shorter side to 256 px (up or down), center-crops it to 224 px and saves it as JPEG. Train only augments that crop; validation and test only normalize it. An image that already exists is left as-is, so delete `data/food101_256` before re-running whenever the crop changes. `make_configs.py` regenerates `configs/a1/*.yml` from one definition (pipeline, epochs, learning rates). `generate.sh a1` runs `eda.py`, which needs the prepared data, and `analyze.py`, which is skipped until checkpoints exist.
+
 ### 2. Preview GitHub Pages
 
 **2.1 Start a shell**
