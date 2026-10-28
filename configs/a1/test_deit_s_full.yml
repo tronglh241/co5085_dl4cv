@@ -11,11 +11,11 @@ data:
           root: "'data/food101_256'"
           split: "'test'"
           fraction: 1.0
-          transform: transforms.Compose([transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), transforms.Normalize([0.5,
-            0.5, 0.5], [0.5, 0.5, 0.5])])
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
       batch_size: 256
       shuffle: false
       num_workers: 8
+      collate_fn: collate_batch
       pin_memory: true
       persistent_workers: true
       drop_last: false
@@ -79,3 +79,6 @@ loader:
     path: null
 extralibs:
   transforms: torchvision.transforms
+  collate_batch:
+    module: datasets.food101
+    name: collate_batch

@@ -11,13 +11,13 @@ data:
           root: "'data/food101_256'"
           split: "'train'"
           fraction: 1.0
-          transform: transforms.Compose([transforms.RandomResizedCrop(224, scale=(0.8, 1.0)), transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomRotation(degrees=15), transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)), transforms.ToTensor(), transforms.Normalize([0.5, 0.5,
-            0.5], [0.5, 0.5, 0.5])])
+          transform: transforms.Compose([transforms.RandomHorizontalFlip(p=0.5), transforms.RandomRotation(degrees=15), transforms.ColorJitter(brightness=0.2,
+            contrast=0.2, saturation=0.2, hue=0.1), transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)), transforms.ToTensor(),
+            transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
       batch_size: 128
       shuffle: true
       num_workers: 8
+      collate_fn: collate_batch
       pin_memory: true
       persistent_workers: true
       drop_last: true
@@ -32,11 +32,11 @@ data:
           root: "'data/food101_256'"
           split: "'train'"
           fraction: 0.1
-          transform: transforms.Compose([transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), transforms.Normalize([0.5,
-            0.5, 0.5], [0.5, 0.5, 0.5])])
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
       batch_size: 256
       shuffle: false
       num_workers: 4
+      collate_fn: collate_batch
       pin_memory: true
       persistent_workers: true
       drop_last: false
@@ -51,11 +51,11 @@ data:
           root: "'data/food101_256'"
           split: "'val'"
           fraction: 1.0
-          transform: transforms.Compose([transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), transforms.Normalize([0.5,
-            0.5, 0.5], [0.5, 0.5, 0.5])])
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
       batch_size: 256
       shuffle: false
       num_workers: 4
+      collate_fn: collate_batch
       pin_memory: true
       persistent_workers: true
       drop_last: false
@@ -203,3 +203,6 @@ loader:
 seed: 42
 extralibs:
   transforms: torchvision.transforms
+  collate_batch:
+    module: datasets.food101
+    name: collate_batch

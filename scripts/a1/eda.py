@@ -9,7 +9,7 @@ Writes figures into --out (default docs/assets/a1/eda):
 Writes tables and values into --results-dir (default reports/results/a1/eda):
     class_counts.csv         the same counts as class_counts.png
     summary.json / .md       totals, size statistics, image modes, channel mean/std
-    splits.tex, stats.tex    the same numbers as booktabs tables for reports/a1.tex
+    splits.tex, stats.tex    the same numbers as booktabs tables for reports/assignment_1.tex
 
     python scripts/a1/eda.py --raw data/ --root data/food101_256
 
@@ -141,7 +141,7 @@ def image_sizes(raw_root, workers, out, sample_size=0, seed=0):
     axes[0].set_ylabel('Height (px)')
     axes[0].set_title('Original image sizes')
     axes[1].hist(shorter, bins=50)
-    axes[1].axvline(256, color='C3', linestyle='--', label='256 px (resized copy)')
+    axes[1].axvline(256, color='C3', linestyle='--', label='256 px (before crop)')
     axes[1].set_xlabel('Shorter side (px)')
     axes[1].set_title('Shorter side')
     axes[1].legend(fontsize=8)
@@ -190,7 +190,7 @@ def samples(dataset, out, classes_shown=8, per_class=6, seed=0):
 
 
 def augmentation(dataset, out, images=4, versions=6, seed=0):
-    '''Each row: the eval crop, then the same image through the train pipeline.'''
+    '''Each row: the stored center crop, then the same image through the train pipeline.'''
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
     picks = rng.choice(len(dataset), size=min(images, len(dataset)), replace=False)
@@ -205,17 +205,17 @@ def augmentation(dataset, out, images=4, versions=6, seed=0):
             axes[row][col].imshow(augment(image))
         for axis in axes[row]:
             axis.set_axis_off()
-    axes[0][0].set_title('eval crop', fontsize=8)
+    axes[0][0].set_title('fixed crop', fontsize=8)
     for col in range(1, versions + 1):
         axes[0][col].set_title(f'train #{col}', fontsize=8)
-    figure.suptitle('RandomResizedCrop(0.8-1) + flip + rotate 15° + ColorJitter + translate 10%', fontsize=9)
+    figure.suptitle('flip + rotate 15° + ColorJitter + translate 10%', fontsize=9)
     figure.tight_layout()
     figure.savefig(out / 'augmentation.png', dpi=200)
     plt.close(figure)
 
 
 def channel_stats(dataset, workers, sample_size=0, seed=0):
-    '''Per-channel mean and std of the eval crops of train, all of it unless sample_size > 0.'''
+    '''Per-channel mean and std of the stored train crops, all of them unless sample_size > 0.'''
     crop = pipeline(EVAL_STEPS)
 
     def sums(index):
@@ -273,7 +273,7 @@ def _n(value):
 
 
 def write_tex(summary, results):
-    '''Booktabs tables that reports/a1.tex pulls in with \\input.'''
+    '''Booktabs tables that reports/assignment_1.tex pulls in with \\input.'''
     rows = []
     for split in SPLITS:
         info = summary['splits'][split]

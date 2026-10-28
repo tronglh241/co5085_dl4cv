@@ -9,13 +9,26 @@ The test images were cleaned by hand; the train images keep their label noise
 on purpose, so val (taken from train) is noisy too.
 
 root holds food-101/{images,meta}: data/ for the original download, or
-data/food101_256 for the copy scripts/a1/prepare_data.py resizes to a 256px
-shorter side.
+data/food101_256 for the copy scripts/a1/prepare_data.py writes after resizing
+the shorter side to 256px and center-cropping to 224px.
 '''
 
 import numpy as np
+import torch
 from sklearn.model_selection import train_test_split
 from torchvision.datasets import Food101 as _TorchvisionFood101
+
+
+def collate_batch(batch):
+    '''Stack (image, label) pairs.
+
+    torch 2.7.1's default collate, when num_workers > 0, builds the batch in
+    shared memory and then resize_()s that storage. Shared memory cannot be
+    resized, so the first batch raises "Trying to resize storage that is not
+    resizable". torch.stack allocates a normal tensor instead.
+    '''
+    images, labels = zip(*batch)
+    return torch.stack(images), torch.tensor(labels)
 
 
 def nested_subset(indices, labels, fraction, seed):
@@ -54,7 +67,10 @@ class Food101(_TorchvisionFood101):
         if fraction < 1 and split != 'train':
             raise ValueError('fraction only subsamples the train split; val and test stay whole')
 
-        super().__init__(root, split='test' if split == 'test' else 'train', download=True, **kwargs)
+        # download=False: prepare_data.py already wrote the 224px crops. Leaving
+        # this True makes a fresh container fetch the original ~5GB archive and
+        # train on those variable-size images instead.
+        super().__init__(root, split='test' if split == 'test' else 'train', download=False, **kwargs)
 
         if split == 'test':
             self.indices = None

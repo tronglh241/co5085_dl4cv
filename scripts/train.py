@@ -12,12 +12,14 @@ from common.config.validate import validate_train_config
 from common.seed import set_seed
 from common.stamp import is_stamp
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('config')
-    args = parser.parse_args()
 
-    cfg = CfgNode.load(args.config, evaluate=False)
+def run_config(config_path, on_epoch_completed=None):
+    '''Train from a YAML config.
+
+    on_epoch_completed runs after the backup for that epoch is on disk. The Modal
+    runner uses it to commit the volume, so a preempted retry can resume.
+    '''
+    cfg = CfgNode.load(config_path, evaluate=False)
     set_seed(cfg.get('seed', 42))
     cfg = cfg.eval()
     validate_train_config(cfg)
@@ -75,7 +77,7 @@ if __name__ == '__main__':
         # Keep the config next to the backups. Checkpoint folders are otherwise
         # created on the first save, so make this one now.
         cfg.backup_checkpoint.dirname.mkdir(parents=True, exist_ok=True)
-        shutil.copy(args.config, cfg.backup_checkpoint.dirname)
+        shutil.copy(config_path, cfg.backup_checkpoint.dirname)
 
     if 'timer' in cfg:
         cfg.timer.attach(cfg.trainer)
@@ -83,4 +85,15 @@ if __name__ == '__main__':
     if 'memory' in cfg:
         cfg.memory.attach(cfg.trainer)
 
+    # After the backup handler, so the committed epoch is the one just saved.
+    if on_epoch_completed is not None:
+        cfg.trainer.on_epoch_completed(on_epoch_completed)
+
     cfg.trainer.run()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config')
+    args = parser.parse_args()
+    run_config(args.config)

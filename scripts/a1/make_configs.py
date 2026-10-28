@@ -38,17 +38,15 @@ MODELS = {
 
 # One data pipeline for every model and mode, as with MNIST in E1/E2: the runs
 # differ only in the model and how it is trained, never in the data they see.
+# prepare_data.py already saved the 224px center crop, so train only augments
+# it and eval only normalizes it.
 TRAIN_STEPS = [
-    'transforms.RandomResizedCrop(224, scale=(0.8, 1.0))',
     'transforms.RandomHorizontalFlip(p=0.5)',
     'transforms.RandomRotation(degrees=15)',
     'transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)',
     'transforms.RandomAffine(degrees=0, translate=(0.1, 0.1))',
 ]
-EVAL_STEPS = [
-    'transforms.Resize(256)',
-    'transforms.CenterCrop(224)',
-]
+EVAL_STEPS = []
 
 # Starting points; check the LRs on val before the final runs (README).
 MODES = {
@@ -104,6 +102,7 @@ def loader(root, split, kind, batch_size, workers, shuffle=False, drop_last=Fals
             'batch_size': batch_size,
             'shuffle': shuffle,
             'num_workers': workers,
+            'collate_fn': 'collate_batch',
             'pin_memory': True,
             'persistent_workers': workers > 0,
             'drop_last': drop_last,
@@ -256,7 +255,10 @@ def train_config(run, spec, mode, seed, root, workers,
             'kwargs': {'path': None},
         },
         'seed': seed,
-        'extralibs': {'transforms': 'torchvision.transforms'},
+        'extralibs': {
+            'transforms': 'torchvision.transforms',
+            'collate_batch': {'module': 'datasets.food101', 'name': 'collate_batch'},
+        },
     }
 
 
@@ -273,7 +275,10 @@ def test_config(run, spec, mode, root, workers, eval_batch_size=EVAL_BATCH_SIZE)
             'name': 'CheckpointLoader',
             'kwargs': {'path': None},
         },
-        'extralibs': {'transforms': 'torchvision.transforms'},
+        'extralibs': {
+            'transforms': 'torchvision.transforms',
+            'collate_batch': {'module': 'datasets.food101', 'name': 'collate_batch'},
+        },
     }
 
 
