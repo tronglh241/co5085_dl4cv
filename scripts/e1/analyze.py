@@ -322,7 +322,7 @@ def _plot_confusions(runs, figures_dir):
     labels = {'softmax': 'Softmax', 'mlp': 'MLP', 'cnn': 'CNN'}
     variants = ('base', 'aug')
     variant_mapping = {'base': 'Phiên bản base', 'aug': 'Phiên bản aug'}
-    figure, axes = plt.subplots(2, 3, figsize=(10.5, 6.6))
+    figure, axes = plt.subplots(2, 3, figsize=(11.2, 7.2), sharex=False, sharey=False)
     cmap = LinearSegmentedColormap.from_list('theme_reds', ('#ffffff', '#f5b7b1', THEME_RED))
     cmap.set_bad('white')
     panels = {}
@@ -381,8 +381,8 @@ def _plot_confusions(runs, figures_dir):
         ticks = range(NUM_CLASSES)
         axis.set_xticks(ticks)
         axis.set_yticks(ticks)
-        axis.tick_params(axis='x', bottom=row == 1, labelbottom=row == 1, labelsize=8, colors='black')
-        axis.tick_params(axis='y', left=column == 0, labelleft=column == 0, labelsize=8, colors='black')
+        axis.tick_params(axis='x', bottom=True, labelbottom=True, labelsize=8, pad=2, colors='black')
+        axis.tick_params(axis='y', left=True, labelleft=True, labelsize=8, pad=2, colors='black')
 
         if row == 0:
             axis.set_title(labels[models[column]], fontsize=13)
@@ -393,7 +393,7 @@ def _plot_confusions(runs, figures_dir):
         if row == 1:
             axis.set_xlabel('Dự đoán', fontsize=10, color='black')
 
-    figure.subplots_adjust(left=0.08, right=0.98, bottom=0.10, top=0.92, wspace=0.16, hspace=0.22)
+    figure.subplots_adjust(left=0.06, right=0.98, bottom=0.08, top=0.92, wspace=0.24, hspace=0.26)
 
     for row, variant in enumerate(variants):
         position = axes[row, 0].get_position()

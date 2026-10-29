@@ -1,12 +1,12 @@
 theme: jekyll-theme-chirpy
-lang: en
+lang: vi-VN
 timezone: Asia/Ho_Chi_Minh
 future: true
 
 title: CO5085 · HK261
-tagline: Deep Learning and its Applications in Computer Vision
+tagline: Học sâu và ứng dụng trong thị giác máy tính
 description: >-
-  Coursework reports for CO5085 — Deep Learning and its Applications in Computer Vision (HK261).
+  Báo cáo môn học CO5085: Học sâu và ứng dụng trong thị giác máy tính (HK261).
 
 url: "https://tronglh241.github.io"
 
@@ -14,9 +14,9 @@ github:
   username: tronglh241
 
 social:
-  name: CO5085 Coursework
+  name: CO5085
   links:
-    - https://github.com/tronglh241/co5085_excersises_and_assignments/
+    - https://github.com/tronglh241/co5085_dl4cv/
 
 theme_mode:
 cdn:
@@ -37,7 +37,7 @@ pwa:
     enabled: false
 
 paginate: 10
-baseurl: "/co5085_excersises_and_assignments"
+baseurl: "/co5085_dl4cv"
 
 kramdown:
   footnote_backlink: "&#8617;&#xfe0e;"

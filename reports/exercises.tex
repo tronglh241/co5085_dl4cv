@@ -88,22 +88,22 @@
 \section{Giới thiệu}
 \label{sec:intro}
 
-Báo cáo này khảo sát và so sánh hiệu suất của các mô hình học sâu thông qua ba bài tập E1--E3. Để tạo điều kiện thuận lợi để đối chiếu trực tiếp các phương pháp tiếp cận khác nhau, chúng tôi sử dụng chung một tập ảnh nhỏ cho cả ba bài tập. Toàn bộ mã nguồn, tài liệu và kết quả chi tiết của các thực nghiệm được lưu trữ và công khai tại các địa chỉ sau:
+Báo cáo này khảo sát và so sánh hiệu suất của các mô hình học sâu thông qua ba bài tập E1--E3. Để đối chiếu trực tiếp các phương pháp, chúng tôi dùng chung một tập ảnh nhỏ cho cả ba bài. Toàn bộ mã nguồn, tài liệu và kết quả chi tiết của các thực nghiệm được công khai tại các địa chỉ sau:
 \begin{itemize}
-    \item Github Repository: \url{https://github.com/tronglh241/co5085_dl4cv}
-    \item Github Pages: \url{https://tronglh241.github.io/co5085_dl4cv}
+    \item GitHub Repository: \url{https://github.com/tronglh241/co5085_dl4cv}
+    \item GitHub Pages: \url{https://tronglh241.github.io/co5085_dl4cv}
 \end{itemize}
 
 Nội dung chính của các bài tập được triển khai như sau:
 \begin{itemize}
-    \item \textbf{Bài E1 (Mục~\ref{sec:e1}):} So sánh ba bộ phân loại cơ bản gồm softmax, Multilayer Perceptron (MLP) và Convolutional Neural Network (CNN), được đánh giá trong cả hai trường hợp có và không có kỹ thuật tăng cường dữ liệu.
+    \item \textbf{Bài E1 (Mục~\ref{sec:e1}):} So sánh ba bộ phân loại cơ bản gồm Softmax, Multilayer Perceptron (MLP) và Convolutional Neural Network (CNN), được đánh giá trong cả hai trường hợp có và không có kỹ thuật tăng cường dữ liệu.
     \item \textbf{Bài E2 (Mục~\ref{sec:e2}):} Xây dựng bộ phân loại dựa trên cơ chế Multi-Head Self-Attention (MSA), trong đó, chúng tôi hiện thực MSA từ đầu để đối chiếu với module sẵn có của PyTorch, đồng thời khảo sát các phương pháp chuyển đổi ảnh thành chuỗi token khác nhau.
     \item \textbf{Bài E3 (Mục~\ref{sec:e3}):} Xem xét ảnh dưới góc độ dữ liệu chuỗi để huấn luyện các mô hình hồi quy Long Short-Term Memory (LSTM) và Gated Recurrent Unit (GRU), sau đó so sánh kết quả với các mô hình không hồi quy đã khảo sát ở bài E1.
 \end{itemize}
 
 Mục tiêu của báo cáo không dừng lại ở việc liệt kê accuracy của từng mô hình, mà tập trung giải thích nguyên nhân dẫn đến sự khác biệt về hiệu suất thông qua số lượng tham số, đường cong học và phân tích chi tiết các trường hợp phân loại sai.
 
-Phần còn lại của báo cáo được tổ chức như sau: Mục~\ref{sec:data} mô tả dữ liệu, phương pháp tiền xử lý và đánh giá dùng chung, thiết lập huấn luyện riêng của mỗi bài được trình bày trong mục tương ứng; Mục~\ref{sec:summary} tổng hợp so sánh tổng quan giữa các bài trước khi đi đến phần kết luận.
+Phần còn lại của báo cáo được tổ chức như sau. Mục~\ref{sec:data} mô tả dữ liệu, phương pháp tiền xử lý và đánh giá dùng chung cho cả ba bài. Các Mục~\ref{sec:e1}, \ref{sec:e2} và \ref{sec:e3} lần lượt trình bày bài E1, E2 và E3, mỗi mục gồm mô hình, thiết lập huấn luyện riêng, kết quả và thảo luận. Mục~\ref{sec:summary} so sánh kết quả giữa ba bài, sau đó là phần kết luận và các phụ lục.
 
 \section{Dữ liệu và phương pháp đánh giá}
 \label{sec:data}
@@ -111,7 +111,7 @@ Phần còn lại của báo cáo được tổ chức như sau: Mục~\ref{sec:
 \subsection{Tập dữ liệu và cách chia}
 \label{sec:split}
 
-Trong bài này, chúng tôi sử dụng MNIST \cite{lecun1998gradient}, tập dữ liệu chuẩn gồm các ảnh chữ số viết tay dạng ảnh xám với kích thước $28\times28$ điểm ảnh, gồm 10 lớp từ 0 đến 9. Bộ dữ liệu gốc bao gồm $60\,000$ ảnh huấn luyện và $10\,000$ ảnh kiểm thử chính thức. Việc lựa chọn MNIST dựa trên ba lý do chính:
+Trong báo cáo này, chúng tôi sử dụng MNIST \cite{lecun1998gradient}, tập dữ liệu chuẩn gồm các ảnh chữ số viết tay dạng ảnh xám với kích thước $28\times28$ điểm ảnh, gồm 10 lớp từ 0 đến 9. Bộ dữ liệu gốc bao gồm $60\,000$ ảnh huấn luyện và $10\,000$ ảnh kiểm thử chính thức. Việc lựa chọn MNIST dựa trên ba lý do chính:
 \begin{itemize}
     \item \textbf{Tốc độ huấn luyện:} Kích thước ảnh nhỏ và chỉ có một kênh màu giúp rút ngắn thời gian huấn luyện, tạo điều kiện thử nghiệm nhiều biến thể cấu trúc.
     \item \textbf{Tính chuẩn hóa:} Là một bộ dữ liệu tham chiếu phổ biến, MNIST giúp dễ dàng đối chiếu, so sánh kết quả của các mô hình.
@@ -168,7 +168,7 @@ Trước khi đưa vào mô hình, mỗi ảnh được chuyển thành tensor v
 \end{equation}
 Bước chuẩn hóa này đưa đầu vào về phân phối có trung bình gần $0$ và độ lệch chuẩn gần $1$, giúp quá trình tối ưu hóa trọng số diễn ra ổn định hơn. Đây là phương pháp tiền xử lý cơ bản được áp dụng xuyên suốt cho tất cả các mô hình.
 
-Trong các thí nghiệm có sử dụng tăng cường dữ liệu, chúng tôi bổ sung phép biến đổi \texttt{RandomAffine(10, translate=(0.1, 0.1))} vào dữ liệu huấn luyện. Phép biến đổi này xoay ảnh một góc ngẫu nhiên trong khoảng $[-10^\circ, 10^\circ]$ và tịnh tiến ngẫu nhiên tối đa $10\%$ kích thước ảnh theo mỗi chiều. Phép biến đổi được áp dụng theo hình thức trực tuyến: mỗi khi một ảnh được nạp từ tập huấn luyện, các tham số xoay và dịch chuyển được sinh ngẫu nhiên lại, điều này giúp mô hình tiếp cận các biến thể khác nhau của cùng một mẫu ở mỗi epoch. Bảng~\ref{tab:pipeline} tóm tắt quy trình tiền xử lý, trong khi Hình~\ref{fig:aug-examples} minh họa kết quả thực tế của phép tăng cường.
+Trong các thí nghiệm có sử dụng tăng cường dữ liệu, chúng tôi bổ sung phép biến đổi \texttt{RandomAffine(10, translate=(0.1, 0.1))} vào dữ liệu huấn luyện. Phép biến đổi này xoay ảnh một góc ngẫu nhiên trong khoảng $[-10^\circ, 10^\circ]$ và tịnh tiến ngẫu nhiên tối đa $10\%$ kích thước ảnh theo mỗi chiều, tương đương khoảng $2{,}8$ điểm ảnh. Phép biến đổi được áp dụng theo hình thức trực tuyến: mỗi khi một ảnh được nạp từ tập huấn luyện, các tham số xoay và dịch chuyển được sinh ngẫu nhiên lại, điều này giúp mô hình tiếp cận các biến thể khác nhau của cùng một mẫu ở mỗi epoch. Bảng~\ref{tab:pipeline} tóm tắt quy trình tiền xử lý, trong khi Hình~\ref{fig:aug-examples} minh họa kết quả thực tế của phép tăng cường.
 
 Kỹ thuật tăng cường dữ liệu chỉ được thực hiện trên các batch dùng để cập nhật trọng số trong quá trình huấn luyện. Khi tiến hành đánh giá, toàn bộ dữ liệu ở cả ba tập huấn luyện, kiểm định và kiểm thử đều được đưa vào mô hình dưới dạng ảnh gốc. Nhờ vậy, mọi chỉ số đánh giá trong báo cáo đều được đo lường trên dữ liệu sạch, đảm bảo tính khách quan khi so sánh giữa các thiết lập thí nghiệm.
 
@@ -206,14 +206,11 @@ Kỹ thuật tăng cường dữ liệu chỉ được thực hiện trên các 
 \end{itemize}
 Chi tiết về điều chỉnh tốc độ học, điều kiện dừng và tiêu chí chọn checkpoint cho từng bài tập cụ thể sẽ được trình bày ở phần thiết lập huấn luyện tương ứng.
 
-\paragraph{Các độ đo hiệu suất} Gọi $K=10$ là tổng số lớp và $C_{ij}$ là số lượng mẫu thuộc lớp thật $i$ nhưng được mô hình dự đoán thành lớp $j$. Độ đo cốt lõi được sử dụng là $\mathrm{accuracy}$, phản ánh tỷ lệ mẫu được phân loại đúng. Bên cạnh đó, để đánh giá chi tiết khả năng nhận diện của mô hình trên từng lớp riêng lẻ, chúng tôi tính toán các chỉ số $\mathrm{precision}_c$, $\mathrm{recall}_c$ và $\mathrm{F1}_c$ cho từng lớp $c$, sau đó lấy giá trị trung bình trên toàn bộ $K$ lớp:
-\begin{align}
-    \mathrm{accuracy}    & = \frac{\sum_{c=1}^{K} C_{cc}}{\sum_{i=1}^{K}\sum_{j=1}^{K} C_{ij}},                           \\
-    \mathrm{precision}_c & = \frac{C_{cc}}{\sum_{i=1}^{K} C_{ic}}, \quad
-    \mathrm{recall}_c = \frac{C_{cc}}{\sum_{j=1}^{K} C_{cj}},                                                             \\
-    \mathrm{F1}_c        & = \frac{2\,\mathrm{precision}_c\,\mathrm{recall}_c}{\mathrm{precision}_c + \mathrm{recall}_c},
-\end{align}
-Đồng thời, ma trận nhầm lẫn và các trường hợp phân loại sai thực tế cũng được phân tích.
+\paragraph{Độ đo hiệu suất} Gọi $K=10$ là tổng số lớp và $C_{ij}$ là số lượng mẫu thuộc lớp thật $i$ nhưng được mô hình dự đoán thành lớp $j$. Độ đo chính của báo cáo là accuracy, phản ánh tỷ lệ mẫu được phân loại đúng:
+\begin{equation}
+    \mathrm{accuracy} = \frac{\sum_{c=1}^{K} C_{cc}}{\sum_{i=1}^{K}\sum_{j=1}^{K} C_{ij}}.
+\end{equation}
+Bên cạnh đó, chúng tôi phân tích tổng số ảnh bị phân loại sai, ma trận nhầm lẫn và các mẫu lỗi cụ thể để giải thích sự khác biệt giữa các mô hình.
 
 \paragraph{Nguyên tắc so sánh công bằng} Để đảm bảo tính khách quan, các yếu tố ngoài kiến trúc mô hình đều được cố định:
 \begin{itemize}
@@ -226,7 +223,7 @@ Dù thiết lập huấn luyện có thể khác biệt giữa ba bài E1, E2 v�
 \subsection{Khả năng tái lập}
 \label{sec:repro}
 
-Để đảm bảo khả năng tái lập kết quả, mỗi thí nghiệm được quản lý thông qua một tệp cấu hình YAML riêng biệt, khai báo chi tiết các thông tin cốt lõi như dữ liệu, kiến trúc mô hình, thuật toán tối ưu hóa, hàm mất mát và một số tiện ích khác. Toàn bộ mã nguồn, cấu hình và hướng dẫn chi tiết để tái hiện thí nghiệm được lưu trữ công khai tại Github như đã đề cập ở Mục~\ref{sec:intro}.
+Để đảm bảo khả năng tái lập kết quả, toàn bộ thông số của mỗi thí nghiệm, gồm dữ liệu, kiến trúc mô hình, thuật toán tối ưu hóa và hàm mất mát, được khai báo trong một tệp cấu hình YAML riêng. Vòng lặp huấn luyện do chúng tôi tự viết, gồm lần lượt các bước forward, tính loss, backward và cập nhật tham số, mà không dùng thư viện huấn luyện có sẵn. Mã nguồn, các tệp cấu hình và hướng dẫn chạy lại thí nghiệm được lưu công khai trên GitHub như đã nêu ở Mục~\ref{sec:intro}.
 
 \section{E1: Softmax, MLP và CNN}
 \label{sec:e1}
@@ -234,9 +231,9 @@ Dù thiết lập huấn luyện có thể khác biệt giữa ba bài E1, E2 v�
 \subsection{Mô hình}
 \label{sec:e1-models}
 
-Phần này so sánh ba kiến trúc có mức ràng buộc về cấu trúc không gian tăng dần. Softmax là bộ phân loại tuyến tính và đóng vai trò baseline. MLP bổ sung tính phi tuyến nhờ các tầng ẩn, nhưng vẫn coi ảnh là một vector phẳng $x\in\mathbb{R}^{784}$ nên không biết điểm ảnh nào nằm gần nhau. CNN nhận trực tiếp ảnh $1\times28\times28$ và khai thác tính cục bộ cùng việc chia sẻ trọng số. Mỗi mô hình được huấn luyện ở hai thiết lập là không tăng cường dữ liệu (base) và có tăng cường dữ liệu (aug). Hai thiết lập dùng cùng kiến trúc và cùng số tham số, chỉ khác nhau ở dữ liệu dùng để cập nhật trọng số. Hình~\ref{fig:e1-arch} minh họa luồng kích thước tensor qua từng mô hình, còn Bảng~\ref{tab:e1-arch} cho số tham số của từng tầng.
+Phần này so sánh ba kiến trúc có mức ràng buộc về cấu trúc không gian tăng dần. Softmax là bộ phân loại tuyến tính. MLP bổ sung tính phi tuyến nhờ các tầng ẩn, nhưng vẫn coi ảnh là một vector phẳng $x\in\mathbb{R}^{784}$ nên không biết sự liên kết cục bộ của các điểm ảnh. CNN nhận trực tiếp ảnh $1\times28\times28$ và khai thác tính cục bộ cùng việc chia sẻ trọng số. Mỗi mô hình được huấn luyện ở hai thiết lập là không tăng cường dữ liệu (base) và có tăng cường dữ liệu (aug). Hai thiết lập dùng cùng kiến trúc và cùng số tham số, chỉ khác nhau ở dữ liệu dùng để cập nhật trọng số. Hình~\ref{fig:e1-arch} minh họa luồng kích thước tensor qua từng mô hình, còn Bảng~\ref{tab:e1-arch} cho số tham số của từng tầng.
 
-\paragraph{Softmax} Mô hình tính logits qua ánh xạ tuyến tính $z = Wx + b$ với $W\in\mathbb{R}^{10\times784}$, tối ưu hóa bằng hàm mất mát cross-entropy. Với $7\,850$ tham số, mô hình học một mẫu tuyến tính cho mỗi lớp nhưng thiếu tính bất biến với phép dịch chuyển không gian.
+\paragraph{Softmax} Mô hình tính logits qua ánh xạ tuyến tính $z = Wx + b$ với $W\in\mathbb{R}^{10\times784}$, tối ưu hóa bằng hàm mất mát cross-entropy. Với $7\,850$ tham số, mô hình học một mẫu tuyến tính cho mỗi lớp.
 
 \paragraph{MLP} Mạng sử dụng hai tầng ẩn với cấu trúc $784\to256\to128\to10$ kết hợp hàm kích hoạt ReLU. Nhờ tính phi tuyến, mô hình tạo ra ranh giới quyết định phức tạp hơn, dù vẫn xử lý dữ liệu đầu vào dạng phẳng. Tổng số tham số là $235\,146$.
 
@@ -316,52 +313,50 @@ Phần này so sánh ba kiến trúc có mức ràng buộc về cấu trúc kh�
 \end{table}
 
 \subsection{Thiết lập huấn luyện}
+\label{sec:e1-setup}
+
 Quá trình thực nghiệm bao gồm sáu thí nghiệm tương ứng với ba mô hình được huấn luyện trong hai điều kiện có và không có tăng cường dữ liệu. Toàn bộ các thí nghiệm này đều áp dụng chung một thiết lập: bộ tối ưu hóa Adam với tốc độ học $10^{-3}$, kích thước batch bằng $64$, hàm mất mát cross-entropy và số epoch tối đa là $1000$. Tốc độ học được tự động giảm đi $10$ lần khi loss trên tập kiểm định không cải thiện sau $10$ epoch, đồng thời huấn luyện sẽ dừng sớm nếu loss trên tập kiểm định chững lại sau $20$ epoch. Checkpoint tốt nhất được lựa chọn dựa trên \textbf{loss kiểm định nhỏ nhất}.
 
-\subsection{Kết quả}
-Bảng~\ref{tab:e1-results} tổng hợp các chỉ số hiệu suất của sáu thí nghiệm trong bài E1. Hình~\ref{fig:e1-curves} minh họa đường cong loss và accuracy trong suốt quá trình huấn luyện.
+\subsection{Kết quả và phân tích}
+\label{sec:e1-results}
 
-Quan sát tổng quan cho thấy các mô hình phi tuyến tính (MLP và CNN) vượt trội hoàn toàn so với mô hình tuyến tính (Softmax) ở mọi chỉ số. Cụ thể, với phiên bản base, các mô hình đạt accuracy trên tập kiểm thử lần lượt là $92{,}58\%$ (Softmax), $97{,}68\%$ (MLP) và $98{,}85\%$ (CNN).
+\paragraph{Accuracy và số tham số} Bảng~\ref{tab:e1-results} tổng hợp kết quả của sáu thí nghiệm. Với phiên bản base, accuracy kiểm thử của Softmax, MLP và CNN lần lượt là $92{,}58\%$, $97{,}68\%$ và $98{,}85\%$. Tăng cường dữ liệu nâng accuracy của MLP lên $99{,}07\%$ và của CNN lên $99{,}50\%$, nhưng làm accuracy của Softmax giảm xuống $85{,}12\%$.
 
-Tác động của kỹ thuật tăng cường dữ liệu mang lại kết quả trái ngược rõ rệt giữa các kiến trúc:
-\begin{itemize}
-    \item Đối với MLP và CNN, tăng cường dữ liệu giúp cải thiện đáng kể accuracy kiểm thử, tăng lên $99{,}07\%$ ở MLP và $99{,}50\%$ ở CNN, đồng thời kéo dài số epoch hội tụ do không gian mẫu được mở rộng đa dạng.
-    \item Ngược lại, đối với Softmax, việc áp dụng tăng cường dữ liệu làm giảm mạnh accuracy xuống còn $85{,}12\%$. Nguyên nhân là do khi ảnh bị xoay hoặc dịch chuyển ngẫu nhiên, phân phối đầu vào bị xê dịch vượt quá khả năng của ranh giới quyết định tuyến tính.
-\end{itemize}
-
-\begin{table}[t]
+\begin{table}[htbp]
     \centering
-    \caption{Kết quả thực nghiệm E1 trên tập dữ liệu MNIST.}
+    \caption{Kết quả thực nghiệm E1 trên MNIST. Accuracy tính bằng \%, đo trên ảnh gốc; Gap là hiệu số giữa accuracy huấn luyện và kiểm định.}
     \label{tab:e1-results}
     \small
     \begin{tabular}{llrrrrrr}
         \toprule
-        Mô hình & Biến thể & Tham số    & Epoch tốt nhất & Train & Val   & Test  & F1    \\
+        Mô hình & Biến thể & Tham số    & Epoch tốt nhất & Train & Val   & Test  & Gap       \\
         \midrule
-        Softmax & base     & $7\,850$   & 45             & 94,00 & 92,28 & 92,58 & 92,47 \\
-        Softmax & aug      & $7\,850$   & 33             & 83,81 & 83,82 & 85,12 & 84,92 \\
-        MLP     & base     & $235\,146$ & 6              & 99,26 & 97,58 & 97,68 & 97,66 \\
-        MLP     & aug      & $235\,146$ & 102            & 99,69 & 98,99 & 99,07 & 99,06 \\
-        CNN     & base     & $206\,922$ & 7              & 99,68 & 98,73 & 98,85 & 98,84 \\
-        CNN     & aug      & $206\,922$ & 72             & 99,93 & 99,41 & 99,50 & 99,50 \\
+        Softmax & base     & $7\,850$   & 45             & 94,00 & 92,28 & 92,58 & $1{,}72$  \\
+        Softmax & aug      & $7\,850$   & 33             & 83,81 & 83,82 & 85,12 & $-0{,}01$ \\
+        MLP     & base     & $235\,146$ & 6              & 99,26 & 97,58 & 97,68 & $1{,}68$  \\
+        MLP     & aug      & $235\,146$ & 102            & 99,69 & 98,99 & 99,07 & $0{,}70$  \\
+        CNN     & base     & $206\,922$ & 7              & 99,68 & 98,73 & 98,85 & $0{,}95$  \\
+        CNN     & aug      & $206\,922$ & 72             & 99,93 & 99,41 & 99,50 & $0{,}52$  \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\paragraph{Đường cong huấn luyện} Hình~\ref{fig:e1-curves} cho thấy diễn biến loss và accuracy của sáu thí nghiệm. Ở phiên bản base, MLP và CNN đạt accuracy cao hơn Softmax và dừng huấn luyện sớm hơn, với checkpoint tốt nhất lần lượt ở epoch $6$ và $7$. Ở phiên bản aug, quá trình cải thiện của hai mô hình này kéo dài hơn, với checkpoint tốt nhất ở epoch $102$ và $72$, đồng thời khoảng cách giữa loss và accuracy của tập huấn luyện so với tập kiểm định thu hẹp lại. Ngược lại, loss của Softmax aug dao động liên tục theo dạng zigzag và quá trình huấn luyện dừng sớm vì mô hình không còn cải thiện được loss kiểm định.
+
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{../docs/assets/e1/curves_e1.png}
     \caption{Đường cong loss và accuracy của sáu thí nghiệm trong E1. Trục trái hiển thị loss (nét đứt), trục phải hiển thị accuracy (nét liền); màu đỏ ứng với tập huấn luyện, màu xanh ứng với kiểm định. Vạch kẻ dọc màu tím đánh dấu epoch đạt hiệu suất tối ưu theo loss kiểm định.}
     \label{fig:e1-curves}
 \end{figure}
 
-\subsection{Phân tích lỗi}
-Bảng~\ref{tab:e1-errors} thống kê số ảnh kiểm thử bị phân loại sai, tính từ các ma trận nhầm lẫn ở Hình~\ref{fig:e1-cm}, còn Hình~\ref{fig:e1-samples} minh họa một số lỗi tiêu biểu của CNN tăng cường.
+\paragraph{Tổng số lỗi} Bảng~\ref{tab:e1-errors} thống kê số ảnh kiểm thử bị phân loại sai. Tăng cường dữ liệu giảm số lỗi của MLP từ $232$ xuống $93$ và của CNN từ $115$ xuống $50$, nhưng làm số lỗi của Softmax tăng gấp đôi.
 
-\begin{table}[t]
+\begin{table}[htbp]
     \centering
-    \caption{Số lượng ảnh kiểm tra bị phân loại sai trên tổng số $10\,000$ mẫu.}
+    \caption{Số lượng ảnh kiểm thử bị phân loại sai trên tổng số $10\,000$ mẫu.}
     \label{tab:e1-errors}
+    \small
     \begin{tabular}{lrrr}
         \toprule
         Mô hình & Base & Aug      & Thay đổi \\
@@ -373,34 +368,32 @@ Bảng~\ref{tab:e1-errors} thống kê số ảnh kiểm thử bị phân loại
     \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\paragraph{Các cặp nhầm lẫn} Thang màu ở Hình~\ref{fig:e1-cm} cho thấy số lỗi giảm dần từ Softmax sang MLP rồi sang CNN. Ở phiên bản base, Softmax nhầm lẫn ở các cặp chữ số có nét giống nhau như $2/8$, $3/5$, $3/8$, $4/9$, $5/8$ và $7/9$. MLP giảm mạnh các lỗi này nhưng vẫn còn nhầm lẫn ở các cặp $4/9$ ($22$ mẫu $4\to9$) và $6/5$ ($15$ mẫu $6\to5$), còn CNN là mô hình cải thiện rõ rệt nhất. Tăng cường dữ liệu làm giảm nhầm lẫn của MLP và CNN, chẳng hạn $4\to9$ ở MLP giảm từ $22$ xuống $8$ mẫu, nhưng làm Softmax nhầm lẫn nhiều hơn, với các nhầm lẫn lớn nhất là $5\to3$ ($80$ mẫu) và $9\to4$ ($71$ mẫu).
+
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{../docs/assets/e1/confusion_e1.png}
-    \caption{Ma trận nhầm lẫn trên tập kiểm tra. Ô chéo được để trắng; màu đỏ đậm hơn biểu thị tỉ lệ lỗi cao hơn; số trong mỗi ô là số mẫu bị phân loại sai.}
+    \caption{Ma trận nhầm lẫn trên tập kiểm thử. Ô chéo được để trắng; màu đỏ đậm hơn biểu thị tỉ lệ lỗi cao hơn; số trong mỗi ô là số mẫu bị phân loại sai.}
     \label{fig:e1-cm}
 \end{figure}
 
-\begin{figure}[t]
+\paragraph{Mẫu bị phân loại sai} Hình~\ref{fig:e1-samples} minh họa các lỗi có độ tự tin cao nhất của CNN aug, là mô hình tốt nhất của bài E1. Một số mẫu khó phân biệt ngay từ hình ảnh: chữ số $6$ và chữ số $2$ bị nhận nhầm thành $0$ vì hình dạng khá giống chữ số $0$, còn chữ số $9$ viết thiếu nét nên trông giống chữ số $4$. Tuy nhiên, cũng có những lỗi cho thấy mô hình chưa tốt, chẳng hạn chữ số $1$ bị nhận nhầm thành $2$ dù hình dạng khá rõ ràng.
+
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{../docs/assets/e1/failures_cnn_aug.png}
     \caption{Một số mẫu kiểm thử bị phân loại sai có độ tự tin dự đoán cao nhất của CNN tăng cường. Mỗi ảnh ghi nhãn thật $\rightarrow$ dự đoán và xác suất của lớp dự đoán sai.}
     \label{fig:e1-samples}
 \end{figure}
 
-\paragraph{Softmax} Ở phiên bản base, lỗi phân tán rộng trên các cấu trúc phức tạp, nổi bật là các trường hợp nhầm lẫn $5\to3$ ($36$ mẫu), $2\to8$ ($35$ mẫu), $7\to9$ ($30$ mẫu) và $8\to5$ ($28$ mẫu). Khi áp dụng tăng cường dữ liệu, do ranh giới tuyến tính bị bóp méo, hiện tượng nhầm lẫn trầm trọng hơn hẳn: chữ số $5$ bị nhận diện sai thành $3$ ($80$ mẫu) và $4$ ($63$ mẫu); chữ số $8$ bị nhầm thành $1$ ($50$ mẫu) và $2$ ($53$ mẫu); chữ số $9$ bị chuyển lệch thành $4$ ($71$ mẫu); chữ số $7$ nhầm thành $9$ ($63$ mẫu) và $1$ ($44$ mẫu).
-
-\paragraph{MLP} Các nhầm lẫn chính ở bản base tập trung ở các cặp $4\to9$ ($22$ mẫu), $5\to3$ ($10$ mẫu), $9\to3$ ($10$ mẫu) và $6\to5$ ($15$ mẫu). Khi sử dụng tăng cường dữ liệu, phần lớn các lỗi này giảm mạnh.
-
-\paragraph{CNN} Mô hình đạt số lỗi thấp nhất với các nhầm lẫn mang tính hệ thống nhưng ở mức rất thấp, chủ yếu xoay quanh các cặp $9\to4$ ($8$ mẫu ở bản base, $6$ mẫu ở bản tăng cường), $7\to2$ ($6$ mẫu ở bản base, $3$ mẫu ở bản tăng cường) và $5\to3$ ($7$ mẫu ở bản base, $4$ mẫu ở bản tăng cường). Các lỗi còn lại rải rác ở các chữ số có nét viết tay biến dạng mạnh, mơ hồ ngay cả với con người.
-
 \subsection{Thảo luận}
 \label{sec:e1-discussion}
 
-\paragraph{Kiến trúc quan trọng hơn số tham số} Dù có ít tham số hơn MLP khoảng $12\%$, CNN chỉ mắc một nửa số lỗi ($115$ so với $232$ ở bản base và $50$ so với $93$ ở bản aug). Trong đó, các tầng tích chập chỉ chiếm khoảng $2{,}3\%$ số lượng trọng số của mạng. Điều này cho thấy ưu thế vượt trội của CNN xuất phát từ khả năng tận dụng cấu trúc cục bộ và chia sẻ trọng số, thay vì tổng số lượng tham số.
+\paragraph{Kiến trúc quan trọng hơn số tham số} Dù có ít tham số hơn MLP khoảng $12\%$, CNN chỉ mắc khoảng một nửa số lỗi, cụ thể là $115$ so với $232$ ở bản base và $50$ so với $93$ ở bản aug. Tầng Linear đầu tiên của hai mô hình có số tham số gần bằng nhau, lần lượt là $200\,832$ và $200\,960$, nên khác biệt chính nằm ở bộ trích xuất đặc trưng. Bộ này chỉ gồm hai tầng tích chập với khoảng $2{,}3\%$ tổng số tham số của CNN, nhưng khai thác cấu trúc cục bộ và chia sẻ trọng số. Do đó, ưu thế của CNN đến từ thiên kiến quy nạp chứ không đến từ số lượng tham số.
 
-\paragraph{Tăng cường dữ liệu nâng cao hiệu quả cho mô hình đủ khả năng biểu diễn} Đối với MLP và CNN, kỹ thuật tăng cường dữ liệu giúp giảm hơn nửa số lỗi kiểm thử, thu hẹp khoảng cách hiệu suất giữa tập huấn luyện và kiểm định, đồng thời kéo dài thời gian hội tụ. Kết quả này chứng minh dữ liệu mở rộng giúp các mô hình có đủ khả năng biểu diễn học được các mẫu phức tạp của không gian ảnh.
+\paragraph{Tăng cường dữ liệu nâng cao hiệu quả cho mô hình đủ khả năng biểu diễn} Tăng cường dữ liệu giảm số lỗi kiểm thử của MLP và CNN lần lượt $60\%$ và $57\%$. Khoảng cách giữa tập huấn luyện và kiểm định thu hẹp từ $1{,}68$ xuống $0{,}70$ điểm ở MLP và từ $0{,}95$ xuống $0{,}52$ điểm ở CNN, còn epoch tốt nhất dời từ $6$ lên $102$ ở MLP và từ $7$ lên $72$ ở CNN. Như vậy tăng cường đóng vai trò điều chuẩn, làm chậm quá khớp và đổi lại thời gian huấn luyện dài hơn.
 
-\paragraph{Hạn chế của mô hình tuyến tính với dữ liệu tăng cường} Ngược lại với các mô hình phi tuyến, độ chính xác của Softmax giảm mạnh từ $92{,}58\%$ xuống $85{,}12\%$ khi có tăng cường dữ liệu. Dữ liệu tăng cường vượt quá giới hạn biểu diễn của mô hình, dẫn đến hiện tượng thiếu khớp (underfitting. Qua đó, tăng cường dữ liệu chỉ phát huy hiệu quả khi mô hình sở hữu đủ khả năng biểu diễn để thích ứng.
+\paragraph{Hạn chế của mô hình tuyến tính với dữ liệu tăng cường} Với Softmax, accuracy kiểm thử giảm từ $92{,}58\%$ xuống $85{,}12\%$ khi có tăng cường dữ liệu. Accuracy huấn luyện, đo trên ảnh sạch, cũng giảm từ $94{,}0\%$ xuống $83{,}8\%$ và gần bằng accuracy kiểm định, nên mô hình đang thiếu khớp chứ không phải quá khớp. Softmax chấm điểm mỗi lớp bằng $w_c^\top x$ với mỗi trọng số gắn với một vị trí điểm ảnh cố định, nên không thể hấp thụ các phép dịch chuyển tới khoảng $2{,}8$ điểm ảnh. Do đó, tăng cường dữ liệu chỉ phát huy hiệu quả khi mô hình đủ khả năng biểu diễn để học được tính bất biến mà nó mang lại.
 
 \section{E2: Transformer --- MSA và các cách tạo token}
 \label{sec:e2}

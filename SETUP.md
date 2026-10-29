@@ -41,8 +41,8 @@ No NVIDIA GPU? Skip the two items above and use the `cpu` service.
 Downloads the code and moves into it.
 
 ```bash
-git clone https://github.com/tronglh241/co5085_excersises_and_assignments.git
-cd co5085_excersises_and_assignments
+git clone https://github.com/tronglh241/co5085_dl4cv.git
+cd co5085_dl4cv
 ```
 
 ### 3. Configure `.env`
@@ -106,8 +106,8 @@ Use this only when Docker is unavailable. For the site and the report, use Docke
 Downloads the code and moves into it.
 
 ```bash
-git clone https://github.com/tronglh241/co5085_excersises_and_assignments.git
-cd co5085_excersises_and_assignments
+git clone https://github.com/tronglh241/co5085_dl4cv.git
+cd co5085_dl4cv
 ```
 
 ### 3. Create the Python environment

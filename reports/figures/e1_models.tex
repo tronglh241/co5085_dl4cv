@@ -1,0 +1,67 @@
+\documentclass{article}
+
+\usepackage{fontspec}
+\usepackage[vietnamese,provide=*]{babel}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage[paperwidth=31cm,paperheight=13cm,margin=0pt]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta,calc}
+
+\tikzset{
+  blk/.style={draw, rounded corners=2pt, minimum height=1.2cm, minimum width=1.6cm,
+              align=center, font=\scriptsize, inner sep=1.5pt},
+  inp/.style={blk, fill=gray!15},
+  flt/.style={blk, fill=gray!15},
+  cnv/.style={blk, fill=blue!15},
+  pol/.style={blk, fill=orange!20},
+  lin/.style={blk, fill=green!15},
+  rowlbl/.style={align=center, font=\small\bfseries, text width=1.9cm},
+  arr/.style={-{Latex[length=1.8mm]}, thick}
+}
+
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\noindent
+\resizebox{30cm}{!}{%
+  \begin{tikzpicture}[node distance=0.3cm]
+
+    % ---------- Softmax ----------
+    \node[rowlbl] (sl) at (0,0) {Softmax\\[2pt]\normalfont\scriptsize $7\,850$ tham số};
+    \node[inp, right=0.3cm of sl, label={[font=\tiny, text=black!70]below:$1{\times}28{\times}28$}] (s1) {Ảnh};
+    \node[flt, right=of s1, label={[font=\tiny, text=black!70]below:$784$}] (s2) {Flatten};
+    \node[lin, right=of s2, label={[font=\tiny, text=black!70]below:$10$ (logits)}] (s3) {Linear\\$784\to10$};
+    \draw[arr] (s1)--(s2); \draw[arr] (s2)--(s3);
+
+    % ---------- MLP ----------
+    \node[rowlbl] (ml) at (0,-2.4) {MLP\\[2pt]\normalfont\scriptsize $235\,146$ tham số};
+    \node[inp, right=0.3cm of ml, label={[font=\tiny, text=black!70]below:$1{\times}28{\times}28$}] (m1) {Ảnh};
+    \node[flt, right=of m1, label={[font=\tiny, text=black!70]below:$784$}] (m2) {Flatten};
+    \node[lin, right=of m2, label={[font=\tiny, text=black!70]below:$256$}] (m3) {Linear\\$784\to256$\\ReLU};
+    \node[lin, right=of m3, label={[font=\tiny, text=black!70]below:$128$}] (m4) {Linear\\$256\to128$\\ReLU};
+    \node[lin, right=of m4, label={[font=\tiny, text=black!70]below:$10$ (logits)}] (m5) {Linear\\$128\to10$};
+    \draw[arr] (m1)--(m2); \draw[arr] (m2)--(m3); \draw[arr] (m3)--(m4); \draw[arr] (m4)--(m5);
+
+    % ---------- CNN ----------
+    \node[rowlbl] (cl) at (0,-4.8) {CNN\\[2pt]\normalfont\scriptsize $206\,922$ tham số};
+    \node[inp, right=0.3cm of cl, label={[font=\tiny, text=black!70]below:$1{\times}28{\times}28$}] (c1) {Ảnh};
+    \node[cnv, right=of c1, label={[font=\tiny, text=black!70]below:$16{\times}28{\times}28$}] (c2) {Conv $3{\times}3$\\$1\to16$\\ReLU};
+    \node[pol, right=of c2, label={[font=\tiny, text=black!70]below:$16{\times}14{\times}14$}] (c3) {MaxPool\\$2{\times}2$};
+    \node[cnv, right=of c3, label={[font=\tiny, text=black!70]below:$32{\times}14{\times}14$}] (c4) {Conv $3{\times}3$\\$16\to32$\\ReLU};
+    \node[pol, right=of c4, label={[font=\tiny, text=black!70]below:$32{\times}7{\times}7$}] (c5) {MaxPool\\$2{\times}2$};
+    \node[flt, right=of c5, label={[font=\tiny, text=black!70]below:$1568$}] (c6) {Flatten};
+    \node[lin, right=of c6, label={[font=\tiny, text=black!70]below:$128$}] (c7) {Linear\\$1568\to128$\\ReLU};
+    \node[lin, right=of c7, label={[font=\tiny, text=black!70]below:$10$ (logits)}] (c8) {Linear\\$128\to10$};
+    \draw[arr] (c1)--(c2); \draw[arr] (c2)--(c3); \draw[arr] (c3)--(c4); \draw[arr] (c4)--(c5);
+    \draw[arr] (c5)--(c6); \draw[arr] (c6)--(c7); \draw[arr] (c7)--(c8);
+
+  \end{tikzpicture}%
+}
+
+\end{document}
