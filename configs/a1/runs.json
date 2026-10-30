@@ -3,7 +3,7 @@
     "resnet50_scratch": {
       "set": "core",
       "model": "resnet50",
-      "timm": "resnet50.a1_in1k",
+      "hf": "microsoft/resnet-50",
       "mode": "scratch",
       "pretrained": false,
       "freeze": "none",
@@ -14,7 +14,7 @@
     "resnet50_head": {
       "set": "core",
       "model": "resnet50",
-      "timm": "resnet50.a1_in1k",
+      "hf": "microsoft/resnet-50",
       "mode": "head",
       "pretrained": true,
       "freeze": "head",
@@ -25,7 +25,7 @@
     "resnet50_partial": {
       "set": "core",
       "model": "resnet50",
-      "timm": "resnet50.a1_in1k",
+      "hf": "microsoft/resnet-50",
       "mode": "partial",
       "pretrained": true,
       "freeze": "partial",
@@ -36,7 +36,7 @@
     "resnet50_full": {
       "set": "core",
       "model": "resnet50",
-      "timm": "resnet50.a1_in1k",
+      "hf": "microsoft/resnet-50",
       "mode": "full",
       "pretrained": true,
       "freeze": "none",
@@ -47,7 +47,7 @@
     "deit_s_scratch": {
       "set": "core",
       "model": "deit_s",
-      "timm": "deit_small_patch16_224.fb_in1k",
+      "hf": "facebook/deit-small-patch16-224",
       "mode": "scratch",
       "pretrained": false,
       "freeze": "none",
@@ -58,7 +58,7 @@
     "deit_s_head": {
       "set": "core",
       "model": "deit_s",
-      "timm": "deit_small_patch16_224.fb_in1k",
+      "hf": "facebook/deit-small-patch16-224",
       "mode": "head",
       "pretrained": true,
       "freeze": "head",
@@ -69,7 +69,7 @@
     "deit_s_partial": {
       "set": "core",
       "model": "deit_s",
-      "timm": "deit_small_patch16_224.fb_in1k",
+      "hf": "facebook/deit-small-patch16-224",
       "mode": "partial",
       "pretrained": true,
       "freeze": "partial",
@@ -80,7 +80,7 @@
     "deit_s_full": {
       "set": "core",
       "model": "deit_s",
-      "timm": "deit_small_patch16_224.fb_in1k",
+      "hf": "facebook/deit-small-patch16-224",
       "mode": "full",
       "pretrained": true,
       "freeze": "none",

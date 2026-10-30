@@ -30,10 +30,11 @@ LABEL_SMOOTHING = 0.1
 # get half the workers: they run only between epochs.
 TRAIN_EVAL_FRACTION = 0.1
 
-# Both pretrained on ImageNet-1k only, so pretraining data is not a confound.
+# Hugging Face repos, both pretrained on ImageNet-1k only, so pretraining data
+# is not a confound.
 MODELS = {
-    'resnet50': {'timm': 'resnet50.a1_in1k', 'channels_last': True},
-    'deit_s': {'timm': 'deit_small_patch16_224.fb_in1k', 'channels_last': False},
+    'resnet50': {'hf': 'microsoft/resnet-50', 'channels_last': True},
+    'deit_s': {'hf': 'facebook/deit-small-patch16-224', 'channels_last': False},
 }
 
 # One data pipeline for every model and mode, as with MNIST in E1/E2: the runs
@@ -52,19 +53,19 @@ EVAL_STEPS = []
 MODES = {
     'scratch': {
         'pretrained': False, 'freeze': 'none', 'epochs': 40, 'warmup': 5,
-        'lr': 5e-4, 'drop_path': 0.1, 'clip_grad_norm': 1.0,
+        'lr': 5e-4, 'clip_grad_norm': 1.0,
     },
     'head': {
         'pretrained': True, 'freeze': 'head', 'epochs': 10, 'warmup': 1,
-        'lr': 1e-3, 'drop_path': 0.0, 'clip_grad_norm': None,
+        'lr': 1e-3, 'clip_grad_norm': None,
     },
     'partial': {
         'pretrained': True, 'freeze': 'partial', 'epochs': 15, 'warmup': 1,
-        'lr': 2e-4, 'drop_path': 0.0, 'clip_grad_norm': None,
+        'lr': 2e-4, 'clip_grad_norm': None,
     },
     'full': {
         'pretrained': True, 'freeze': 'none', 'epochs': 15, 'warmup': 1,
-        'lr': 1e-4, 'drop_path': 0.1, 'clip_grad_norm': None,
+        'lr': 1e-4, 'clip_grad_norm': None,
     },
 }
 
@@ -115,11 +116,10 @@ def model_block(spec, mode, pretrained=None):
         'module': 'models.a1.classifier',
         'name': 'A1Classifier',
         'kwargs': {
-            'model_name': q(spec['timm']),
+            'model_name': q(spec['hf']),
             'num_classes': NUM_CLASSES,
             'pretrained': mode['pretrained'] if pretrained is None else pretrained,
             'freeze': q(mode['freeze'] if pretrained is None else 'none'),
-            'drop_path_rate': mode['drop_path'] if pretrained is None else 0.0,
         },
     }
 
@@ -331,7 +331,7 @@ def main():
         runs[run] = {
             'set': 'core',
             'model': model,
-            'timm': spec['timm'],
+            'hf': spec['hf'],
             'mode': mode_name,
             'pretrained': mode['pretrained'],
             'freeze': mode['freeze'],

@@ -55,8 +55,8 @@ def _timed(step, device, warmup, steps):
 
 def measure(model_key, freeze, batch_size, warmup, steps, device):
     spec = MODELS[model_key]
-    model = A1Classifier(spec['timm'], 101)
-    freeze_parameters(model.net, spec['timm'], freeze)
+    model = A1Classifier(spec['hf'], 101)
+    freeze_parameters(model.net, freeze)
     model.to(device)
     memory_format = torch.channels_last if spec['channels_last'] else torch.contiguous_format
     model.to(memory_format=memory_format)

@@ -24,11 +24,10 @@ model:
   module: models.a1.classifier
   name: A1Classifier
   kwargs:
-    model_name: "'deit_small_patch16_224.fb_in1k'"
+    model_name: "'facebook/deit-small-patch16-224'"
     num_classes: 101
     pretrained: false
     freeze: "'none'"
-    drop_path_rate: 0.0
 evaluator:
   module: common.engine.evaluator
   name: Evaluator

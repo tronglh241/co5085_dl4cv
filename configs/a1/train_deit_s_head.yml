@@ -65,11 +65,10 @@ model:
   module: models.a1.classifier
   name: A1Classifier
   kwargs:
-    model_name: "'deit_small_patch16_224.fb_in1k'"
+    model_name: "'facebook/deit-small-patch16-224'"
     num_classes: 101
     pretrained: true
     freeze: "'head'"
-    drop_path_rate: 0.0
 optimizer:
   module: torch.optim
   name: AdamW

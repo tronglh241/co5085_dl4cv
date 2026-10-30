@@ -32,14 +32,13 @@ if str(_repo_root) not in sys.path:
 
 import matplotlib.pyplot as plt
 import numpy as np
-import timm
 import torch
 from PIL import Image
 
 from common.config.config import CfgNode
 from common.engine.engine import Events
 from common.metrics.confusion_matrix import ConfusionMatrix
-from models.a1.classifier import freeze_parameters
+from models.a1.classifier import build_network, freeze_parameters
 from scripts.a1.stats import compare, wilson_interval, write_comparisons
 from scripts.tensorboard.extract import extract_run
 
@@ -105,8 +104,8 @@ def scalar_stats(series):
 
 
 def count_params(info):
-    net = timm.create_model(info['timm'], pretrained=False, num_classes=101)
-    freeze_parameters(net, info['timm'], info['freeze'])
+    net = build_network(info['hf'], 101, pretrained=False)
+    freeze_parameters(net, info['freeze'])
     total = sum(param.numel() for param in net.parameters())
     trainable = sum(param.numel() for param in net.parameters() if param.requires_grad)
     return total, trainable
