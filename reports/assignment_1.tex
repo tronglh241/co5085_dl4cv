@@ -241,7 +241,7 @@ Mọi mô hình và mọi chế độ dùng chung một pipeline dữ liệu, c�
 
 \textbf{Cắt cố định, áp dụng một lần cho mọi ảnh.} Mọi ảnh của cả ba tập (train, validation, test) được xử lý đúng một lần theo cùng một cách: chuyển sang RGB, đổi cạnh ngắn về 256 px, rồi cắt phần giữa \(224\times224\) và lưu lại dạng JPEG.
 
-\textbf{Chuẩn hoá.} Ảnh được đưa về tensor trong \([0,1]\) rồi chuẩn hoá với mean \(=\) std \(=0.5\) trên cả ba kênh, tức về khoảng \([-1,1]\). Hai bộ trọng số pretrained được train với mean \((0.485, 0.456, 0.406)\) và std \((0.229, 0.224, 0.225)\) của ImageNet, nên đầu vào có thang đo khác lúc pretrain. Chế độ full được kỳ vọng tự thích nghi; chế độ head và partial giữ cố định phần mạng bị đóng băng nên có thể gặp bất lợi. Đây là đánh đổi có chủ đích để mọi mô hình dùng chung một pipeline.
+\textbf{Chuẩn hoá.} Ảnh được đưa về tensor trong \([0,1]\) rồi chuẩn hoá với mean \((0.485, 0.456, 0.406)\) và std \((0.229, 0.224, 0.225)\) của ImageNet, đúng thống kê mà cả hai bộ trọng số pretrained được train. Chọn thống kê này cho mọi run, kể cả scratch, để đầu vào của phần mạng bị đóng băng ở chế độ head và partial có cùng thang đo như lúc pretrain; nếu dùng thang đo khác, BatchNorm đóng băng của ResNet-50 sẽ chuẩn hoá bằng thống kê không còn khớp, còn LayerNorm của DeiT-S thì tự điều chỉnh, làm lệch phép so sánh hai họ kiến trúc.
 
 \subsection{Tăng cường dữ liệu}
 Sau bước đó, chỉ tập train được tăng cường dữ liệu (Bảng~\ref{tab:a1-pipeline}, Hình~\ref{fig:a1-aug}); validation và test chỉ được chuẩn hoá.
@@ -258,7 +258,7 @@ Sau bước đó, chỉ tập train được tăng cường dữ liệu (Bảng~
         Xoay                           & Xoay ngẫu nhiên trong khoảng \(\pm15^\circ\)                                                                   & --                                             \\
         Màu                            & Độ sáng, tương phản, độ bão hoà đổi trong \(\pm20\%\); sắc độ xoay trong \(\pm0.1\) vòng màu (\(\pm36^\circ\)) & --                                             \\
         Dịch                           & Dịch ngẫu nhiên tối đa 10\% theo mỗi chiều                                                                     & --                                             \\
-        Chuẩn hoá                      & Đưa về tensor trong \([0,1]\), rồi trừ mean 0.5 và chia std 0.5 trên từng kênh                                 & như train                                      \\
+        Chuẩn hoá                      & Đưa về tensor trong \([0,1]\), rồi trừ mean và chia std của ImageNet trên từng kênh                                 & như train                                      \\
         \bottomrule
     \end{tabular}
     \caption{Pipeline dữ liệu dùng chung, theo đúng thứ tự áp dụng.}

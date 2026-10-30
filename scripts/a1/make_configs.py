@@ -18,8 +18,8 @@ import yaml
 
 ROOT = 'data/food101_256'
 NUM_CLASSES = 101
-MEAN = [0.5, 0.5, 0.5]
-STD = [0.5, 0.5, 0.5]
+MEAN = [0.485, 0.456, 0.406]
+STD = [0.229, 0.224, 0.225]
 SEED = 42
 BATCH_SIZE = 128
 EVAL_BATCH_SIZE = 256

@@ -42,8 +42,6 @@ from datasets.food101 import Food101
 from scripts.a1.make_configs import EVAL_STEPS, MEAN, STD, TRAIN_STEPS
 
 SPLITS = ('train', 'val', 'test')
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 def pipeline(steps):
@@ -261,8 +259,7 @@ def write_summary(summary, results):
         '',
         f"Channel mean of {stats['sample_images']:,} train crops: [{fmt(f'{v:.3f}' for v in stats['mean'])}], "
         f"std: [{fmt(f'{v:.3f}' for v in stats['std'])}].",
-        f'Pipeline normalizes with mean {MEAN}, std {STD}; ImageNet weights expect mean {IMAGENET_MEAN}, '
-        f'std {IMAGENET_STD}.',
+        f'Pipeline normalizes with the ImageNet mean {MEAN} and std {STD}, the statistics the pretrained weights expect.',
     ]
     (results / 'summary.md').write_text('\n'.join(lines) + '\n')
 
