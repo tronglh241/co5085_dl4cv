@@ -337,17 +337,17 @@ Cho chuỗi token $X\in\mathbb{R}^{N\times d}$ ($N$ token, chiều $d=d_{\text{m
 \end{align}
 với $W_i^Q,W_i^K,W_i^V\in\mathbb{R}^{d\times d_k}$ và $W^O\in\mathbb{R}^{d\times d}$. Ma trận attention có kích thước $N\times N$ cho mỗi đầu, nên chi phí thời gian tăng theo $O(N^2 d)$ và bộ nhớ theo $O(hN^2)$; điều này quan trọng khi so sánh các cách tạo token.
 
-\paragraph{Bản tự cài đặt.} \todo{mô tả: Linear gộp hay tách cho Q/K/V, reshape thành $(B,h,N,d_k)$, dùng einsum/matmul cho $QK^\top$, scale, softmax, ghép các đầu, phép chiếu đầu ra, dropout.} Bản này không dùng \texttt{nn.MultiheadAttention} hay \texttt{nn.TransformerEncoder*}.
+\paragraph{Bản tự cài đặt.} Chỉ dùng \texttt{Linear}, \texttt{einsum} và \texttt{softmax}. Một lớp \texttt{Linear} duy nhất ($d\to3d$) tạo cả $Q,K,V$, với trọng số xếp chồng $[W^Q;W^K;W^V]$ cùng cách xếp với \texttt{in\_proj\_weight} của PyTorch; kết quả được reshape thành $(B,N,3,h,d_k)$ rồi hoán vị thành $(3,B,h,N,d_k)$. Điểm số $QK^\top/\sqrt{d_k}$ tính bằng \texttt{einsum('bhnd,\allowbreak bhmd-\allowbreak>\allowbreak bhnm')}, qua softmax theo chiều khóa, rồi dropout trên ma trận attention; đầu ra mỗi đầu là \texttt{einsum('bhnm,\allowbreak bhmd-\allowbreak>\allowbreak bhnd')} của attention với $V$. Các đầu được ghép lại thành $(B,N,d)$ và đi qua phép chiếu đầu ra $W^O$ (\texttt{Linear} $d\to d$). Bản này không dùng \texttt{nn.MultiheadAttention} hay \texttt{nn.TransformerEncoder*}.
 
-\paragraph{Bản PyTorch.} Cùng bộ phân loại nhưng thay MSA bằng \texttt{nn.MultiheadAttention} \todo{hoặc TransformerEncoderLayer} để đối chiếu.
+\paragraph{Bản PyTorch.} Cùng bộ phân loại nhưng thay MSA bằng \texttt{nn.MultiheadAttention} (\texttt{batch\_first=True}, cùng số đầu và dropout) để đối chiếu. Hai bản dùng chung tokenizer, LayerNorm, FFN, token CLS và đầu phân loại, và với cùng seed thì khởi tạo trọng số giống hệt nhau.
 
-\paragraph{Kiểm tra tính đúng đắn.} Chúng tôi sao chép trọng số từ module PyTorch sang module tự cài đặt (lưu ý \texttt{in\_proj\_weight} của PyTorch gộp $W^Q,W^K,W^V$), đưa cùng một đầu vào ngẫu nhiên qua cả hai và so sánh đầu ra: chênh lệch tuyệt đối lớn nhất là \todo{giá trị, ví dụ $\sim10^{-6}$ với float32}. \todo{nói rõ có kiểm tra cả attention weights và gradient không.}
+\paragraph{Kiểm tra tính đúng đắn.} Chúng tôi sao chép trọng số từ module PyTorch sang module tự cài đặt (lưu ý \texttt{in\_proj\_weight} của PyTorch gộp $W^Q,W^K,W^V$), đưa cùng một đầu vào ngẫu nhiên qua cả hai và so sánh đầu ra: chênh lệch tuyệt đối lớn nhất ở float32 là $1{,}2\times10^{-7}$ với đầu ra và $8{,}9\times10^{-8}$ với trọng số attention của từng đầu, và dưới $2\times10^{-16}$ ở float64. Chúng tôi cũng so sánh gradient theo đầu vào và theo các trọng số: ở float32 lệch lớn nhất $1{,}9\times10^{-5}$ (ngưỡng chấp nhận $10^{-4}$, vì phép cộng ngược của PyTorch không cùng thứ tự với \texttt{einsum}), ở float64 cỡ $10^{-14}$. Phép so sánh chạy ở chế độ eval để tắt dropout, trên 12 cấu hình độ dài chuỗi và chiều khác nhau (gồm $N=16,28,36,49$), và tất cả đều đạt; kết quả chi tiết nằm trong \texttt{reports/results/e2/msa\_check.csv}.
 
 \subsection{Kiến trúc bộ phân loại}
-Token được chiếu tuyến tính lên $d_{\text{model}}=\todo{d}$, cộng mã hóa vị trí (\todo{học được/sin-cos}), rồi qua $L=\todo{L}$ khối encoder (\todo{pre/post-LayerNorm}, MSA $h=\todo{h}$ đầu, FFN chiều \todo{$d_{ff}$}, kết nối residual, dropout \todo{p}). Đầu phân loại áp dụng lên \todo{token CLS / trung bình các token}.
+Mỗi cách tạo token đưa ảnh về chuỗi $N$ token và chiếu lên $d_{\text{model}}=64$. Một token CLS được thêm vào đầu chuỗi, rồi cộng mã hóa vị trí học được kích thước $(N+1)\times d_{\text{model}}$. Chuỗi đi qua $L=4$ khối encoder dạng pre-LayerNorm, mỗi khối gồm MSA $h=4$ đầu ($d_k=16$) và FFN (\texttt{Linear}--GELU--\texttt{Linear}, chiều ẩn $d_{ff}=128=2d_{\text{model}}$), mỗi phần có kết nối residual và dropout $p=0{,}1$. Sau một LayerNorm cuối, đầu phân loại (\texttt{Linear} $64\to10$) áp dụng lên token CLS.
 
 \subsection{Thiết lập huấn luyện}
-\todo{tối ưu hóa, tốc độ học, bộ lập lịch, batch size, dừng sớm, tăng cường dữ liệu có hay không, seed. Nhắc rõ nếu khác E1.}
+Dữ liệu và cách chia giống E1 (50\,000 ảnh huấn luyện, 10\,000 kiểm định phân tầng với seed $42$, 10\,000 kiểm tra), chỉ chuẩn hóa mean/std và \emph{không} tăng cường dữ liệu. Tối ưu hóa bằng AdamW với tốc độ học $10^{-3}$, weight decay $0{,}05$ (chỉ áp lên trọng số của \texttt{Linear} và \texttt{Conv2d}; bias, tham số chuẩn hóa, token CLS và mã hóa vị trí không bị decay), batch size $128$, hàm mất mát cross-entropy. Tốc độ học giảm $10$ lần (\texttt{ReduceLROnPlateau}) khi loss kiểm định không cải thiện sau $10$ epoch; dừng sớm khi loss kiểm định không cải thiện sau $20$ epoch, tối đa $200$ epoch; checkpoint giữ lại là epoch có loss kiểm định thấp nhất, nên độ chính xác kiểm định và kiểm tra trong cùng một dòng của bảng thuộc về cùng một mô hình. Mọi lượt chạy dùng seed $42$. Khác với E1 (Adam), E2 dùng AdamW và có bộ lập lịch tốc độ học.
 
 \subsection{Các cách tạo token}
 Chúng tôi triển khai năm cách tạo token:
@@ -355,10 +355,10 @@ Chúng tôi triển khai năm cách tạo token:
     \item \textbf{Hàng (row)}: mỗi hàng ảnh là một token, $N=28$ token chiều $28$.
     \item \textbf{Patch $4\times4$}: các ô lưới không chồng lấn, $N=(28/4)^2=49$ token chiều $16$.
     \item \textbf{Patch $7\times7$}: $N=(28/7)^2=16$ token chiều $49$.
-    \item \textbf{Patch $4\times4$ chồng lấn}: patch $4\times4$ với bước (stride) \todo{s}, cho $N=\todo{N}$ token chiều $16$.
-    \item \textbf{CNN-stem}: một CNN nhỏ (\todo{kiến trúc}) trích bản đồ đặc trưng $C\times H'\times W'$; mỗi vị trí không gian là một token, $N=H'W'=\todo{N}$, chiều $C=\todo{C}$.
+    \item \textbf{Patch $8\times8$ chồng lấn}: patch $8\times8$ với bước (stride) $4$, nên hai patch liền kề chồng lên nhau một nửa, cho $N=((28-8)/4+1)^2=36$ token chiều $64$.
+    \item \textbf{CNN-stem}: một CNN nhỏ gồm hai khối Conv$3\times3$--BatchNorm--ReLU--MaxPool$2\times2$ (32 rồi 64 kênh) và một Conv$1\times1$ lên $64$ kênh, trích bản đồ đặc trưng $C\times H'\times W'=64\times7\times7$; mỗi vị trí không gian là một token, $N=H'W'=49$, chiều $C=64$.
 \end{itemize}
-\todo{nói rõ có dùng token CLS không và loại mã hóa vị trí cho từng cách.} Bảng~\ref{tab:e2-tokens} liệt kê số token.
+Cả năm cách đều dùng token CLS và mã hóa vị trí học được; chiều token trong Bảng~\ref{tab:e2-tokens} là số giá trị của mỗi token trước khi được chiếu lên $d_{\text{model}}=64$. Bảng~\ref{tab:e2-tokens} liệt kê số token.
 
 \begin{table}[t]
     \centering
@@ -371,25 +371,32 @@ Chúng tôi triển khai năm cách tạo token:
         Hàng                       & 28      & 28          \\
         Patch $4\times4$           & 49      & 16          \\
         Patch $7\times7$           & 16      & 49          \\
-        Patch $4\times4$ chồng lấn & \todo{} & 16          \\
-        CNN-stem                   & \todo{} & \todo{}     \\
+        Patch $8\times8$ chồng lấn & 36      & 64          \\
+        CNN-stem                   & 49      & 64          \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \subsection{Kết quả}
-\paragraph{(i) MSA tự cài đặt so với PyTorch.} Bảng~\ref{tab:e2-msa} so sánh hai bản cài đặt dưới cùng cách tạo token (\todo{tên cách tạo token}).
+\paragraph{(i) MSA tự cài đặt so với PyTorch.} Bảng~\ref{tab:e2-msa} so sánh hai bản cài đặt dưới cùng cách tạo token, với ba cách tạo token có cả hai bản. Hai bản có cùng số tham số vì chỉ khác cách tính attention.
 
 \begin{table}[t]
     \centering
-    \caption{MSA tự cài đặt so với PyTorch (cách tạo token: \todo{tên}).}
+    \caption{MSA tự cài đặt so với PyTorch, với từng cách tạo token.}
     \label{tab:e2-msa}
-    \begin{tabular}{lrrrr}
+    \small
+    \begin{tabular}{llrrrr}
         \toprule
-        MSA        & Tham số & Test acc (\%) & Thời gian/epoch (s) & Epoch tốt nhất \\
+        Cách tạo token   & MSA        & Tham số & Test acc (\%) & Thời gian/epoch (s) & Epoch tốt nhất \\
         \midrule
-        Tự cài đặt & \todo{} & \todo{}       & \todo{}             & \todo{}        \\
-        PyTorch    & \todo{} & \todo{}       & \todo{}             & \todo{}        \\
+        Patch $4\times4$ & Tự cài đặt & 139\,018 & 98,85         & 11,08               & 38             \\
+                         & PyTorch    & 139\,018 & 98,67         & 15,83               & 33             \\
+        \addlinespace
+        Hàng             & Tự cài đặt & 138\,442 & 99,13         & 16,03               & 43             \\
+                         & PyTorch    & 138\,442 & 98,94         & 10,69               & 34             \\
+        \addlinespace
+        CNN-stem         & Tự cài đặt & 161\,098 & 99,33         & 16,73               & 33             \\
+                         & PyTorch    & 161\,098 & 99,49         & 15,94               & 34             \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -397,31 +404,47 @@ Chúng tôi triển khai năm cách tạo token:
 \paragraph{(ii) So sánh các cách tạo token.}
 \begin{table}[t]
     \centering
-    \caption{So sánh các cách tạo token (MSA: \todo{tự cài đặt/PyTorch}).}
+    \caption{So sánh các cách tạo token (MSA tự cài đặt, độ chính xác theo \%).}
     \label{tab:e2-tok}
     \small
     \begin{tabular}{lrrrrrr}
         \toprule
         Cách tạo token             & $N$     & Tham số & Train   & Val     & Test    & Thời gian/epoch (s) \\
         \midrule
-        Hàng                       & 28      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
-        Patch $4\times4$           & 49      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
-        Patch $7\times7$           & 16      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
-        Patch $4\times4$ chồng lấn & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
-        CNN-stem                   & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} & \todo{}             \\
+        Hàng                       & 28      & 138\,442 & 99,96  & 98,87  & 99,13  & 16,03               \\
+        Patch $4\times4$           & 49      & 139\,018 & 99,95  & 98,73  & 98,85  & 11,08               \\
+        Patch $7\times7$           & 16      & 139\,018 & 99,99  & 98,60  & 98,70  & 11,76               \\
+        Patch $8\times8$ chồng lấn & 36      & 141\,258 & 99,99  & 98,94  & 98,98  & 16,17               \\
+        CNN-stem                   & 49      & 161\,098 & 99,99  & 99,32  & 99,33  & 16,73               \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \begin{figure}[t]
     \centering
-    \figph{5cm}{Đường cong học của các cách tạo token (và MSA tự cài đặt so với PyTorch)}
-    \caption{Đường cong học của E2. \todo{chú thích.}}
+    \includegraphics[width=0.92\linewidth]{../docs/assets/e2/curves_patch.png}
+    \includegraphics[width=0.92\linewidth]{../docs/assets/e2/curves_cnnstem.png}
+    \caption{Đường cong học của E2: loss và độ chính xác (nét đứt: huấn luyện, nét liền: kiểm định) của MSA tự cài đặt (xanh dương) và PyTorch (cam). Trên: patch $4\times4$; dưới: CNN-stem. Hai bản bám sát nhau; loss kiểm định gần như phẳng sau khoảng 40 epoch trong khi độ chính xác huấn luyện đã gần $100\%$.}
     \label{fig:e2-curves}
 \end{figure}
 
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.55\linewidth]{../docs/assets/e2/confusion_best.png}
+    \caption{Lỗi trên tập kiểm tra của mô hình có độ chính xác kiểm định cao nhất (CNN-stem, MSA tự cài đặt): mỗi ô là tỉ lệ ảnh của lớp thật (hàng) bị đoán thành lớp cột, số trong ô là số ảnh; đường chéo được bỏ. Tổng cộng 67 ảnh sai trên 10\,000.}
+    \label{fig:e2-confusion}
+\end{figure}
+
 \subsection{Thảo luận}
-\todo{Viết sau khi có số liệu. Gợi ý: (1) MSA tự cài đặt và PyTorch cho độ chính xác tương đương, giải thích chênh lệch tốc độ nếu có; (2) cách tạo token là một dạng thiên kiến quy nạp: patch đưa tính cục bộ vào, hàng giao cho attention tự học cấu trúc không gian, CNN-stem mang thiên kiến tích chập; (3) liên hệ thời gian đo được với chi phí $O(N^2d)$ (patch $4$ vs.\ $7$ vs.\ chồng lấn); (4) so sánh với CNN/MLP của E1; (5) hạn chế.}
+\paragraph{MSA tự cài đặt so với PyTorch.} Độ chính xác kiểm tra của hai bản gần nhau ở cả ba cách tạo token: patch $98{,}85\%$ so với $98{,}67\%$, hàng $99{,}13\%$ so với $98{,}94\%$, CNN-stem $99{,}33\%$ so với $99{,}49\%$. Chênh lệch lớn nhất là $0{,}19$ điểm và hướng chênh không nhất quán (bản tự cài đặt cao hơn ở patch và hàng, thấp hơn ở CNN-stem), nên phù hợp với nhiễu tối ưu hơn là một khác biệt hệ thống. Cùng với kiểm tra số học ở mục trước, bản MSA tự cài đặt cho kết quả tương đương \texttt{nn.MultiheadAttention}. Thời gian mỗi epoch cũng không cho thấy bản nào nhanh hơn: bản tự cài đặt nhanh hơn ở patch ($11{,}08$ s so với $15{,}83$ s) nhưng chậm hơn ở hàng ($16{,}03$ s so với $10{,}69$ s). Con số này gồm cả thời gian nạp dữ liệu trên CPU và mỗi lượt chạy diễn ra trên một container riêng, nên nó phản ánh máy chạy nhiều hơn chi phí của mô hình; chúng tôi không dùng nó để so sánh hai cách cài đặt.
+
+\paragraph{Cách tạo token là một dạng thiên kiến quy nạp.} Với MSA tự cài đặt, độ chính xác kiểm tra xếp từ cao xuống thấp là CNN-stem $99{,}33\%$, hàng $99{,}13\%$, patch $8\times8$ chồng lấn $98{,}98\%$, patch $4\times4$ $98{,}85\%$ và patch $7\times7$ $98{,}70\%$. CNN-stem mang thiên kiến tích chập (tính cục bộ và bất biến tịnh tiến được đưa vào trước khi attention nhìn toàn cục) và dẫn đầu, nhưng cũng có nhiều tham số nhất ($161\,098$, hơn các mô hình còn lại khoảng $16\%$), nên chưa tách được đóng góp của thiên kiến khỏi đóng góp của dung lượng. Cách tạo token theo hàng giao cho attention tự học quan hệ giữa các hàng và vẫn cao hơn mọi biến thể patch ở độ chính xác kiểm tra, dù xếp dưới patch chồng lấn ở độ chính xác kiểm định ($98{,}87\%$ so với $98{,}94\%$). Giữa các biến thể patch, chênh lệch tối đa là $0{,}28$ điểm, nhỏ hơn mức dao động mà một seed duy nhất cho phép phân biệt, và thứ tự giữa chúng đã đổi giữa các lần chạy thử trước; chúng tôi không rút ra kết luận về kích thước hay độ chồng lấn của patch.
+
+\paragraph{Chi phí theo số token.} Chi phí của attention tăng theo $O(N^2d)$ với $N$ từ $16$ (patch $7\times7$) đến $49$ (patch $4\times4$, CNN-stem). Tuy vậy thời gian mỗi epoch không tăng theo $N$ (patch $7\times7$ $11{,}76$ s, hàng $16{,}03$ s, chồng lấn $16{,}17$ s, patch $4\times4$ $11{,}08$ s). Với $N\le49$ và $d=64$, phần $O(N^2d)$ nhỏ so với các phép chiếu và FFN $O(Nd^2)$, và thời gian đo được bị chi phối bởi việc nạp dữ liệu, nên số liệu này chưa đủ để kiểm chứng quan hệ $O(N^2d)$.
+
+\paragraph{So sánh với E1.} E2 không tăng cường dữ liệu nên được so với các biến thể base của E1. Mọi mô hình Transformer ($98{,}67$--$99{,}49\%$) đều vượt MLP base ($97{,}68\%$) với ít tham số hơn ($138\,442$--$161\,098$ so với $235\,146$). Sáu trên tám mô hình ngang hoặc vượt CNN base ($98{,}85\%$, $206\,922$ tham số), nổi bật là CNN-stem ($99{,}33\%$ và $99{,}49\%$); chỉ patch $4\times4$ với PyTorch ($98{,}67\%$) và patch $7\times7$ ($98{,}70\%$) thấp hơn một chút. Tuy nhiên không mô hình nào vượt CNN có tăng cường dữ liệu của E1 ($99{,}50\%$).
+
+\paragraph{Lỗi và hạn chế.} Mô hình có độ chính xác kiểm định cao nhất (CNN-stem, MSA tự cài đặt) sai $67$ ảnh trên $10\,000$ (Hình~\ref{fig:e2-confusion}), tập trung ở các chữ số có nét gần giống nhau. Mỗi cấu hình chỉ chạy một lần (seed $42$) nên các chênh lệch dưới khoảng $0{,}3$ điểm phần trăm chưa đủ để kết luận; muốn kiểm tra, có thể chạy lại với seed khác. MNIST nhỏ và dễ: cả tám mô hình đều đạt trên $98{,}6\%$ với chưa tới $162\,000$ tham số, nên bài toán này khó phân biệt các cách tạo token.
 
 \section{E3: LSTM và GRU trên chuỗi ảnh}
 \label{sec:e3}
@@ -440,7 +463,7 @@ Chúng tôi triển khai năm cách tạo token:
         E1  & Softmax (aug)               & 7\,850   & 85,12    & \todo{}             \\
         E1  & MLP (aug)                   & 235\,146 & 99,07    & \todo{}             \\
         E1  & CNN (aug)                   & 206\,922 & 99,50    & \todo{}             \\
-        E2  & \todo{Transformer tốt nhất} & \todo{}  & \todo{}  & \todo{}             \\
+        E2  & CNN-stem + MSA tự cài đặt   & 161\,098 & 99,33    & 16,73               \\
         E3  & \todo{LSTM/GRU tốt nhất}    & \todo{}  & \todo{}  & \todo{}             \\
         \bottomrule
     \end{tabular}
@@ -452,7 +475,7 @@ Chúng tôi triển khai năm cách tạo token:
     \item Kiến trúc quan trọng hơn số tham số: CNN vượt MLP dù ít tham số hơn.
     \item Tăng cường dữ liệu tương tác với dung lượng mô hình: giảm khoảng $60\%$ số lỗi của MLP và CNN nhưng làm hại softmax vì mô hình này underfitting.
     \item Tăng cường dữ liệu thay thế được một phần thiên kiến kiến trúc (MLP aug $\approx$ CNN base).
-    \item \todo{Kết luận E2.}
+    \item Với cùng cách cài đặt MSA, cách tạo token mang thiên kiến tích chập (CNN-stem) cho Transformer tốt nhất trên MNIST ($99{,}33\%$), ngang CNN base của E1 nhưng chưa vượt CNN có tăng cường dữ liệu ($99{,}50\%$); MSA tự cài đặt cho kết quả tương đương \texttt{nn.MultiheadAttention} (chênh tối đa $0{,}19$ điểm).
     \item \todo{Kết luận E3.}
 \end{itemize}
 \paragraph{Hạn chế.} \todo{một seed, tập dữ liệu nhỏ, tinh chỉnh hạn chế, một mức tăng cường.}
