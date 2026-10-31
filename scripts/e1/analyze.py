@@ -461,8 +461,8 @@ def _plot_curves(records, figures_dir):
         'aug': 'Phiên bản aug',
     }
     split_mapping = {
-        'train': 'huấn luyện',
-        'valid': 'kiểm định',
+        'train': 'train',
+        'valid': 'valid',
     }
     metric_mapping = {
         'loss': 'Loss',

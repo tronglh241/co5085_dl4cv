@@ -106,9 +106,9 @@ def write_split_table(counts, results_dir):
 
 def plot_class_balance(counts, path):
     label_mapping = {
-        'Train': 'Huấn luyện',
-        'Validation': 'Kiểm định',
-        'Test': 'Kiểm thử',
+        'Train': 'Train',
+        'Validation': 'Valid',
+        'Test': 'Test',
     }
     digits = np.arange(N_CLASSES)
     width = 0.26

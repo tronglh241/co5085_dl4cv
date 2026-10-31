@@ -20,7 +20,7 @@ Mỗi mô hình được huấn luyện ở hai thiết lập: không tăng cư�
 
 Kết quả chính:
 
-- CNN aug đạt accuracy kiểm thử cao nhất, 99,50%.
+- CNN aug đạt accuracy test cao nhất, 99,50%.
 - CNN có ít tham số hơn MLP nhưng mắc khoảng một nửa số lỗi.
 - Tăng cường dữ liệu giúp MLP và CNN, nhưng làm Softmax kém đi.
 
@@ -29,7 +29,7 @@ Kết quả chính:
 ### Tập dữ liệu
 
 - MNIST gồm 70.000 ảnh chữ số viết tay, ảnh xám kích thước $28 \times 28$, thuộc 10 lớp từ 0 đến 9.
-- Dữ liệu gốc chia sẵn thành 60.000 ảnh huấn luyện và 10.000 ảnh kiểm thử.
+- Dữ liệu gốc chia sẵn thành 60.000 ảnh train và 10.000 ảnh test.
 - Lí do chọn MNIST:
   - Là bộ dữ liệu tiêu chuẩn, phổ biến nên dễ đối chiếu kết quả.
   - Ảnh nhỏ, số mẫu vừa phải nên huấn luyện nhanh.
@@ -41,11 +41,11 @@ Kết quả chính:
 
 ### Chia dữ liệu
 
-- 60.000 ảnh huấn luyện gốc được chia theo phương pháp phân tầng thành 50.000 ảnh huấn luyện và 10.000 ảnh kiểm định.
+- 60.000 ảnh train gốc được chia theo phương pháp phân tầng thành 50.000 ảnh train và 10.000 ảnh valid.
 - Việc chia chỉ thực hiện một lần, nên mọi mô hình trong E1 đều dùng chung một tập dữ liệu.
-- 10.000 ảnh kiểm thử chính thức được giữ nguyên và không tham gia huấn luyện hay chọn mô hình.
+- 10.000 ảnh test chính thức được giữ nguyên và không tham gia huấn luyện hay chọn mô hình.
 
-| Lớp | Huấn luyện | Kiểm định | Kiểm thử |
+| Lớp | Train | Valid | Test |
 |---:|---:|---:|---:|
 | 0 | 4.936 | 987 | 980 |
 | 1 | 5.618 | 1.124 | 1.135 |
@@ -67,17 +67,17 @@ Kết quả chính:
 
 ### Tiền xử lý và tăng cường dữ liệu
 
-- Mỗi ảnh được chuyển thành tensor trong khoảng $[0, 1]$ rồi chuẩn hóa, với trung bình và độ lệch chuẩn tính trên 50.000 ảnh huấn luyện:
+- Mỗi ảnh được chuyển thành tensor trong khoảng $[0, 1]$ rồi chuẩn hóa, với trung bình và độ lệch chuẩn tính trên 50.000 ảnh train:
 
 $$
 x' = \frac{x - 0.1308}{0.3082}
 $$
 
-- Ở thiết lập aug, ảnh huấn luyện được biến đổi bằng `RandomAffine(10, translate=(0.1, 0.1))`:
+- Ở thiết lập aug, ảnh train được biến đổi bằng `RandomAffine(10, translate=(0.1, 0.1))`:
   - Xoay ngẫu nhiên tối đa $\pm 10^\circ$.
   - Dịch ngẫu nhiên tối đa 10% mỗi chiều, tương đương khoảng 2,8 điểm ảnh.
   - Tham số được sinh lại mỗi lần nạp ảnh, nên mỗi epoch mô hình thấy một biến thể khác của cùng một mẫu.
-- Tăng cường chỉ áp dụng cho các batch dùng để cập nhật trọng số. Mọi chỉ số huấn luyện, kiểm định và kiểm thử đều đo trên ảnh gốc.
+- Tăng cường chỉ áp dụng cho các batch dùng để cập nhật trọng số. Mọi chỉ số train, valid và test đều đo trên ảnh gốc.
 
 ![Ảnh gốc và các phiên bản sau khi tăng cường dữ liệu](/assets/shared/mnist_augmentation.png)
 
@@ -86,9 +86,9 @@ $$
 ### Phương pháp đánh giá
 
 - Vai trò của ba tập dữ liệu:
-  - **Huấn luyện:** cập nhật trọng số.
-  - **Kiểm định:** điều chỉnh learning rate, dừng sớm và chọn checkpoint.
-  - **Kiểm thử:** chỉ dùng một lần ở cuối, trên checkpoint đã chọn.
+  - **Train:** cập nhật trọng số.
+  - **Valid:** điều chỉnh learning rate, dừng sớm và chọn checkpoint.
+  - **Test:** chỉ dùng một lần ở cuối, trên checkpoint đã chọn.
 - Độ đo chính là accuracy, tức tỷ lệ mẫu được phân loại đúng:
 
 $$
@@ -116,11 +116,11 @@ Sáu thí nghiệm (ba mô hình, mỗi mô hình hai thiết lập) dùng chung
 
 - Tối ưu hóa bằng Adam với learning rate $10^{-3}$.
 - Batch size 64.
-- Hàm mất mát cross-entropy.
+- Hàm loss cross-entropy.
 - Tối đa 1000 epoch.
-- Giảm learning rate 10 lần sau 10 epoch không cải thiện loss kiểm định.
-- Dừng sớm sau 20 epoch không cải thiện loss kiểm định.
-- Chọn checkpoint có loss kiểm định nhỏ nhất, và báo cáo accuracy kiểm thử tại checkpoint này.
+- Giảm learning rate 10 lần sau 10 epoch không cải thiện loss valid.
+- Dừng sớm sau 20 epoch không cải thiện loss valid.
+- Chọn checkpoint có loss valid nhỏ nhất, và báo cáo accuracy test tại checkpoint này.
 - Toàn bộ thông số của mỗi thí nghiệm nằm trong một tệp cấu hình YAML riêng, và log huấn luyện được ghi bằng TensorBoard.
 
 Vòng lặp huấn luyện do nhóm tự viết, gồm lần lượt các bước forward, tính loss, backward và cập nhật tham số, mà không dùng thư viện huấn luyện có sẵn:
@@ -159,19 +159,19 @@ Thay `train_cnn_aug.yml` và `test_cnn_aug.yml` bằng cấu hình tương ứng
 
 ![Đường cong loss và accuracy của sáu thí nghiệm E1](/assets/e1/curves_e1.png)
 
-*Hình 5. Đường cong loss và accuracy; nét đứt là loss, nét liền là accuracy, đỏ là huấn luyện, xanh là kiểm định.*
+*Hình 5. Đường cong loss và accuracy; nét đứt là loss, nét liền là accuracy, đỏ là train, xanh là valid.*
 
 - **Base:**
   - MLP và CNN đạt accuracy cao hơn Softmax và dừng sớm hơn, với epoch tốt nhất lần lượt là 6 và 7.
   - Softmax cần 45 epoch để đạt checkpoint tốt nhất.
 - **Aug:**
   - Quá trình cải thiện của MLP và CNN kéo dài hơn, với epoch tốt nhất là 102 và 72.
-  - Khoảng cách giữa huấn luyện và kiểm định, cả về loss lẫn accuracy, thu hẹp lại ở MLP và CNN.
+  - Khoảng cách giữa train và valid, cả về loss lẫn accuracy, thu hẹp lại ở MLP và CNN.
   - Loss của Softmax dao động zigzag liên tục và huấn luyện dừng sớm hơn vì mô hình không cải thiện thêm được.
 
 ### Accuracy
 
-| Mô hình | Biến thể | Tham số | Epoch tốt nhất | Huấn luyện (%) | Kiểm định (%) | Kiểm thử (%) | Gap |
+| Mô hình | Biến thể | Tham số | Epoch tốt nhất | Train (%) | Valid (%) | Test (%) | Gap |
 |---|---|---:|---:|---:|---:|---:|---:|
 | Softmax | base | 7.850 | 45 | 94,00 | 92,28 | 92,58 | 1,72 |
 | Softmax | aug | 7.850 | 33 | 83,81 | 83,82 | 85,12 | −0,01 |
@@ -180,10 +180,10 @@ Thay `train_cnn_aug.yml` và `test_cnn_aug.yml` bằng cấu hình tương ứng
 | CNN | base | 206.922 | 7 | 99,68 | 98,73 | 98,85 | 0,95 |
 | CNN | aug | 206.922 | 72 | **99,93** | **99,41** | **99,50** | 0,52 |
 
-*Bảng 2. Kết quả E1 trên MNIST. Gap là chênh lệch accuracy giữa huấn luyện và kiểm định.*
+*Bảng 2. Kết quả E1 trên MNIST. Gap là chênh lệch accuracy giữa train và valid.*
 
-- CNN aug đạt accuracy kiểm thử cao nhất, 99,50%.
-- Ở thiết lập base, accuracy kiểm thử tăng dần từ Softmax (92,58%) sang MLP (97,68%) và CNN (98,85%).
+- CNN aug đạt accuracy test cao nhất, 99,50%.
+- Ở thiết lập base, accuracy test tăng dần từ Softmax (92,58%) sang MLP (97,68%) và CNN (98,85%).
 - Tăng cường dữ liệu cải thiện MLP từ 97,68% lên 99,07% và CNN từ 98,85% lên 99,50%.
 - Ngược lại, Softmax giảm từ 92,58% xuống 85,12%.
 
@@ -195,11 +195,11 @@ Thay `train_cnn_aug.yml` và `test_cnn_aug.yml` bằng cấu hình tương ứng
 | MLP | 232 | 93 | −60% |
 | CNN | 115 | 50 | −57% |
 
-*Bảng 3. Số ảnh kiểm thử bị phân loại sai trên tổng số 10.000 mẫu.*
+*Bảng 3. Số ảnh test bị phân loại sai trên tổng số 10.000 mẫu.*
 
 ![Ma trận nhầm lẫn của sáu thí nghiệm E1](/assets/e1/confusion_e1.png)
 
-*Hình 6. Ma trận nhầm lẫn trên tập kiểm thử, ô chéo để trắng, màu đỏ đậm hơn là tỉ lệ lỗi cao hơn, số trong ô là số mẫu bị phân loại sai.*
+*Hình 6. Ma trận nhầm lẫn trên tập test, ô chéo để trắng, màu đỏ đậm hơn là tỉ lệ lỗi cao hơn, số trong ô là số mẫu bị phân loại sai.*
 
 - **Tổng quan:**
   - Theo thang màu, số lỗi giảm dần từ Softmax sang MLP rồi sang CNN.
@@ -212,7 +212,7 @@ Thay `train_cnn_aug.yml` và `test_cnn_aug.yml` bằng cấu hình tương ứng
 | $5 \to 3$ | 36 | 80 | 10 | 5 | 7 | 4 |
 | $7 \to 2$ | 21 | 27 | 13 | 6 | 6 | 3 |
 
-*Bảng 4. Số mẫu kiểm thử bị nhầm của ba cặp theo dõi.*
+*Bảng 4. Số mẫu test bị nhầm của ba cặp theo dõi.*
 
 - **Thiết lập base:**
   - Số mẫu của các cặp này giảm dần từ Softmax sang MLP rồi sang CNN, chẳng hạn $5 \to 3$ giảm từ 36 xuống 10 rồi 7 mẫu.
@@ -238,7 +238,7 @@ Thay `train_cnn_aug.yml` và `test_cnn_aug.yml` bằng cấu hình tương ứng
   - CNN có ít tham số hơn MLP khoảng 12% nhưng chỉ mắc khoảng một nửa số lỗi: 115 so với 232 ở base và 50 so với 93 ở aug.
   - Ưu thế của CNN đến từ tính cục bộ và chia sẻ trọng số.
 - **Tăng cường dữ liệu có lợi cho mô hình đủ khả năng biểu diễn:**
-  - Với MLP và CNN, tăng cường dữ liệu cải thiện accuracy kiểm thử từ 97,68% lên 99,07% ở MLP và từ 98,85% lên 99,50% ở CNN.
+  - Với MLP và CNN, tăng cường dữ liệu cải thiện accuracy test từ 97,68% lên 99,07% ở MLP và từ 98,85% lên 99,50% ở CNN.
   - Gap thu hẹp từ 1,68 xuống 0,70 ở MLP và từ 0,95 xuống 0,52 ở CNN.
   - Epoch tốt nhất dời từ 6 lên 102 ở MLP và từ 7 lên 72 ở CNN. Quá trình cải thiện được kéo dài.
 
