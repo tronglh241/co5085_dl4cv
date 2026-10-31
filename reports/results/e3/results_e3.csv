@@ -1,0 +1,5 @@
+Model,Sequence,Params,Best epoch,Train acc (%),Val acc (%),Test acc (%),Images/s
+LSTM,row,82186,14,99.638,98.590,98.670,185086.5
+GRU,row,61962,7,99.432,98.530,98.660,317768.0
+LSTM,column,82186,11,99.650,98.730,98.380,185137.0
+GRU,column,61962,13,99.850,98.620,98.820,318334.9

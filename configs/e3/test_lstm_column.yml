@@ -1,0 +1,63 @@
+data:
+  test:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.mnist
+        name: MNIST
+        kwargs:
+          root: "'data/'"
+          split: "'test'"
+          transform: 'transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1308,), (0.3082,)),
+          ])'
+      shuffle: False
+      batch_size: 512
+
+model:
+  module: models.e3.recurrent
+  name: RecurrentClassifier
+  kwargs:
+    num_classes: 10
+    image_size: 28
+    in_channels: 1
+    sequence: "'column'"
+    cell: "'lstm'"
+    hidden_size: 128
+    num_layers: 1
+    dropout: 0.0
+
+evaluator:
+  module: common.engine.evaluator
+  name: Evaluator
+  kwargs:
+    data: data.test
+    model: model
+    device: null
+
+metrics:
+  loss:
+    module: common.metrics.loss
+    name: Loss
+    kwargs:
+      loss_fn:
+        module: torch.nn
+        name: CrossEntropyLoss
+  accuracy:
+    module: common.metrics.accuracy
+    name: Accuracy
+    kwargs:
+      num_classes: 10
+
+loader:
+  module: common.handlers.checkpoint.loader
+  name: CheckpointLoader
+  kwargs:
+    path: "'checkpoints/e3/lstm_column/261030165224/best_epoch_11_loss=0.0520.pt'"
+
+seed: 42
+
+extralibs:
+  transforms: torchvision.transforms
