@@ -19,7 +19,7 @@
       "pretrained": true,
       "freeze": "head",
       "seed": 42,
-      "epochs": 10,
+      "epochs": 15,
       "lr": 0.001
     },
     "resnet50_partial": {
@@ -63,7 +63,7 @@
       "pretrained": true,
       "freeze": "head",
       "seed": 42,
-      "epochs": 10,
+      "epochs": 15,
       "lr": 0.001
     },
     "deit_s_partial": {

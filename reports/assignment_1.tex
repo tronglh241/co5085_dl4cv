@@ -131,7 +131,7 @@ Food-101~\cite{bossard2014food101} gồm 101 lớp món ăn, mỗi lớp 1\,000 
     \item \textbf{Đủ lớn và đủ khó.} 101 lớp, 75\,750 ảnh train chính thức; bài toán phân loại chi tiết, nhiều món khác nhau trông gần giống nhau.
     \item \textbf{Không trùng với ImageNet.} Tiny-ImageNet, Imagenette và các tập con của ImageNet bị loại vì ảnh của chúng nằm trong dữ liệu mà mô hình pretrained đã học, làm lệch so sánh scratch với pretrained.
     \item \textbf{Hợp với mô hình pretrained.} Ảnh tự nhiên, dùng được ở độ phân giải 224 px; CIFAR-100 (\(32\times32\)) phải phóng to gấp 7 lần nên bị loại.
-    \item \textbf{Phù hợp ngân sách.} Khoảng 68\,000 ảnh train đủ nhỏ để train từ đầu trên một GPU L4.
+    \item \textbf{Phù hợp ngân sách.} Khoảng 68\,000 ảnh train đủ nhỏ để train từ đầu trên một GPU A10G.
 \end{itemize}
 
 Lưu ý: ImageNet-1k có sẵn một số lớp món ăn trùng hoặc gần với Food-101, nên trọng số pretrained có lợi thế ngữ nghĩa ở các lớp này.
@@ -499,7 +499,7 @@ Mỗi mô hình được huấn luyện theo bốn chế độ, khác nhau ở t
             Chế độ  & Khởi tạo   & Phần được học           & Epoch dự tính & ResNet-50 trainable   & DeiT-S trainable      \\
             \midrule
             scratch & ngẫu nhiên & toàn bộ mạng            & 40            & 23\,714\,981 (100\%)  & 21\,704\,549 (100\%)  \\
-            head    & pretrained & chỉ classification head & 10            & 206\,949 (0.9\%)      & 38\,885 (0.2\%)       \\
+            head    & pretrained & chỉ classification head & 15            & 206\,949 (0.9\%)      & 38\,885 (0.2\%)       \\
             partial & pretrained & nửa sau của mạng        & 15            & 22\,270\,053 (93.9\%) & 10\,686\,437 (49.2\%) \\
             full    & pretrained & toàn bộ mạng            & 15            & 23\,714\,981 (100\%)  & 21\,704\,549 (100\%)  \\
             \bottomrule

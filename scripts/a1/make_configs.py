@@ -56,7 +56,7 @@ MODES = {
         'lr': 5e-4, 'clip_grad_norm': 1.0,
     },
     'head': {
-        'pretrained': True, 'freeze': 'head', 'epochs': 10, 'warmup': 1,
+        'pretrained': True, 'freeze': 'head', 'epochs': 15, 'warmup': 1,
         'lr': 1e-3, 'clip_grad_norm': None,
     },
     'partial': {

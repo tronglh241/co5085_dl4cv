@@ -2,17 +2,19 @@
 \toprule
 Tokenizer & MSA & Params & Epoch & Time/epoch (s) & Val acc (\%) & Test acc (\%) & Ảnh/s \\
 \midrule
-cnnstem & scratch & 161\,098 & 33 & 16.73 & 99.32 & 99.33 & 2123 \\
-cnnstem & torch & 161\,098 & 34 & 15.94 & 99.29 & 99.49 & 2489 \\
+cnnstem & scratch & 161\,098 & 33 & 16.73 & 99.32 & 99.33 & 2645 \\
+cnnstem & torch & 161\,098 & 34 & 15.94 & 99.29 & 99.49 & 2307 \\
 \addlinespace
-patch7 & scratch & 139\,018 & 47 & 11.76 & 98.60 & 98.70 & 6543 \\
+patch7 & scratch & 139\,018 & 47 & 11.76 & 98.60 & 98.70 & 8379 \\
+patch7 & torch & 139\,018 & 48 & 15.81 & 98.55 & 98.80 & 11021 \\
 \addlinespace
-patch\_overlap & scratch & 141\,258 & 52 & 16.17 & 98.94 & 98.98 & 4539 \\
+patch\_overlap & scratch & 141\,258 & 52 & 16.17 & 98.94 & 98.98 & 5252 \\
+patch\_overlap & torch & 141\,258 & 53 & 15.56 & 99.06 & 99.07 & 4632 \\
 \addlinespace
-patch & scratch & 139\,018 & 38 & 11.08 & 98.73 & 98.85 & 3485 \\
-patch & torch & 139\,018 & 33 & 15.83 & 98.60 & 98.67 & 3417 \\
+patch & scratch & 139\,018 & 38 & 11.08 & 98.73 & 98.85 & 3812 \\
+patch & torch & 139\,018 & 33 & 15.83 & 98.60 & 98.67 & 4176 \\
 \addlinespace
-row & scratch & 138\,442 & 43 & 16.03 & 98.87 & 99.13 & 5445 \\
-row & torch & 138\,442 & 34 & 10.69 & 98.82 & 98.94 & 6287 \\
+row & scratch & 138\,442 & 43 & 16.03 & 98.87 & 99.13 & 5357 \\
+row & torch & 138\,442 & 34 & 10.69 & 98.82 & 98.94 & 4038 \\
 \bottomrule
 \end{tabular}

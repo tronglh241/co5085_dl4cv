@@ -89,7 +89,7 @@ trainer:
     optimizer: optimizer
     loss_fn: loss_fn
     device: null
-    max_epochs: 10
+    max_epochs: 15
     amp: true
     channels_last: false
     clip_grad_norm: null
