@@ -13,7 +13,6 @@
 \usepackage{enumitem}
 \usepackage{caption}
 \usepackage{placeins}
-\usepackage{needspace}
 \usepackage{minted}
 \usepackage[top=2.5cm, bottom=2.0cm, left=3.0cm, right=2.0cm]{geometry}
 \usepackage{setspace}\onehalfspacing
@@ -222,7 +221,6 @@ Kích thước ảnh được đo trên toàn bộ 101\,000 ảnh gốc, trướ
     \caption{Ảnh train của một số lớp, sau bước cắt cố định.}\label{fig:a1-samples}
 \end{figure}
 
-\Needspace{8\baselineskip}
 \textbf{Nhận xét:}
 \begin{itemize}
     \item \textbf{Cân bằng lớp.} Mỗi lớp có đúng 675 ảnh train, 75 ảnh validation và 250 ảnh test (Hình~\ref{fig:a1-counts}), nên không cần trọng số lớp.
@@ -258,7 +256,7 @@ Sau bước đó, chỉ tập train được tăng cường dữ liệu (Bảng~
         Xoay                           & Xoay ngẫu nhiên trong khoảng \(\pm15^\circ\)                                                                   & --                                             \\
         Màu                            & Độ sáng, tương phản, độ bão hoà đổi trong \(\pm20\%\); sắc độ xoay trong \(\pm0.1\) vòng màu (\(\pm36^\circ\)) & --                                             \\
         Dịch                           & Dịch ngẫu nhiên tối đa 10\% theo mỗi chiều                                                                     & --                                             \\
-        Chuẩn hoá                      & Đưa về tensor trong \([0,1]\), rồi trừ mean và chia std của ImageNet trên từng kênh                                 & như train                                      \\
+        Chuẩn hoá                      & Đưa về tensor trong \([0,1]\), rồi trừ mean và chia std của ImageNet trên từng kênh                            & như train                                      \\
         \bottomrule
     \end{tabular}
     \caption{Pipeline dữ liệu dùng chung, theo đúng thứ tự áp dụng.}
@@ -538,11 +536,6 @@ Cả 8 run được đánh giá theo cùng một quy trình:
 \section{Thảo luận và hạn chế}
 
 \section{Kết luận}
-
-\section*{Mã nguồn và khả năng tái lập}
-
-\section*{Liêm chính học thuật}
-\addcontentsline{toc}{section}{Liêm chính học thuật}
 
 \addcontentsline{toc}{section}{Tài liệu}
 \bibliographystyle{plain}

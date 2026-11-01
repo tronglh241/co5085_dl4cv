@@ -31,10 +31,6 @@
 \setsansfont{Latin Modern Sans}
 \setmonofont{Latin Modern Mono}
 
-% TODO: remove when done
-\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
-\newcommand{\figph}[2]{\fbox{\parbox[c][#1][c]{0.92\linewidth}{\centering\textcolor{gray}{[Chỗ chèn hình: #2]}}}}
-
 \begin{document}
 \begin{titlepage}
     \begin{center}
@@ -103,7 +99,7 @@ Nội dung chính của các bài tập được triển khai như sau:
 
 Mục tiêu của báo cáo không dừng lại ở việc liệt kê accuracy của từng mô hình, mà tập trung giải thích nguyên nhân dẫn đến sự khác biệt về hiệu suất thông qua số lượng tham số, đường cong học và phân tích chi tiết các trường hợp phân loại sai.
 
-Phần còn lại của báo cáo được tổ chức như sau. Mục~\ref{sec:data} mô tả dữ liệu, phương pháp tiền xử lý và đánh giá dùng chung cho cả ba bài. Các Mục~\ref{sec:e1}, \ref{sec:e2} và \ref{sec:e3} lần lượt trình bày bài E1, E2 và E3, mỗi mục gồm mô hình, thiết lập huấn luyện riêng, kết quả và thảo luận. Mục~\ref{sec:summary} so sánh kết quả giữa ba bài, sau đó là phần kết luận và các phụ lục.
+Phần còn lại của báo cáo được tổ chức như sau. Mục~\ref{sec:data} mô tả dữ liệu, phương pháp tiền xử lý và đánh giá dùng chung cho cả ba bài. Các Mục~\ref{sec:e1}, \ref{sec:e2} và \ref{sec:e3} lần lượt trình bày bài E1, E2 và E3, mỗi mục gồm mô hình, thiết lập huấn luyện riêng, kết quả và thảo luận. Mục~\ref{sec:conclusion} tổng hợp những kết luận của các bài E1, E2 và E3.
 
 \section{Dữ liệu và phương pháp đánh giá}
 \label{sec:data}
@@ -395,7 +391,7 @@ Quá trình thực nghiệm bao gồm sáu thí nghiệm tương ứng với ba 
 
 \paragraph{Hạn chế của mô hình tuyến tính với dữ liệu tăng cường} Với Softmax, accuracy kiểm thử giảm từ $92{,}58\%$ xuống $85{,}12\%$ khi có tăng cường dữ liệu. Accuracy huấn luyện, đo trên ảnh sạch, cũng giảm từ $94{,}0\%$ xuống $83{,}8\%$ và gần bằng accuracy kiểm định, nên mô hình đang thiếu khớp chứ không phải quá khớp. Softmax chấm điểm mỗi lớp bằng $w_c^\top x$ với mỗi trọng số gắn với một vị trí điểm ảnh cố định, nên không thể hấp thụ các phép dịch chuyển tới khoảng $2{,}8$ điểm ảnh. Do đó, tăng cường dữ liệu chỉ phát huy hiệu quả khi mô hình đủ khả năng biểu diễn để học được tính bất biến mà nó mang lại.
 
-\section{E2: Transformer --- MSA và các cách tạo token}
+\section{E2: Transformer -- MSA và các cách tạo token}
 \label{sec:e2}
 
 \subsection{Mô hình}
@@ -434,13 +430,13 @@ Cả năm cách đều dùng token CLS và mã hóa vị trí học được; ch
     \label{tab:e2-tokens}
     \begin{tabular}{lrr}
         \toprule
-        Cách tạo token             & $N$     & Chiều token \\
+        Cách tạo token             & $N$ & Chiều token \\
         \midrule
-        Hàng                       & 28      & 28          \\
-        Patch $4\times4$           & 49      & 16          \\
-        Patch $7\times7$           & 16      & 49          \\
-        Patch $8\times8$ chồng lấn & 36      & 64          \\
-        CNN-stem                   & 49      & 64          \\
+        Hàng                       & 28  & 28          \\
+        Patch $4\times4$           & 49  & 16          \\
+        Patch $7\times7$           & 16  & 49          \\
+        Patch $8\times8$ chồng lấn & 36  & 64          \\
+        CNN-stem                   & 49  & 64          \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -462,15 +458,15 @@ Cả năm cách đều dùng token CLS và mã hóa vị trí học được; ch
         \toprule
         Thành phần                      & Hàng       & Patch $4\times4$ & Patch $7\times7$ & Chồng lấn $8\times8$ & CNN-stem   \\
         \midrule
-        Tokenizer                       & $1\,856$   & $1\,088$         & $3\,200$         & $4\,160$                   & $23\,168$  \\
-        Token CLS                       & $64$       & $64$             & $64$             & $64$                       & $64$       \\
-        Mã hóa vị trí $(N{+}1)\times64$ & $1\,856$   & $3\,200$         & $1\,088$         & $2\,368$                   & $3\,200$   \\
-        MSA ($4$ block)                 & $66\,560$  & $66\,560$        & $66\,560$        & $66\,560$                  & $66\,560$  \\
-        FFN ($4$ block)                 & $66\,304$  & $66\,304$        & $66\,304$        & $66\,304$                  & $66\,304$  \\
-        LayerNorm ($4\times2$ và cuối)  & $1\,152$   & $1\,152$         & $1\,152$         & $1\,152$                   & $1\,152$   \\
-        Linear $64\to10$                & $650$      & $650$            & $650$            & $650$                      & $650$      \\
+        Tokenizer                       & $1\,856$   & $1\,088$         & $3\,200$         & $4\,160$             & $23\,168$  \\
+        Token CLS                       & $64$       & $64$             & $64$             & $64$                 & $64$       \\
+        Mã hóa vị trí $(N{+}1)\times64$ & $1\,856$   & $3\,200$         & $1\,088$         & $2\,368$             & $3\,200$   \\
+        MSA ($4$ block)                 & $66\,560$  & $66\,560$        & $66\,560$        & $66\,560$            & $66\,560$  \\
+        FFN ($4$ block)                 & $66\,304$  & $66\,304$        & $66\,304$        & $66\,304$            & $66\,304$  \\
+        LayerNorm ($4\times2$ và cuối)  & $1\,152$   & $1\,152$         & $1\,152$         & $1\,152$             & $1\,152$   \\
+        Linear $64\to10$                & $650$      & $650$            & $650$            & $650$                & $650$      \\
         \midrule
-        \textit{Tổng}                   & $138\,442$ & $139\,018$       & $139\,018$       & $141\,258$                 & $161\,098$ \\
+        \textit{Tổng}                   & $138\,442$ & $139\,018$       & $139\,018$       & $141\,258$           & $161\,098$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -493,22 +489,22 @@ Quá trình thực nghiệm bao gồm mười thí nghiệm tương ứng với 
     \setlength{\tabcolsep}{3.5pt}
     \begin{tabular}{llrrrrrrr}
         \toprule
-        Cách tạo token             & MSA        & Tham số  & Epoch & Train  & Val   & Test  & Gap  & Giây/epoch \\
+        Cách tạo token             & MSA        & Tham số  & Epoch & Train  & Val   & Test  & Gap      & Giây/epoch \\
         \midrule
-        Patch $4\times4$            & Tự cài đặt & 139\,018 & 38 & 99,95 & 98,73 & 98,85 & $1{,}22$ & 11,08 \\
-                                    & PyTorch    & 139\,018 & 33 & 99,96 & 98,60 & 98,67 & $1{,}36$ & 15,83 \\
+        Patch $4\times4$           & Tự cài đặt & 139\,018 & 38    & 99,95  & 98,73 & 98,85 & $1{,}22$ & 11,08      \\
+                                   & PyTorch    & 139\,018 & 33    & 99,96  & 98,60 & 98,67 & $1{,}36$ & 15,83      \\
         \addlinespace
-        Patch $7\times7$            & Tự cài đặt & 139\,018 & 47 & 99,99 & 98,60 & 98,70 & $1{,}39$ & 11,76 \\
-                                    & PyTorch    & 139\,018 & 48 & 99,98 & 98,55 & 98,80 & $1{,}43$ & 15,81 \\
+        Patch $7\times7$           & Tự cài đặt & 139\,018 & 47    & 99,99  & 98,60 & 98,70 & $1{,}39$ & 11,76      \\
+                                   & PyTorch    & 139\,018 & 48    & 99,98  & 98,55 & 98,80 & $1{,}43$ & 15,81      \\
         \addlinespace
-        Patch $8\times8$ chồng lấn  & Tự cài đặt & 141\,258 & 52 & 99,99 & 98,94 & 98,98 & $1{,}05$ & 16,17 \\
-                                    & PyTorch    & 141\,258 & 53 & 100,00 & 99,06 & 99,07 & $0{,}94$ & 15,55 \\
+        Patch $8\times8$ chồng lấn & Tự cài đặt & 141\,258 & 52    & 99,99  & 98,94 & 98,98 & $1{,}05$ & 16,17      \\
+                                   & PyTorch    & 141\,258 & 53    & 100,00 & 99,06 & 99,07 & $0{,}94$ & 15,55      \\
         \addlinespace
-        Hàng                        & Tự cài đặt & 138\,442 & 43 & 99,96 & 98,87 & 99,13 & $1{,}09$ & 16,03 \\
-                                    & PyTorch    & 138\,442 & 34 & 99,89 & 98,82 & 98,94 & $1{,}07$ & 10,69 \\
+        Hàng                       & Tự cài đặt & 138\,442 & 43    & 99,96  & 98,87 & 99,13 & $1{,}09$ & 16,03      \\
+                                   & PyTorch    & 138\,442 & 34    & 99,89  & 98,82 & 98,94 & $1{,}07$ & 10,69      \\
         \addlinespace
-        CNN-stem                    & Tự cài đặt & 161\,098 & 33 & 99,99 & 99,32 & 99,33 & $0{,}67$ & 16,73 \\
-                                    & PyTorch    & 161\,098 & 34 & 99,99 & 99,29 & 99,49 & $0{,}70$ & 15,94 \\
+        CNN-stem                   & Tự cài đặt & 161\,098 & 33    & 99,99  & 99,32 & 99,33 & $0{,}67$ & 16,73      \\
+                                   & PyTorch    & 161\,098 & 34    & 99,99  & 99,29 & 99,49 & $0{,}70$ & 15,94      \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -531,13 +527,13 @@ Quá trình thực nghiệm bao gồm mười thí nghiệm tương ứng với 
     \small
     \begin{tabular}{lrr}
         \toprule
-        Cách tạo token              & MSA tự cài đặt & MSA PyTorch \\
+        Cách tạo token             & MSA tự cài đặt & MSA PyTorch \\
         \midrule
-        Patch $4\times4$            & 115 & 133 \\
-        Patch $7\times7$            & 130 & 120 \\
-        Patch $8\times8$ chồng lấn  & 102 & 93 \\
-        Hàng                        & 87 & 106 \\
-        CNN-stem                    & 67 & 51 \\
+        Patch $4\times4$           & 115            & 133         \\
+        Patch $7\times7$           & 130            & 120         \\
+        Patch $8\times8$ chồng lấn & 102            & 93          \\
+        Hàng                       & 87             & 106         \\
+        CNN-stem                   & 67             & 51          \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -574,54 +570,14 @@ Quá trình thực nghiệm bao gồm mười thí nghiệm tương ứng với 
 \paragraph{Hạn chế} MNIST nhỏ và dễ: cả mười mô hình đều đạt trên $98{,}6\%$ với chưa tới $162\,000$ tham số, nên bài toán này khó phân biệt các cách tạo token.
 \section{E3: LSTM và GRU trên chuỗi ảnh}
 \label{sec:e3}
-\todo{Sẽ viết sau khi có kết quả E3 (hạn nộp 09/11/2026).}
-
-\section{So sánh tổng hợp}
-\label{sec:summary}
-\begin{table}[t]
-    \centering
-    \caption{Tất cả mô hình trên MNIST (độ chính xác kiểm tra, \%).}
-    \label{tab:master}
-    \small
-    \begin{tabular}{llrrr}
-        \toprule
-        Bài & Mô hình                     & Tham số  & Test acc & Thời gian/epoch (s) \\
-        \midrule
-        E1  & Softmax (aug)               & 7\,850   & 85,12    & \todo{}             \\
-        E1  & MLP (aug)                   & 235\,146 & 99,07    & \todo{}             \\
-        E1  & CNN (aug)                   & 206\,922 & 99,50    & \todo{}             \\
-        E2  & Patch $4\times4$ + MSA tự cài đặt  & 139\,018 & 98,85    & 11,08 \\
-        E2  & Patch $4\times4$ + MSA PyTorch     & 139\,018 & 98,67    & 15,83 \\
-        E2  & Patch $7\times7$ + MSA tự cài đặt  & 139\,018 & 98,70    & 11,76 \\
-        E2  & Patch $7\times7$ + MSA PyTorch     & 139\,018 & 98,80    & 15,81 \\
-        E2  & Patch $8\times8$ chồng lấn + MSA tự cài đặt & 141\,258 & 98,98    & 16,17 \\
-        E2  & Patch $8\times8$ chồng lấn + MSA PyTorch & 141\,258 & 99,07    & 15,55 \\
-        E2  & Hàng + MSA tự cài đặt              & 138\,442 & 99,13    & 16,03 \\
-        E2  & Hàng + MSA PyTorch                 & 138\,442 & 98,94    & 10,69 \\
-        E2  & CNN-stem + MSA tự cài đặt          & 161\,098 & 99,33    & 16,73 \\
-        E2  & CNN-stem + MSA PyTorch             & 161\,098 & 99,49    & 15,94 \\
-        E3  & \todo{LSTM/GRU tốt nhất}    & \todo{}  & \todo{}  & \todo{}             \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-\todo{Thảo luận độ chính xác so với tham số so với thời gian, và thiên kiến quy nạp nào phù hợp nhất với MNIST.}
 
 \section{Kết luận}
+\label{sec:conclusion}
 \begin{itemize}
     \item Kiến trúc quan trọng hơn số tham số: CNN vượt MLP dù ít tham số hơn.
-    \item Tăng cường dữ liệu tương tác với dung lượng mô hình: giảm khoảng $60\%$ số lỗi của MLP và CNN nhưng làm hại softmax vì mô hình này underfitting.
-    \item Tăng cường dữ liệu thay thế được một phần thiên kiến kiến trúc (MLP aug $\approx$ CNN base).
+    \item Tăng cường dữ liệu tương tác với dung lượng mô hình: giảm khoảng $60\%$ số lỗi của MLP và CNN nhưng làm giảm hiệu quả của softmax vì mô hình này thiếu khớp.
     \item Với cùng cách cài đặt MSA, CNN-stem cho accuracy test cao nhất trong năm cách tạo token ($99{,}33\%$ với MSA tự cài đặt và $99{,}49\%$ với MSA PyTorch). Bản tự cài đặt cao hơn CNN base của E1 $0{,}48$ điểm dù ít tham số hơn. Bản PyTorch lệch CNN có tăng cường một ảnh test, trong sai số của một seed. MSA tự cài đặt gần \texttt{nn.MultiheadAttention}: chênh tối đa $0{,}19$ điểm và đổi chiều giữa các cách tạo token.
-    \item \todo{Kết luận E3.}
 \end{itemize}
-\paragraph{Hạn chế} \todo{một seed, tập dữ liệu nhỏ, tinh chỉnh hạn chế, một mức tăng cường.}
-
-\appendix
-\section{Siêu tham số chi tiết}
-\todo{Bảng đầy đủ tối ưu hóa, tốc độ học, bộ lập lịch, batch size, số epoch, seed, kích thước mô hình của từng bài.}
-
-\section{Việc sử dụng công cụ AI}
-\todo{Khai báo trung thực: đã dùng công cụ AI nào, vào việc gì (ví dụ trao đổi hướng phân tích, chỉnh ngữ pháp, gợi ý soạn thảo). Theo quy định môn học, AI chỉ được dùng hỗ trợ, phải ghi rõ, và nhóm phải hiểu và bảo vệ được mã nguồn và số liệu.}
 
 \addcontentsline{toc}{section}{Tài liệu}
 \bibliographystyle{plain}
