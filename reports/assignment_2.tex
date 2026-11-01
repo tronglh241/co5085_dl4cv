@@ -14,6 +14,16 @@
 \setsansfont{Latin Modern Sans}
 \setmonofont{Latin Modern Mono}
 
+% TODO: remove later
+\newcommand{\chuaco}{\textit{Nội dung này sẽ được bổ sung ở mốc A2.2.}}
+\newcommand{\hinhtam}[2]{%
+  \begin{figure}[ht]
+    \centering
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{2cm}\textit{Hình minh họa sẽ được bổ sung}\vspace{2cm}}}
+    \caption{#1}
+    \label{#2}
+  \end{figure}}
+
 \begin{document}
 \begin{titlepage}
     \begin{center}
@@ -37,7 +47,8 @@
             ~~                                                                     \\
             \hline
             \\ \\
-            \textbf{{\huge Báo cáo Bài tập lớn A2}}                                \\
+            \textbf{{\Large Báo cáo Bài tập lớn 2}}                                \\[0.5em]
+            \textbf{{\huge Chủ đề tự chọn và phân tích paper}}                     \\
             \\ \\
             \hline
         \end{tabular}
@@ -64,8 +75,117 @@
 \tableofcontents
 \newpage
 
-\section*{Liêm chính học thuật}
-\addcontentsline{toc}{section}{Liêm chính học thuật}
+\section{Giới thiệu}\label{sec:intro}
+
+\subsection{Bài toán và động lực}
+Nhận dạng khuôn mặt (face recognition) là bài toán xác định hoặc kiểm tra danh tính của một người từ ảnh khuôn mặt. Bài toán thường được chia thành hai nhiệm vụ. Nhiệm vụ thứ nhất là xác minh (verification), trong đó hệ thống quyết định hai ảnh có thuộc cùng một người hay không. Nhiệm vụ thứ hai là định danh (identification), trong đó hệ thống tìm danh tính đúng của một ảnh truy vấn trong một tập ảnh đã biết danh tính. Trong cả hai nhiệm vụ, mô hình ánh xạ mỗi ảnh thành một vector đặc trưng (embedding), sau đó so sánh các vector này bằng một độ đo tương đồng.
+
+Trong thực tế, các danh tính xuất hiện khi kiểm thử thường không có trong tập huấn luyện (training). Vì vậy mô hình cần học một không gian đặc trưng khái quát hóa được sang danh tính mới, thay vì chỉ phân loại các lớp đã thấy. Báo cáo này đánh giá mô hình trên các danh tính không giao với tập training để phản ánh đúng yêu cầu đó.
+
+\subsection{Paper chính}
+Báo cáo phân tích bài báo ArcFace \cite{deng2019arcface}, được trình bày tại hội nghị CVPR 2019. Bài báo đề xuất hàm loss Additive Angular Margin, thêm một độ lệch góc cố định vào góc giữa vector đặc trưng và tâm lớp của danh tính đúng. Nhóm xây dựng pipeline huấn luyện xoay quanh việc tái hiện ý tưởng này ở quy mô nhỏ hơn trên tập CelebA \cite{liu2015celeba}.
+
+\subsection{Mục tiêu}
+Nhóm thực hiện hai phép so sánh có kiểm soát. Phép so sánh thứ nhất giữ nguyên backbone và so sánh hàm loss softmax với ArcFace, nhằm đo tác động của margin góc. Phép so sánh thứ hai giữ nguyên hàm loss ArcFace và so sánh hai backbone là ResNet-50 và MobileNetV3, nhằm xem xét sự đánh đổi giữa độ chính xác và chi phí tính toán. Ngoài phần cài đặt, nhóm phân tích bài báo ArcFace theo bốn khía cạnh gồm phương pháp, thí nghiệm, hạn chế và đối chiếu với kết quả của nhóm.
+
+\subsection{Cấu trúc báo cáo}
+Mục~\ref{sec:data} mô tả bài toán, tập dữ liệu và giao thức đánh giá. Mục~\ref{sec:data-pipeline} trình bày pipeline xử lý dữ liệu. Mục~\ref{sec:arcface} phân tích bài báo ArcFace. Mục~\ref{sec:training} mô tả pipeline huấn luyện và các phương pháp được so sánh. Mục~\ref{sec:results} trình bày kết quả, thảo luận và hạn chế. Mục~\ref{sec:conclusion} là kết luận và hướng phát triển.
+
+\section{Bài toán và tập dữ liệu}\label{sec:data}
+
+\subsection{Nhiệm vụ đánh giá}
+Gọi $f(\cdot)$ là hàm ánh xạ một ảnh thành embedding. Độ tương đồng giữa hai ảnh $x$ và $y$ được đo bằng cosine similarity:
+\begin{equation}
+    s(x,y) = \frac{f(x)^\top f(y)}{\lVert f(x)\rVert \, \lVert f(y)\rVert}.
+\end{equation}
+Với verification, hệ thống kết luận hai ảnh thuộc cùng một người khi $s(x,y) > \tau$, trong đó $\tau$ là ngưỡng quyết định. Với identification, hệ thống tính $s$ giữa ảnh truy vấn và mọi ảnh trong gallery, rồi xếp hạng các danh tính theo độ tương đồng giảm dần.
+
+Các metric cho verification gồm accuracy trên các cặp ảnh ở một ngưỡng cố định, đường cong ROC, TAR@FAR và EER. Các metric cho identification gồm Rank-1, Recall@k và mAP. Trong báo cáo này, accuracy của verification là tỉ lệ các cặp được phân loại đúng ở ngưỡng được chọn trên tập kiểm định (validation), còn accuracy của identification chính là Rank-1. Recall@k và mAP là các metric xếp hạng nên chỉ áp dụng cho identification.
+
+\subsection{Tập dữ liệu CelebA}
+CelebA \cite{liu2015celeba} là tập ảnh khuôn mặt của người nổi tiếng gồm $202\,599$ ảnh thuộc $10\,177$ danh tính. Tập dữ liệu được phát hành cho mục đích nghiên cứu phi thương mại, phù hợp với phạm vi học tập của bài tập này. Nhóm sử dụng phiên bản \texttt{img\_align\_celeba}, trong đó ảnh được căn chỉnh sơ bộ theo vị trí hai mắt bằng phép biến đổi đồng dạng và đổi kích thước thành $218 \times 178$. Kèm theo đó là tệp \texttt{list\_landmarks\_align\_celeba.txt} chứa năm điểm mốc khuôn mặt gồm hai mắt, mũi và hai khóe miệng.
+
+Nhóm dùng phân chia mặc định của CelebA. Nhóm đã kiểm tra rằng ba tập training, validation và kiểm thử (test) không có danh tính chung, nên việc đánh giá trên tập test là đánh giá trên danh tính chưa từng thấy. Bảng~\ref{tab:celeba-split} thống kê số ảnh và số danh tính của từng tập.
+
+\begin{table}[ht]
+    \centering
+    \caption{Thống kê các tập của CelebA.}
+    \label{tab:celeba-split}
+    \begin{tabular}{lrr}
+        \toprule
+        Tập        & Số ảnh     & Số danh tính \\
+        \midrule
+        Train      & $162\,770$ & $8\,192$     \\
+        Validation & $19\,867$  & $985$        \\
+        Test       & $19\,962$  & $1\,000$     \\
+        \midrule
+        Tổng       & $202\,599$ & $10\,177$    \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Phân tích khám phá dữ liệu}
+
+\subsection{Giao thức và metric đánh giá}
+Nhóm đánh giá trên tập test của CelebA. Tập validation chỉ dùng để chọn checkpoint tốt nhất và không dùng để huấn luyện. Tập test được đánh giá một lần sau khi đã chọn checkpoint.
+
+Với verification, nhóm sinh các cặp ảnh cùng danh tính và khác danh tính từ mỗi tập với một seed cố định, rồi lưu vào tệp để mọi lần chạy dùng chung. Với identification, nhóm chia ảnh của mỗi danh tính trong tập test thành gallery và probe, và chỉ dùng các danh tính có ít nhất hai ảnh.
+
+\section{Pipeline dữ liệu}\label{sec:data-pipeline}
+
+\subsection{Căn chỉnh và tiền xử lý}
+Nhóm căn chỉnh mọi ảnh về kích thước $112 \times 112$ bằng phép biến đổi đồng dạng dựa trên năm điểm mốc. Gọi $p_k$ là năm điểm mốc của ảnh và $q_k$ là năm điểm tương ứng của mẫu chuẩn $112 \times 112$ thường dùng trong các pipeline kiểu ArcFace. Phép biến đổi được tìm bằng bình phương tối thiểu:
+\begin{equation}
+    \min_{s,\,R,\,t} \sum_{k=1}^{5} \left\lVert s R p_k + t - q_k \right\rVert^2,
+\end{equation}
+trong đó $s$ là hệ số tỉ lệ, $R$ là ma trận xoay và $t$ là vector tịnh tiến. Nhóm dùng trực tiếp các điểm mốc có sẵn trong \texttt{list\_landmarks\_align\_celeba.txt}, nên không cần chạy bộ phát hiện khuôn mặt. Ảnh sau khi căn chỉnh được lưu lại một lần để các lần huấn luyện sau không phải lặp lại bước này.
+
+\subsection{Augmentation}
+
+\subsection{Xây dựng tập đánh giá}
+Các cặp ảnh cho verification và cách chia gallery và probe cho identification được xây dựng một lần với seed cố định, lưu vào tệp và dùng lại ở mọi lần chạy. Cách làm này bảo đảm các mô hình được so sánh trên đúng cùng một dữ liệu đánh giá.
+
+\section{Phân tích paper ArcFace}\label{sec:arcface}
+
+\subsection{Thông tin paper}
+Bài báo được phân tích là \emph{ArcFace: Additive Angular Margin Loss for Deep Face Recognition} \cite{deng2019arcface}, trình bày tại CVPR 2019. Nhóm chọn bài báo này vì nó thuộc một hội nghị hàng đầu và có ảnh hưởng lớn đến các hệ thống nhận dạng khuôn mặt sau đó. Thay đổi chính của bài báo nằm ở hàm loss, nên có thể tái hiện bằng cách thay lớp phân loại cuối của một backbone sẵn có.
+
+\subsection{Tóm tắt phương pháp}
+
+\subsection{Thí nghiệm của paper}
+
+\subsection{Hạn chế}
+
+\subsection{Đối chiếu với nhóm}\label{sec:doi-chieu}
+
+\section{Pipeline, huấn luyện và so sánh phương pháp}\label{sec:training}
+
+\subsection{Tổng quan pipeline}
+Pipeline nhận ảnh đã căn chỉnh, đưa qua backbone và khối embedding để thu được vector $512$ chiều, rồi đưa vector này vào lớp hàm loss khi huấn luyện hoặc dùng trực tiếp cho cosine similarity khi đánh giá.
+
+\subsection{Backbone}
+Nhóm dùng hai backbone có sẵn trong torchvision là ResNet-50 \cite{he2016resnet} và MobileNetV3 \cite{howard2019mobilenetv3}, với phiên bản Large cho MobileNetV3.
+
+\subsection{Hàm loss}
+Nhóm cài đặt hai hàm loss là softmax thông thường và ArcFace. Với ArcFace, nhóm dự kiến dùng $s = 64$ và $m = 0.5$ theo thiết lập phổ biến của bài báo, cùng với cơ chế tăng dần margin ở giai đoạn đầu để hỗ trợ hội tụ. Nhóm cũng xử lý trường hợp $\theta + m > \pi$ để hàm $\cos(\theta + m)$ vẫn đơn điệu theo $\theta$.
+
+\subsection{Thiết lập huấn luyện}
+
+\subsection{Hiệu năng tính toán}
+
+\section{Kết quả, thảo luận và hạn chế}\label{sec:results}
+
+\subsection{Đường cong huấn luyện}
+
+\subsection{Kết quả trên tập test}
+
+\subsection{Softmax so với ArcFace}
+
+\subsection{ResNet-50 so với MobileNetV3}
+
+\subsection{Thảo luận}
+
+\section{Kết luận}\label{sec:conclusion}
 
 \addcontentsline{toc}{section}{Tài liệu}
 \bibliographystyle{plain}
