@@ -70,7 +70,7 @@ $$
 x' = \frac{x - 0.1308}{0.3082}
 $$
 
-- E2 **không** dùng tăng cường dữ liệu, nên được so sánh với các biến thể base của E1.
+- E2 **không** dùng tăng cường dữ liệu.
 
 ### Phương pháp đánh giá
 
@@ -185,7 +185,7 @@ Mười thí nghiệm dùng chung một quy trình:
 - Mọi thí nghiệm dùng seed 42.
 - Toàn bộ thông số của mỗi thí nghiệm nằm trong một tệp cấu hình YAML riêng, và log huấn luyện được ghi bằng TensorBoard.
 
-So với E1, E2 dùng AdamW thay cho Adam, batch size 128 thay cho 64, tối đa 200 epoch thay cho 1.000, và không tăng cường dữ liệu.
+E2 không dùng tăng cường dữ liệu.
 
 Cách chạy lại thí nghiệm: làm theo [SETUP.md](https://github.com/tronglh241/co5085_dl4cv/blob/main/SETUP.md) để cài môi trường, sau đó mở shell trong container và chạy:
 
@@ -270,11 +270,6 @@ Thay `train_patch_scratch.yml` và `test_patch_scratch.yml` bằng cấu hình t
 - **Cách tạo token là một dạng thiên kiến quy nạp:**
   - CNN-stem đưa tính cục bộ và bất biến tịnh tiến vào trước khi attention nhìn toàn cục, và dẫn đầu.
   - Với MSA tự cài đặt, hàng đạt 99,13% trên test, cao hơn cả ba biến thể patch (98,70% đến 98,98%). Trên val của cùng bản này, patch chồng lấn cao hơn hàng (98,94% so với 98,87%). Ngược lại, với MSA PyTorch, patch chồng lấn cao hơn hàng trên test (99,07% so với 98,94%). Chênh lệch của hàng so với patch chồng lấn (0,15 điểm) và patch $4 \times 4$ (0,28 điểm) dưới 0,3 điểm; riêng patch $7 \times 7$ thấp hơn hàng 0,43 điểm nhưng đây chỉ là kết quả của một seed, và thứ hạng giữa hàng với patch chồng lấn đổi chiều theo cách cài đặt MSA nên chưa ổn định.
-- **So sánh với E1:**
-  - E2 không tăng cường dữ liệu nên được so với các biến thể base của E1.
-  - Mọi mô hình Transformer (98,67% đến 99,49%) đều cao hơn MLP base (97,68%) và có ít tham số hơn (138.442 đến 161.098 so với 235.146). Khoảng cách khoảng 1 đến 1,8 điểm lớn hơn ngưỡng một seed. Phép so sánh này đi cùng khác biệt huấn luyện đã nêu ở phần thiết lập: E2 dùng AdamW, weight decay 0,05, batch 128, tối đa 200 epoch; E1 dùng Adam, batch 64, tối đa 1.000 epoch.
-  - Bảy trên mười mô hình ngang hoặc vượt CNN base (98,85%, 206.922 tham số). CNN-stem tự cài đặt đạt 99,33% (67 lỗi), cao hơn CNN base (115 lỗi) 0,48 điểm, với ít tham số hơn (161.098 so với 206.922). Chỉ patch $4 \times 4$ với PyTorch (98,67%) và patch $7 \times 7$ (98,70% và 98,80%) thấp hơn một chút.
-  - CNN-stem PyTorch đạt 99,49% (51 lỗi), sát CNN có tăng cường của E1 (99,50%, 50 lỗi). Lệch một ảnh test, nhỏ hơn nhiều so với ngưỡng khoảng 0,3 điểm, nên hai mức này chưa tách được.
 - **Hạn chế:**
   - Mỗi thí nghiệm chỉ chạy một lần (seed 42), nên các chênh lệch dưới khoảng 0,3 điểm phần trăm chưa đủ để kết luận.
   - MNIST nhỏ và dễ: cả mười mô hình đều đạt trên 98,6% với chưa tới 162.000 tham số, nên khó phân biệt các cách tạo token. Muốn so sánh chắc chắn hơn cần nhiều seed hoặc một tập dữ liệu khó hơn.
@@ -282,5 +277,4 @@ Thay `train_patch_scratch.yml` và `test_patch_scratch.yml` bằng cấu hình t
 ## Kết luận
 
 - MSA viết từ đầu cho kết quả tương đương `nn.MultiheadAttention` về cả số học lẫn accuracy: chênh accuracy tối đa 0,19 điểm và đổi chiều giữa các cách tạo token.
-- CNN-stem cho accuracy test cao nhất trong năm cách tạo token: 99,33% với MSA tự cài đặt và 99,49% với MSA PyTorch. Phần chênh lệch có thể một phần đến từ số tham số lớn hơn. Bản tự cài đặt cao hơn CNN base của E1 0,48 điểm dù ít tham số hơn. Bản PyTorch lệch CNN có tăng cường một ảnh test, trong sai số của một seed.
-- Mọi mô hình Transformer đều cao hơn MLP base của E1 và có ít tham số hơn. Khoảng cách này đi cùng khác biệt huấn luyện đã nêu ở phần thiết lập.
+- CNN-stem cho accuracy test cao nhất trong năm cách tạo token: 99,33% với MSA tự cài đặt và 99,49% với MSA PyTorch. Phần chênh lệch có thể một phần đến từ số tham số lớn hơn.
