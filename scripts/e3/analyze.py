@@ -235,10 +235,12 @@ def _plot_curves(records, figures_dir):
                     if metric == 'loss':
                         loss_max = max(loss_max, value)
 
-    figure, axes = plt.subplots(2, 2, figsize=(10.5, 7.2), sharex=True)
+    sequences = [sequence for sequence in SEQUENCES if any(record['sequence'] == sequence for record in records)]
+    rows = len(sequences)
+    figure, axes = plt.subplots(rows, 2, figsize=(10.5, 3.8 * rows), sharex=True, squeeze=False)
     handles = {}
 
-    for row, sequence in enumerate(SEQUENCES):
+    for row, sequence in enumerate(sequences):
         for column, cell in enumerate(CELLS):
             axis = axes[row, column]
             record = next(
@@ -294,12 +296,15 @@ def _plot_curves(records, figures_dir):
                 axis.set_ylabel('Loss')
             if column == 1:
                 accuracy_axis.set_ylabel('Accuracy (%)')
-            if row == 1:
+            if row == rows - 1:
                 axis.set_xlabel('Epoch')
             axis.set_title(f'{CELL_LABELS[cell]} · {SEQUENCE_LABELS[sequence]}', fontsize=13)
 
     figure.legend(handles.values(), handles.keys(), loc='lower center', ncol=4, fontsize=9, frameon=False)
-    figure.subplots_adjust(left=0.08, right=0.92, bottom=0.11, top=0.93, wspace=0.30, hspace=0.26)
+    figure.subplots_adjust(
+        left=0.08, right=0.92, bottom=0.16 if rows == 1 else 0.11, top=0.93, wspace=0.30,
+        hspace=0.26,
+    )
     figure.savefig(figures_dir / 'curves_e3.png', dpi=300, bbox_inches='tight', pad_inches=0.03)
     plt.close(figure)
 
@@ -307,10 +312,12 @@ def _plot_curves(records, figures_dir):
 def _plot_confusions(runs, figures_dir):
     cmap = LinearSegmentedColormap.from_list('theme_reds', ('#ffffff', '#f5b7b1', THEME_RED))
     cmap.set_bad('white')
-    figure, axes = plt.subplots(2, 2, figsize=(10.0, 8.2), sharex=False, sharey=False)
+    sequences = [sequence for sequence in SEQUENCES if any(run[0]['sequence'] == sequence for run in runs)]
+    rows = len(sequences)
+    figure, axes = plt.subplots(rows, 2, figsize=(10.0, 4.1 * rows), sharex=False, sharey=False, squeeze=False)
     panels = {}
 
-    for row, sequence in enumerate(SEQUENCES):
+    for row, sequence in enumerate(sequences):
         for column, cell in enumerate(CELLS):
             axis = axes[row, column]
             run = next(
@@ -366,10 +373,13 @@ def _plot_confusions(runs, figures_dir):
         )
         if column == 0:
             axis.set_ylabel('Nhãn thật')
-        if row == 1:
+        if row == rows - 1:
             axis.set_xlabel('Dự đoán')
 
-    figure.subplots_adjust(left=0.06, right=0.98, bottom=0.07, top=0.94, wspace=0.24, hspace=0.26)
+    figure.subplots_adjust(
+        left=0.06, right=0.98, bottom=0.10 if rows == 1 else 0.07, top=0.94, wspace=0.24,
+        hspace=0.26,
+    )
     figure.savefig(figures_dir / 'confusion_e3.png', dpi=300, bbox_inches='tight', pad_inches=0.03)
     plt.close(figure)
 

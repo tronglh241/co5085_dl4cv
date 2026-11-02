@@ -25,7 +25,7 @@ model:
     in_channels: 1
     sequence: "'row'"
     cell: "'lstm'"
-    hidden_size: 128
+    hidden_size: 224
     num_layers: 1
     dropout: 0.0
 
