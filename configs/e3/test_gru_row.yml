@@ -51,11 +51,21 @@ metrics:
     kwargs:
       num_classes: 10
 
+logging:
+  tensorboard:
+    module: common.handlers.logging.tensorboard
+    name: TensorBoardLogger
+    kwargs:
+      log_dir: "'logs/e3/test_gru_row'"
+  tqdm:
+    module: common.handlers.logging.tqdm_logger
+    name: TQDMLogger
+
 loader:
   module: common.handlers.checkpoint.loader
   name: CheckpointLoader
   kwargs:
-    path: "'checkpoints/e3/gru_row/261030164800/best_epoch_7_loss=0.0522.pt'"
+    path: "'checkpoints/e3/gru_row/261103054212/best_epoch_22_loss=0.0436.pt'"
 
 seed: 42
 
