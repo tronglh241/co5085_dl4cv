@@ -2,7 +2,6 @@ import argparse
 import csv
 import os
 import sys
-import time
 from pathlib import Path
 
 os.environ.setdefault('MPLBACKEND', 'Agg')
@@ -22,7 +21,7 @@ from common.stamp import parse_stamp
 
 COLUMNS = (
     'Model', 'Sequence', 'Params', 'Best epoch',
-    'Train acc (%)', 'Val acc (%)', 'Test acc (%)', 'Images/s',
+    'Train acc (%)', 'Val acc (%)', 'Test acc (%)',
 )
 MAX_STAMP_GAP_S = 60
 NUM_CLASSES = 10
@@ -63,14 +62,15 @@ def _run_name(config_path):
     return parts[0], parts[1]
 
 
-def _checkpoint_path(cfg):
-    path = cfg.loader.path if 'loader' in cfg else None
-    if not path or 'REPLACE_WITH_BEST' in str(path):
-        return None
-    path = _resolve(path)
+def _require_checkpoint(cfg):
+    if 'loader' not in cfg or not cfg.loader.path:
+        raise ValueError('test config must set loader.path')
+
+    path = _resolve(cfg.loader.path)
+
     if not path.is_file():
-        print(f'skip test, checkpoint missing: {path}')
-        return None
+        raise FileNotFoundError(f'checkpoint not found: {path}')
+
     cfg.loader.path = str(path)
     return path
 
@@ -85,8 +85,6 @@ def _log_dir_for(cell, sequence, checkpoint_path):
     )
     if not candidates:
         return None
-    if checkpoint_path is None:
-        return candidates[-1]
 
     target = parse_stamp(Path(checkpoint_path).parent.name)
     if target is None:
@@ -133,35 +131,12 @@ def _epoch_stats(series):
     }
 
 
-def _sync(device):
-    if device.type == 'cuda':
-        torch.cuda.synchronize()
-
-
-def _throughput(model, loader, warmup=5, repeats=50):
-    device = next(model.parameters()).device
-    model.eval()
-    images = next(iter(loader))[0].to(device)
-    with torch.no_grad():
-        for _ in range(warmup):
-            model(images)
-        _sync(device)
-        start = time.perf_counter()
-        for _ in range(repeats):
-            model(images)
-        _sync(device)
-    elapsed = time.perf_counter() - start
-    return repeats * images.shape[0] / elapsed if elapsed else None
-
-
 def _evaluate(cfg):
     cfg.loader.attach(cfg.evaluator, cfg)
     for name, metric in cfg.metrics.items():
         metric.attach(cfg.evaluator, name)
     ConfusionMatrix(NUM_CLASSES).attach(cfg.evaluator, 'confusion_matrix')
-    result = cfg.evaluator.run()
-    result['images_per_s'] = _throughput(cfg.model, cfg.evaluator.data)
-    return result
+    return cfg.evaluator.run()
 
 
 def _collect_failures(cfg, limit=FAILURE_LIMIT):
@@ -192,6 +167,50 @@ def _collect_failures(cfg, limit=FAILURE_LIMIT):
     return failures[:limit]
 
 
+def _display_path(path):
+    path = Path(path)
+    return str(path.relative_to(_repo_root)) if path.is_relative_to(_repo_root) else str(path)
+
+
+def _architecture_text(record, model, checkpoint):
+    module = type(model).__module__
+    name = type(model).__name__
+    lines = [
+        f"run: {record['run']}",
+        f"cell: {record['cell']}",
+        f"sequence: {record['sequence']}",
+        f'model: {module}.{name}',
+        f"params: {record['params']}",
+        f'checkpoint: {_display_path(checkpoint)}',
+        '',
+        str(model),
+        '',
+        'parameters:',
+    ]
+
+    for name, parameter in model.named_parameters():
+        lines.append(f'{name:<40} {str(tuple(parameter.shape)):<24} {parameter.numel()}')
+
+    return '\n'.join(lines) + '\n'
+
+
+def _write_architecture(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+
+def _write_confusion_text(path, matrix):
+    counts = matrix.cpu().numpy().astype(int)
+    labels = range(counts.shape[0])
+    lines = ['true\\pred' + ''.join(f'{label:7d}' for label in labels)]
+
+    for label, row in enumerate(counts):
+        lines.append(f'{label:<9d}' + ''.join(f'{value:7d}' for value in row))
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('\n'.join(lines) + '\n')
+
+
 def _fmt(value, digits=4):
     if value is None:
         return ''
@@ -209,7 +228,6 @@ def _csv_row(record):
         'Train acc (%)': _fmt(record['train_acc'] * 100 if record['train_acc'] is not None else None, 3),
         'Val acc (%)': _fmt(record['val_acc'] * 100 if record['val_acc'] is not None else None, 3),
         'Test acc (%)': _fmt(record['test_acc'] * 100 if record['test_acc'] is not None else None, 3),
-        'Images/s': _fmt(record['images_per_s'], 1),
     }
 
 
@@ -418,8 +436,8 @@ def _record(config_path):
     print(f'analyze {run}')
 
     cfg = CfgNode.load(config_path)
-    checkpoint = _checkpoint_path(cfg)
-    result = _evaluate(cfg) if checkpoint is not None else None
+    checkpoint = _require_checkpoint(cfg)
+    result = _evaluate(cfg)
     series = _read_series(_extract_metrics(_log_dir_for(cell, sequence, checkpoint)))
     stats = _epoch_stats(series)
     params = sum(parameter.numel() for parameter in cfg.model.parameters())
@@ -432,13 +450,11 @@ def _record(config_path):
         'best_epoch': stats['best_epoch'],
         'train_acc': stats['train_acc'],
         'val_acc': stats['val_acc'],
-        'test_acc': None if result is None else result.get('accuracy'),
-        'images_per_s': None if result is None else result.get('images_per_s'),
+        'test_acc': result.get('accuracy'),
         'series': series,
         'failures': None,
     }
-    matrix = None if result is None else result.get('confusion_matrix')
-    return record, matrix, cfg, checkpoint
+    return record, result['confusion_matrix'], cfg, checkpoint
 
 
 def main():
@@ -465,16 +481,22 @@ def main():
         writer.writeheader()
         writer.writerows(_csv_row(record) for record in records)
 
+    for record, matrix, cfg, checkpoint in runs:
+        run = record['run']
+        _write_architecture(
+            results_dir / f'architecture_{run}.txt',
+            _architecture_text(record, cfg.model, checkpoint),
+        )
+        _write_confusion_text(results_dir / f'confusion_{run}.txt', matrix)
+
     _plot_curves(records, figures_dir)
     _plot_confusions(runs, figures_dir)
 
-    evaluated = [item for item in runs if item[0]['test_acc'] is not None]
-    if evaluated:
-        best = max(evaluated, key=lambda item: item[0]['val_acc'] if item[0]['val_acc'] is not None else -1.0)
-        best[0]['failures'] = _collect_failures(best[2])
-        _plot_failures(best[0], figures_dir)
+    best = max(runs, key=lambda item: item[0]['val_acc'] if item[0]['val_acc'] is not None else -1.0)
+    best[0]['failures'] = _collect_failures(best[2])
+    _plot_failures(best[0], figures_dir)
 
-    print(f'wrote {path} and figures to {figures_dir}')
+    print(f'wrote {path}, architectures, confusion matrices and figures to {figures_dir}')
 
 
 if __name__ == '__main__':

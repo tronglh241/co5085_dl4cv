@@ -1,0 +1,22 @@
+run: lstm_row
+cell: lstm
+sequence: row
+model: models.e3.recurrent.RecurrentClassifier
+params: 229834
+checkpoint: checkpoints/e3/lstm_row/261103054414/best_epoch_15_loss=0.0425.pt
+
+RecurrentClassifier(
+  (rnn): LSTM(28, 224, batch_first=True)
+  (classifier): Sequential(
+    (0): Dropout(p=0.0, inplace=False)
+    (1): Linear(in_features=224, out_features=10, bias=True)
+  )
+)
+
+parameters:
+rnn.weight_ih_l0                         (896, 28)                25088
+rnn.weight_hh_l0                         (896, 224)               200704
+rnn.bias_ih_l0                           (896,)                   896
+rnn.bias_hh_l0                           (896,)                   896
+classifier.1.weight                      (10, 224)                2240
+classifier.1.bias                        (10,)                    10

@@ -1,0 +1,22 @@
+run: gru_row
+cell: gru
+sequence: row
+model: models.e3.recurrent.RecurrentClassifier
+params: 222218
+checkpoint: checkpoints/e3/gru_row/261103054212/best_epoch_22_loss=0.0436.pt
+
+RecurrentClassifier(
+  (rnn): GRU(28, 256, batch_first=True)
+  (classifier): Sequential(
+    (0): Dropout(p=0.0, inplace=False)
+    (1): Linear(in_features=256, out_features=10, bias=True)
+  )
+)
+
+parameters:
+rnn.weight_ih_l0                         (768, 28)                21504
+rnn.weight_hh_l0                         (768, 256)               196608
+rnn.bias_ih_l0                           (768,)                   768
+rnn.bias_hh_l0                           (768,)                   768
+classifier.1.weight                      (10, 256)                2560
+classifier.1.bias                        (10,)                    10
