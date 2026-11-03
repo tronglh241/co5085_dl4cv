@@ -12,3 +12,5 @@ dc46e949dc344fb8c23630592309e6e4  logs/e1/train_softmax/261020005115/events.out.
 246f02895a9d9d1ea51fb236e4f0cf3a  logs/e2/train_patch_torch/261013031834/events.out.tfevents.1791861514.modal.4.0
 201cabd5879a2fa52b1bbf00d799b76f  logs/e2/train_row_scratch/261013032303/events.out.tfevents.1791861783.modal.4.0
 b65da0a0e3d9e613691a70b7ef16ff1e  logs/e2/train_row_torch/261013032408/events.out.tfevents.1791861848.modal.4.0
+e1edf0f1a7e53b7f516df071aa20fa7e  logs/e3/train_gru_row/261103054212/events.out.tfevents.1793684570.569e6049cdcb.1221.0
+47ddaa6b85978e7167d1cf7299e4a28b  logs/e3/train_lstm_row/261103054414/events.out.tfevents.1793684697.569e6049cdcb.1222.0

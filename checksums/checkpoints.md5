@@ -40,3 +40,9 @@ e070dda4ff43e10c1d75dbc9d87e3ce6  checkpoints/e2/train_patch_torch/261013031834/
 d3220914d8b7400aff9a63d4443eb80c  checkpoints/e2/train_row_torch/261013032408/backup_epoch_55.pt
 04b6d63dc0406a6bad2bf20a005e65cd  checkpoints/e2/train_row_torch/261013032408/best_epoch_34_loss=0.0448.pt
 08edf3b8a72047ed8b0091c75f5594fd  checkpoints/e2/train_row_torch/261013032408/train_row_torch.yml
+80a28f0497b036294e8fa693aff331d0  checkpoints/e3/gru_row/261103054212/backup_epoch_43.pt
+263fdaf6d6aaa2f8850c91a800e02749  checkpoints/e3/gru_row/261103054212/best_epoch_22_loss=0.0436.pt
+16d0387d74cce5cb9e0f574276948867  checkpoints/e3/gru_row/261103054212/train_gru_row.yml
+791d6ba1c058db1ffe6629c20964885f  checkpoints/e3/lstm_row/261103054414/backup_epoch_36.pt
+77d687eee50a5e78f02af9b8efd37ca5  checkpoints/e3/lstm_row/261103054414/best_epoch_15_loss=0.0425.pt
+3bc7a0e3b1a475bece515cefc660891f  checkpoints/e3/lstm_row/261103054414/train_lstm_row.yml
