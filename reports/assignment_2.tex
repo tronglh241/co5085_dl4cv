@@ -141,6 +141,7 @@ Nhóm căn chỉnh mọi ảnh về kích thước $112 \times 112$ bằng phép
 trong đó $s$ là hệ số tỉ lệ, $R$ là ma trận xoay và $t$ là vector tịnh tiến. Nhóm dùng trực tiếp các điểm mốc có sẵn trong \texttt{list\_landmarks\_align\_celeba.txt}, nên không cần chạy bộ phát hiện khuôn mặt. Ảnh sau khi căn chỉnh được lưu lại một lần để các lần huấn luyện sau không phải lặp lại bước này.
 
 \subsection{Augmentation}
+Để giữ sát thiết lập của paper, nhóm không dùng augmentation ngẫu nhiên. Ảnh chỉ được căn chỉnh, đổi kích thước về $112 \times 112$ và chuẩn hóa theo mean và std $0.5$ cho cả ba kênh.
 
 \subsection{Xây dựng tập đánh giá}
 Các cặp ảnh cho verification và cách chia gallery và probe cho identification được xây dựng một lần với seed cố định, lưu vào tệp và dùng lại ở mọi lần chạy. Cách làm này bảo đảm các mô hình được so sánh trên đúng cùng một dữ liệu đánh giá.
@@ -167,9 +168,10 @@ Pipeline nhận ảnh đã căn chỉnh, đưa qua backbone và khối embedding
 Nhóm dùng hai backbone có sẵn trong torchvision là ResNet-50 \cite{he2016resnet} và MobileNetV3 \cite{howard2019mobilenetv3}, với phiên bản Large cho MobileNetV3.
 
 \subsection{Hàm loss}
-Nhóm cài đặt hai hàm loss là softmax thông thường và ArcFace. Với ArcFace, nhóm dự kiến dùng $s = 64$ và $m = 0.5$ theo thiết lập phổ biến của bài báo, cùng với cơ chế tăng dần margin ở giai đoạn đầu để hỗ trợ hội tụ. Nhóm cũng xử lý trường hợp $\theta + m > \pi$ để hàm $\cos(\theta + m)$ vẫn đơn điệu theo $\theta$.
+Nhóm cài đặt hai hàm loss là softmax thông thường và ArcFace. Với ArcFace, nhóm dùng cố định $s = 64$ và $m = 0.5$ theo thiết lập của paper, không dùng cơ chế tăng dần margin. Nhóm cũng không thêm nhánh đặc biệt cho trường hợp $\theta + m > \pi$; cosine được kẹp vào $[-1 + 10^{-7}, 1 - 10^{-7}]$ trước khi lấy arccos để tránh lỗi số.
 
 \subsection{Thiết lập huấn luyện}
+Nhóm huấn luyện bằng SGD với momentum $0.9$ và weight decay $5 \times 10^{-4}$, batch size $128$, learning rate khởi tạo $0.01$. Paper dùng batch $512$ và learning rate $0.1$; nhóm giảm cả hai theo tỉ lệ để phù hợp với bộ nhớ của GPU trong phạm vi bài tập. Mô hình chạy ở FP32, không dùng mixed precision. Mỗi run huấn luyện tối đa $1000$ epoch và dừng sớm với patience $30$ epoch theo ROC-AUC trên tập validation. Learning rate được giảm theo ReduceLROnPlateau với factor $0.5$, patience $5$ và min learning rate $10^{-6}$, cũng theo dõi ROC-AUC trên validation. Checkpoint tốt nhất được chọn theo ROC-AUC trên validation.
 
 \subsection{Hiệu năng tính toán}
 

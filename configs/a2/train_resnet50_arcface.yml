@@ -1,0 +1,241 @@
+data:
+  train:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.celeba
+        name: CelebA
+        kwargs:
+          root: "'data/celeba_112'"
+          split: "'train'"
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+      batch_size: 128
+      shuffle: true
+      num_workers: 4
+      collate_fn: collate_batch
+      pin_memory: true
+      persistent_workers: true
+      drop_last: true
+  train_eval:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.celeba
+        name: CelebA
+        kwargs:
+          root: "'data/celeba_112'"
+          split: "'train'"
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+      batch_size: 256
+      shuffle: false
+      num_workers: 2
+      collate_fn: collate_batch
+      pin_memory: true
+      persistent_workers: true
+      drop_last: false
+  valid:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.celeba
+        name: CelebA
+        kwargs:
+          root: "'data/celeba_112'"
+          split: "'val'"
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+      batch_size: 256
+      shuffle: false
+      num_workers: 2
+      collate_fn: collate_batch
+      pin_memory: true
+      persistent_workers: true
+      drop_last: false
+  valid_pairs:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.celeba
+        name: VerificationPairs
+        kwargs:
+          root: "'data/celeba_112'"
+          split: "'val'"
+          pairs: "'data/celeba_112/pairs/val.csv'"
+      batch_size: 512
+      shuffle: false
+      num_workers: 0
+      collate_fn: collate_pairs
+      pin_memory: true
+      persistent_workers: false
+      drop_last: false
+  test:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.celeba
+        name: CelebA
+        kwargs:
+          root: "'data/celeba_112'"
+          split: "'test'"
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+      batch_size: 256
+      shuffle: false
+      num_workers: 2
+      collate_fn: collate_batch
+      pin_memory: true
+      persistent_workers: true
+      drop_last: false
+  test_pairs:
+    module: torch.utils.data
+    name: DataLoader
+    kwargs:
+      dataset:
+        module: datasets.celeba
+        name: VerificationPairs
+        kwargs:
+          root: "'data/celeba_112'"
+          split: "'test'"
+          pairs: "'data/celeba_112/pairs/test.csv'"
+      batch_size: 512
+      shuffle: false
+      num_workers: 0
+      collate_fn: collate_pairs
+      pin_memory: true
+      persistent_workers: false
+      drop_last: false
+model:
+  module: models.a2.embedding
+  name: A2Model
+  kwargs:
+    backbone: "'resnet50'"
+    num_classes: 8192
+    embedding_dim: 512
+    pretrained: true
+    head: "'arcface'"
+    dropout: 0.4
+    scale: 64.0
+    margin: 0.5
+optimizer:
+  module: torch.optim
+  name: SGD
+  kwargs:
+    params: model.parameters()
+    lr: 0.01
+    momentum: 0.9
+    weight_decay: 0.0005
+loss_fn:
+  module: models.a2.loss
+  name: ArcFaceLoss
+  kwargs:
+    scale: 64.0
+    margin: 0.5
+    label_smoothing: 0.0
+trainer:
+  module: common.engine.trainer
+  name: Trainer
+  kwargs:
+    data: data.train
+    model: model
+    optimizer: optimizer
+    loss_fn: loss_fn
+    device: null
+    max_epochs: 1000
+    amp: false
+    channels_last: true
+    clip_grad_norm: null
+evaluators:
+  valid:
+    module: models.a2.evaluator
+    name: VerificationEvaluator
+    kwargs:
+      data: data.valid_pairs
+      image_data: data.valid
+      model: model
+      device: null
+      channels_last: true
+      threshold: null
+lr_scheduler:
+  module: common.handlers.scheduler.metric
+  name: MetricScheduler
+  kwargs:
+    scheduler:
+      module: torch.optim.lr_scheduler
+      name: ReduceLROnPlateau
+      kwargs:
+        optimizer: optimizer
+        mode: "'max'"
+        factor: 0.5
+        patience: 5
+        threshold: 0.0001
+        min_lr: 0.000001
+    evaluator: evaluators.valid
+    score_name: "'roc_auc'"
+early_stopping:
+  module: common.handlers.early_stopping
+  name: EarlyStopping
+  kwargs:
+    patience: 30
+    evaluator: evaluators.valid
+    mode: "'max'"
+    score_name: "'roc_auc'"
+logging:
+  tensorboard:
+    module: common.handlers.logging.tensorboard
+    name: TensorBoardLogger
+    kwargs:
+      log_dir: "'logs/a2/train_resnet50_arcface'"
+  tqdm:
+    module: common.handlers.logging.tqdm_logger
+    name: TQDMLogger
+timer:
+  module: common.handlers.timer
+  name: EpochTimer
+  kwargs:
+    logger: logging.tensorboard
+memory:
+  module: common.handlers.memory
+  name: PeakMemory
+  kwargs:
+    logger: logging.tensorboard
+best_checkpoint:
+  module: common.handlers.checkpoint.best
+  name: BestCheckpoint
+  kwargs:
+    dirname: "'checkpoints/a2/train_resnet50_arcface'"
+    modules:
+    - "'model'"
+    evaluator: evaluators.valid
+    score_name: "'roc_auc'"
+    mode: "'max'"
+    n_saved: 1
+backup_checkpoint:
+  module: common.handlers.checkpoint.backup
+  name: BackupCheckpoint
+  kwargs:
+    dirname: "'checkpoints/a2/train_resnet50_arcface'"
+    modules:
+    - "'model'"
+    - "'optimizer'"
+    - "'trainer'"
+    - "'lr_scheduler'"
+    - "'early_stopping'"
+    - "'best_checkpoint'"
+    n_saved: 1
+loader:
+  module: common.handlers.checkpoint.loader
+  name: CheckpointLoader
+  kwargs:
+    path: null
+seed: 42
+extralibs:
+  transforms: torchvision.transforms
+  collate_batch:
+    module: datasets.celeba
+    name: collate_batch
+  collate_pairs:
+    module: datasets.celeba
+    name: collate_pairs
