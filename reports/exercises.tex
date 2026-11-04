@@ -31,6 +31,9 @@
 \setsansfont{Latin Modern Sans}
 \setmonofont{Latin Modern Mono}
 
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\figph}[2]{\fbox{\parbox[c][#1][c]{0.92\linewidth}{\centering\textcolor{gray}{[Chỗ chèn hình: #2]}}}}
+
 \begin{document}
 \begin{titlepage}
     \begin{center}
@@ -568,6 +571,158 @@ Quá trình thực nghiệm bao gồm mười thí nghiệm tương ứng với 
 \paragraph{Hạn chế} MNIST nhỏ và dễ: cả mười mô hình đều đạt trên $98{,}6\%$ với chưa tới $162\,000$ tham số, nên bài toán này khó phân biệt các cách tạo token.
 \section{E3: LSTM và GRU trên chuỗi ảnh}
 \label{sec:e3}
+
+Bài tập E3 xem mỗi ảnh như một chuỗi gồm 28 hàng và phân loại bằng hai mô hình hồi quy là LSTM và GRU. Hai mô hình này được so sánh với MLP và CNN không hồi quy từ E1 trên cùng tập kiểm thử.
+
+\subsection{Mô hình}
+\label{sec:e3-models}
+
+Mỗi ảnh $28\times 28$ sau khi chuẩn hóa được chuyển thành chuỗi $(\mathbf{x}_1,\dots,\mathbf{x}_T)$ với $T=28$, trong đó $\mathbf{x}_t\in\mathbb{R}^{D}$, $D=28$, là hàng thứ $t$ của ảnh, đọc từ trên xuống dưới. Mô hình đọc lần lượt từng hàng và cập nhật trạng thái ẩn $\mathbf{h}_t\in\mathbb{R}^{H}$. Trạng thái ẩn ở bước cuối $\mathbf{h}_{28}$ đi qua một lớp tuyến tính để tạo ra logits $\mathbf{z}\in\mathbb{R}^{10}$, và hàm softmax nằm trong CrossEntropyLoss như ở E1. Hình~\ref{fig:e3-arch} minh họa cách chuyển ảnh thành chuỗi.
+
+\begin{figure}[htbp]
+    \centering
+    \figph{4.5cm}{Sơ đồ mô hình hồi quy: mỗi hàng ảnh là một bước thời gian, trạng thái ẩn cuối đi qua lớp tuyến tính}
+    \caption{Cách chuyển ảnh thành chuỗi và kiến trúc mô hình hồi quy.}
+    \label{fig:e3-arch}
+\end{figure}
+
+LSTM duy trì hai trạng thái, gồm trạng thái ô $\mathbf{c}_t$ và trạng thái ẩn $\mathbf{h}_t$, và điều khiển chúng bằng ba cổng:
+\begin{align*}
+    \mathbf{i}_t & = \sigma(W_i\mathbf{x}_t + U_i\mathbf{h}_{t-1} + \mathbf{b}_i),      &
+    \mathbf{f}_t & = \sigma(W_f\mathbf{x}_t + U_f\mathbf{h}_{t-1} + \mathbf{b}_f),        \\
+    \mathbf{o}_t & = \sigma(W_o\mathbf{x}_t + U_o\mathbf{h}_{t-1} + \mathbf{b}_o),      &
+    \mathbf{g}_t & = \tanh(W_g\mathbf{x}_t + U_g\mathbf{h}_{t-1} + \mathbf{b}_g),         \\
+    \mathbf{c}_t & = \mathbf{f}_t\odot\mathbf{c}_{t-1} + \mathbf{i}_t\odot\mathbf{g}_t, &
+    \mathbf{h}_t & = \mathbf{o}_t\odot\tanh(\mathbf{c}_t).
+\end{align*}
+GRU gộp hai trạng thái thành một và chỉ dùng hai cổng:
+\begin{align*}
+    \mathbf{r}_t & = \sigma(W_r\mathbf{x}_t + U_r\mathbf{h}_{t-1} + \mathbf{b}_r),                                             &
+    \mathbf{u}_t & = \sigma(W_u\mathbf{x}_t + U_u\mathbf{h}_{t-1} + \mathbf{b}_u),                                               \\
+    \mathbf{n}_t & = \tanh\bigl(W_n\mathbf{x}_t + \mathbf{b}_n + \mathbf{r}_t\odot(U_n\mathbf{h}_{t-1} + \mathbf{b}'_n)\bigr), &
+    \mathbf{h}_t & = (1-\mathbf{u}_t)\odot\mathbf{n}_t + \mathbf{u}_t\odot\mathbf{h}_{t-1}.
+\end{align*}
+
+Lớp hồi quy của PyTorch có hai vector bias cho mỗi khối cổng, nên số tham số của lớp này là $4H(D+H+2)$ cho LSTM và $3H(D+H+2)$ cho GRU. Kích thước ẩn được chọn là $H=224$ cho LSTM và $H=256$ cho GRU để cả hai mô hình có khoảng $2\times10^{5}$ tham số, gần với MLP và CNN ở E1. Bảng~\ref{tab:e3-arch} liệt kê số tham số của từng phần.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Kiến trúc và số tham số của LSTM và GRU.}
+    \label{tab:e3-arch}
+    \small
+    \begin{tabular}{lcccc}
+        \toprule
+        Mô hình & Lớp hồi quy            & Tham số lớp hồi quy & Tham số lớp tuyến tính & Tổng    \\
+        \midrule
+        LSTM    & \texttt{LSTM(28, 224)} & 227,584             & 2,250                  & 229,834 \\
+        GRU     & \texttt{GRU(28, 256)}  & 219,648             & 2,570                  & 222,218 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Hai mô hình cơ sở không hồi quy là MLP và CNN của E1 ở cấu hình không tăng cường dữ liệu. Hai mô hình này được dùng lại từ checkpoint của E1 và được đánh giá trên cùng tập kiểm thử.
+
+\subsection{Thiết lập huấn luyện}
+\label{sec:e3-setup}
+
+LSTM và GRU được huấn luyện theo đúng thiết lập của E1 trong Mục~\ref{sec:e1-setup}, gồm Adam với learning rate $10^{-3}$, batch size 64, CrossEntropyLoss, ReduceLROnPlateau và EarlyStopping theo validation loss, cùng vòng lặp huấn luyện tự viết. Dữ liệu dùng cùng phép chia và cùng cách chuẩn hóa như E1, và không áp dụng tăng cường dữ liệu. Checkpoint tốt nhất là checkpoint có validation loss nhỏ nhất, và test accuracy được tính tại epoch đó.
+
+Để khảo sát mức phụ thuộc vào thứ tự và độ dài của chuỗi, các checkpoint tốt nhất được đánh giá trên tập kiểm thử đã biến đổi mà không huấn luyện lại. Ở các thí nghiệm chỉ giữ $k$ hàng đầu hoặc $k$ hàng cuối, các hàng còn lại được thay bằng giá trị nền $-0.1308/0.3082\approx-0.424$ trong không gian đã chuẩn hóa, nên mọi mô hình vẫn nhận đầu vào $28\times28$. Thí nghiệm đảo thứ tự đọc các hàng từ dưới lên trên. Cả bốn mô hình, gồm MLP và CNN, được đánh giá theo cùng quy trình.
+
+\subsection{Kết quả và phân tích}
+\label{sec:e3-results}
+
+\begin{table}[htbp]
+    \centering
+    \caption{So sánh LSTM và GRU với MLP và CNN của E1. Accuracy tính bằng \%, Gap là chênh lệch giữa train accuracy và validation accuracy.}
+    \label{tab:e3-results}
+    \small
+    \begin{tabular}{lcccccccc}
+        \toprule
+        Mô hình & Tham số & Epoch & Train & Val   & Test  & Gap  & Số lỗi \\
+        \midrule
+        MLP     & 235,146 & 6     & 99.26 & 97.58 & 97.68 & 1.68 & 232    \\
+        CNN     & 206,922 & 7     & 99.68 & 98.73 & 98.85 & 0.95 & 115    \\
+        \midrule
+        LSTM    & 229,834 & 15    & 99.87 & 98.93 & 98.90 & 0.94 & 110    \\
+        GRU     & 222,218 & 22    & 99.99 & 99.03 & 98.94 & 0.96 & 106    \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Bảng~\ref{tab:e3-results} cho thấy LSTM và GRU đạt test accuracy 98.90\% và 98.94\%, tương đương CNN với 98.85\% và cao hơn rõ rệt so với MLP với 97.68\%. Số lỗi trên tập kiểm thử là 110 cho LSTM, 106 cho GRU, 115 cho CNN và 232 cho MLP. Chênh lệch giữa hai mô hình hồi quy và CNN chỉ là 5 đến 9 ảnh, cùng cỡ với độ lệch chuẩn khoảng 10 ảnh do tập kiểm thử có kích thước hữu hạn, và mỗi cấu hình chỉ được huấn luyện một lần. Vì vậy kết quả được hiểu là LSTM và GRU ngang CNN và tốt hơn MLP, không phải là một mô hình nào vượt trội. Hai mô hình hồi quy có gap gần bằng CNN và thấp hơn gap của MLP. Epoch tốt nhất của LSTM và GRU là 15 và 22, muộn hơn nhiều so với 6 và 7 của MLP và CNN.
+
+\begin{figure}[htbp]
+    \centering
+    \figph{6cm}{Đường cong loss và accuracy của LSTM và GRU trên tập huấn luyện và kiểm định}
+    \caption{Đường cong huấn luyện của LSTM và GRU.}
+    \label{fig:e3-curves}
+\end{figure}
+
+Hình~\ref{fig:e3-curves} trình bày đường cong huấn luyện và kiểm định của hai mô hình. \todo{Nhận xét hình dạng đường cong, thời điểm validation loss bắt đầu tăng và khác biệt giữa LSTM và GRU, dựa trên hình thực tế.}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Số ảnh kiểm thử bị nhầm ở ba cặp lớp được theo dõi.}
+    \label{tab:e3-errors}
+    \small
+    \begin{tabular}{lcccc}
+        \toprule
+        Cặp lớp & MLP & CNN      & LSTM & GRU \\
+        \midrule
+        $4\to9$ & 22  & \todo{?} & 7    & 9   \\
+        $5\to3$ & 10  & 7        & 4    & 10  \\
+        $7\to2$ & 13  & 6        & 9    & 9   \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Bảng~\ref{tab:e3-errors} theo dõi cùng ba cặp lớp như ở E1. Cả LSTM và GRU giảm số ảnh $4\to9$ từ 22 của MLP xuống còn 7 và 9. Cặp $7\to2$ vẫn là một trong các nhầm lẫn lớn nhất của cả bốn mô hình, với 13, 6, 9 và 9 ảnh. Cặp $5\to3$ có 4 ảnh ở LSTM và 10 ảnh ở GRU, nhưng chênh lệch này chưa đủ cơ sở để kết luận vì mỗi mô hình chỉ được huấn luyện một lần. Ma trận nhầm lẫn đầy đủ của hai mô hình hồi quy được trình bày trong Hình~\ref{fig:e3-cm}.
+
+\begin{figure}[htbp]
+    \centering
+    \figph{5.5cm}{Ma trận nhầm lẫn của LSTM và GRU trên tập kiểm thử}
+    \caption{Ma trận nhầm lẫn của LSTM và GRU trên tập kiểm thử.}
+    \label{fig:e3-cm}
+\end{figure}
+
+Bảng~\ref{tab:e3-temporal} đánh giá mức phụ thuộc của từng mô hình vào các hàng của ảnh. Các trường hợp chỉ giữ 7 hàng hoặc ẩn toàn bộ ảnh cho accuracy gần mức ngẫu nhiên nên không được đưa vào bảng.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Test accuracy (\%) khi chỉ giữ một phần các hàng và khi đảo thứ tự hàng. Các hàng bị ẩn được thay bằng giá trị nền.}
+    \label{tab:e3-temporal}
+    \small
+    \begin{tabular}{lcccccc}
+        \toprule
+        Mô hình & Đầy đủ & 14 hàng đầu & 14 hàng cuối & 21 hàng đầu & 21 hàng cuối & Đảo thứ tự \\
+        \midrule
+        MLP     & 97.68  & 47.99       & 51.88        & 93.53       & 95.73        & 35.39      \\
+        CNN     & 98.85  & 54.03       & 59.94        & 96.08       & 97.70        & 36.80      \\
+        \midrule
+        LSTM    & 98.90  & 30.16       & 41.88        & 92.84       & 94.21        & 42.21      \\
+        GRU     & 98.94  & 30.20       & 40.69        & 94.81       & 94.51        & 40.19      \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Khi chỉ giữ 14 hàng, LSTM và GRU giảm mạnh hơn MLP và CNN. Với 14 hàng đầu, accuracy của hai mô hình hồi quy chỉ còn khoảng 30\%, trong khi MLP và CNN đạt 47.99\% và 54.03\%. Với 14 hàng cuối, LSTM và GRU đạt 41.88\% và 40.69\%, so với 51.88\% và 59.94\% của MLP và CNN. Các chênh lệch từ 10 đến 24 điểm này lớn hơn nhiều so với sai số lấy mẫu của tập kiểm thử.
+
+Hai mô hình hồi quy thu thêm 11.72 và 10.49 điểm khi giữ nửa cuối thay vì nửa đầu, còn MLP và CNN chỉ thu thêm 3.89 và 5.91 điểm. Điều này gợi ý rằng trạng thái ẩn cuối ưu tiên các hàng gần cuối chuỗi. Tuy nhiên, khi chỉ bỏ 7 hàng, GRU giảm gần bằng nhau giữa bỏ 7 hàng cuối và bỏ 7 hàng đầu, với 4.13 và 4.43 điểm. LSTM giảm 6.06 và 4.69 điểm, MLP giảm 4.15 và 1.95 điểm, còn CNN giảm 2.77 và 1.15 điểm. Bằng chứng cho thiên lệch về các hàng cuối vì vậy chỉ ở mức vừa phải.
+
+Khi đảo thứ tự hàng, cả bốn mô hình giảm xuống còn 35.39\% đến 42.21\%. Ảnh bị đảo là một ảnh khác, nên thí nghiệm này chỉ cho biết mọi mô hình đều dựa vào thứ tự hàng và không phân biệt được mô hình hồi quy với mô hình không hồi quy.
+
+\subsection{Thảo luận}
+\label{sec:e3-discussion}
+
+\paragraph{Vì sao mô hình hồi quy ngang CNN.}
+LSTM và GRU dùng chung một ma trận trọng số đầu vào cho cả 28 hàng, tương tự cách CNN dùng chung bộ lọc cho mọi vị trí, trong khi lớp đầu tiên của MLP có một trọng số riêng cho từng điểm ảnh. Ma trận chuyển trạng thái chiếm 196,608 trên 222,218 tham số của GRU và 200,704 trên 229,834 tham số của LSTM, tức khoảng 88\% và 87\%. Phần lớn ngân sách tham số vì vậy dành cho việc mô hình hóa quan hệ giữa các hàng. Điều này có thể giải thích vì sao hai mô hình hồi quy ngang CNN và vượt MLP với số tham số tương đương.
+
+\paragraph{Vì sao mô hình hồi quy nhạy hơn với các hàng bị thiếu.}
+Lớp đầu tiên của MLP cộng đóng góp của từng điểm ảnh, nên việc thay một số hàng bằng giá trị nền chỉ làm thay đổi đầu vào của mỗi nơ-ron theo một lượng bị chặn. CNN trích xuất đặc trưng cục bộ, nên các hàng bị thay chỉ ảnh hưởng đến đặc trưng quanh vùng đó. Ở LSTM và GRU, một thay đổi tại bước $t$ làm thay đổi mọi trạng thái $\mathbf{h}_{t'}$ với $t'\ge t$, và do đó thay đổi cả $\mathbf{h}_{28}$ dùng để phân loại. Sai lệch được truyền qua các chuyển trạng thái phi tuyến nên ảnh hưởng đến kết quả nhiều hơn. Các hàng đầu còn đi qua nhiều chuyển trạng thái hơn các hàng cuối trước khi đến $\mathbf{h}_{28}$, điều này phù hợp với chênh lệch giữa nửa đầu và nửa cuối nhưng không được xác nhận rõ ở thí nghiệm bỏ 7 hàng.
+
+\paragraph{LSTM và GRU.}
+Ở cùng kích thước ẩn, GRU có ít hơn LSTM một phần tư số tham số vì chỉ có ba khối cổng thay vì bốn. Với ngân sách tham số tương đương, GRU dùng kích thước ẩn lớn hơn, và hai mô hình cho cùng accuracy trong phạm vi dao động của một lần đo. Chuỗi chỉ dài 28 bước, nên trạng thái ô riêng của LSTM không mang lại lợi thế đo được trên bài toán này.
 
 \section{Kết luận}
 \label{sec:conclusion}

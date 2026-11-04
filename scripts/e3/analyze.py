@@ -320,7 +320,7 @@ def _plot_curves(records, figures_dir):
 
     figure.legend(handles.values(), handles.keys(), loc='lower center', ncol=4, fontsize=9, frameon=False)
     figure.subplots_adjust(
-        left=0.08, right=0.92, bottom=0.16 if rows == 1 else 0.11, top=0.93, wspace=0.30,
+        left=0.08, right=0.92, bottom=0.22 if rows == 1 else 0.11, top=0.93, wspace=0.30,
         hspace=0.26,
     )
     figure.savefig(figures_dir / 'curves_e3.png', dpi=300, bbox_inches='tight', pad_inches=0.03)
@@ -385,8 +385,7 @@ def _plot_confusions(runs, figures_dir):
         axis.tick_params(axis='y', labelsize=7, pad=2)
         errors_total = int(counts.sum() - np.trace(counts))
         axis.set_title(
-            f"{CELL_LABELS[record['cell']]} · {SEQUENCE_LABELS[record['sequence']]}"
-            f' ({errors_total} lỗi)',
+            f"{CELL_LABELS[record['cell']]} {SEQUENCE_LABELS[record['sequence']]}",
             fontsize=11,
         )
         if column == 0:
