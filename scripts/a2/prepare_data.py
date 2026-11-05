@@ -1,18 +1,7 @@
-'''Prepare CelebA for A2: aligned crops, split lists, pairs, and identification sets.
-
-    python scripts/a2/prepare_data.py --download
-    python scripts/a2/prepare_data.py --raw data/celeba --out data/celeba_112
-
-The raw torchvision layout is data/celeba/celeba. The prepared layout is
-data/celeba_112/{images,meta,splits,pairs,identification,summary.json}.
-'''
-
 import argparse
 import csv
-import json
 import sys
 from collections import defaultdict
-from multiprocessing import Pool
 from pathlib import Path
 
 _repo_root = Path(__file__).resolve().parents[2]
@@ -26,11 +15,11 @@ from torchvision.datasets import CelebA as _TorchvisionCelebA
 SPLITS = ('train', 'val', 'test')
 SPLIT_IDS = {0: 'train', 1: 'val', 2: 'test'}
 TEMPLATE = np.array([
-    [30.2946, 51.6963],
-    [65.5318, 51.5014],
-    [48.0252, 71.7366],
-    [33.5493, 92.3655],
-    [62.7299, 92.2041],
+    [38.2946, 51.6963],
+    [73.5318, 51.5014],
+    [56.0252, 71.7366],
+    [41.5493, 92.3655],
+    [70.7299, 92.2041],
 ], dtype=np.float64)
 
 
@@ -121,7 +110,7 @@ def _align(job):
         image.save(target, quality=95)
 
 
-def _align_all(raw_root, out_root, names, landmarks, workers):
+def _align_all(raw_root, out_root, names, landmarks):
     jobs = [
         (
             raw_root / 'celeba' / 'img_align_celeba' / name,
@@ -131,17 +120,10 @@ def _align_all(raw_root, out_root, names, landmarks, workers):
         for name in names
     ]
 
-    if workers <= 0:
-        for index, job in enumerate(jobs, start=1):
-            _align(job)
-            if index % 10000 == 0 or index == len(jobs):
-                print(f'aligned {index}/{len(jobs)}')
-        return
-
-    with Pool(workers) as pool:
-        for index, _ in enumerate(pool.imap_unordered(_align, jobs, chunksize=64), start=1):
-            if index % 10000 == 0 or index == len(jobs):
-                print(f'aligned {index}/{len(jobs)}')
+    for index, job in enumerate(jobs, start=1):
+        _align(job)
+        if index % 10000 == 0 or index == len(jobs):
+            print(f'aligned {index}/{len(jobs)}')
 
 
 def _write_pairs(out_root, split, rows, count, seed):
@@ -181,6 +163,7 @@ def _write_pairs(out_root, split, rows, count, seed):
         writer.writerow(['id_a', 'id_b', 'label'])
         writer.writerows(pairs)
     print(f'wrote {path} ({len(pairs)} pairs)')
+    return len(pairs)
 
 
 def _write_identification(out_root, rows):
@@ -209,15 +192,37 @@ def _write_identification(out_root, rows):
     return {'gallery': len(gallery), 'probes': len(probe)}
 
 
+def _write_summary(out_root, raw_root, rows_by_split, pair_counts, identification, seed):
+    images = ' '.join(f'{split}={len(rows_by_split[split]["rows"])}' for split in SPLITS)
+    identities = ' '.join(
+        f'{split}={len(rows_by_split[split]["identities"])}' for split in SPLITS
+    )
+    pairs = ' '.join(f'{split}={pair_counts[split]}' for split in ('val', 'test'))
+    lines = [
+        f'raw: {raw_root}',
+        f'out: {out_root}',
+        f'images: {images}',
+        f'identities: {identities}',
+        'identity overlap: none',
+        f'verification pairs: {pairs}',
+        f'identification: gallery={identification["gallery"]} probes={identification["probes"]}',
+        f'seed: {seed}',
+        'template:',
+    ]
+    lines.extend(f'  {x:.4f} {y:.4f}' for x, y in TEMPLATE)
+
+    path = out_root / 'summary.txt'
+    path.write_text('\n'.join(lines) + '\n')
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(description='Prepare CelebA for A2.')
     parser.add_argument('--raw', default='data/celeba', help='torchvision CelebA root')
     parser.add_argument('--out', default='data/celeba_112')
     parser.add_argument('--download', action='store_true')
-    parser.add_argument('--workers', type=int, default=8)
     parser.add_argument('--pairs', type=int, default=10000, help='verification pairs per split')
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--allow-overlap', action='store_true')
     args = parser.parse_args()
 
     raw_root = Path(args.raw)
@@ -237,33 +242,24 @@ def main():
         rows_by_split[split]['identities'].add(identity)
 
     overlaps = _identity_overlaps(rows_by_split)
-    if overlaps and not args.allow_overlap:
-        raise SystemExit(f'identity overlap across splits: {overlaps}; pass --allow-overlap to continue')
     if overlaps:
-        print(f'warning: identity overlap across splits: {overlaps}')
+        raise SystemExit(f'identity overlap across splits: {overlaps}')
 
     label_map = {identity: index for index, identity in enumerate(sorted(rows_by_split['train']['identities']))}
     out_root.mkdir(parents=True, exist_ok=True)
+    stale_summary = out_root / 'summary.json'
+    if stale_summary.exists():
+        stale_summary.unlink()
 
     _write_splits(out_root, rows_by_split, label_map)
-    _align_all(raw_root, out_root, names, landmarks, args.workers)
-    for split in ('val', 'test'):
-        _write_pairs(out_root, split, rows_by_split[split]['rows'], args.pairs, args.seed)
-    identification = _write_identification(out_root, rows_by_split['test']['rows'])
-
-    summary = {
-        'raw': str(raw_root),
-        'out': str(out_root),
-        'images': {split: len(rows_by_split[split]['rows']) for split in SPLITS},
-        'identities': {split: len(rows_by_split[split]['identities']) for split in SPLITS},
-        'overlaps': overlaps,
-        'pairs_per_split': args.pairs,
-        'identification': identification,
-        'seed': args.seed,
-        'template': TEMPLATE.tolist(),
+    _align_all(raw_root, out_root, names, landmarks)
+    pair_counts = {
+        split: _write_pairs(out_root, split, rows_by_split[split]['rows'], args.pairs, args.seed)
+        for split in ('val', 'test')
     }
-    (out_root / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
-    print(f'wrote {out_root / "summary.json"}')
+    identification = _write_identification(out_root, rows_by_split['test']['rows'])
+    path = _write_summary(out_root, raw_root, rows_by_split, pair_counts, identification, args.seed)
+    print(f'wrote {path}')
 
 
 if __name__ == '__main__':
