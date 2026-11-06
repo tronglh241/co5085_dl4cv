@@ -2,7 +2,6 @@
 
 import argparse
 import csv
-import json
 import sys
 from pathlib import Path
 
@@ -13,6 +12,7 @@ if str(_repo_root) not in sys.path:
 from common.config.config import CfgNode
 from common.config.validate import validate_eval_config
 from models.a2.evaluator import VerificationEvaluator, identification_metrics
+from scripts.a2.result_io import write_result
 
 
 def latest_best(checkpoint_root):
@@ -80,7 +80,7 @@ def main():
         'test': test_result,
         'identification': identification,
     }
-    (out_dir / f'{run}.json').write_text(json.dumps(result, indent=2) + '\n')
+    write_result(out_dir / f'{run}.txt', result)
 
     with (scores_dir / f'{run}_test.csv').open('w', newline='') as handle:
         writer = csv.writer(handle)

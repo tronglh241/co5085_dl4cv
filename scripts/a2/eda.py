@@ -1,6 +1,5 @@
 import argparse
 import csv
-import json
 import os
 import sys
 from collections import Counter, defaultdict
@@ -17,6 +16,7 @@ import numpy as np
 from PIL import Image
 
 from datasets.celeba import CelebA
+from scripts.a2.result_io import write_result
 
 SPLITS = ('train', 'val', 'test')
 
@@ -149,7 +149,7 @@ def main():
         'train_images_per_identity': identity,
         'alignment_preview': aligned,
     }
-    (results / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+    write_result(results / 'summary.txt', summary)
     print(f'wrote EDA outputs to {out} and {results}')
 
 

@@ -2,7 +2,6 @@
 
 import argparse
 import csv
-import json
 import os
 import statistics
 import sys
@@ -19,6 +18,7 @@ import numpy as np
 from sklearn.metrics import roc_auc_score, roc_curve
 
 from common.config.config import CfgNode
+from scripts.a2.result_io import read_result
 from scripts.tensorboard.extract import extract_run
 
 CONFIG_DIR = _repo_root / 'configs' / 'a2'
@@ -287,11 +287,11 @@ def main():
 
     records = []
     for run, info in load_runs(args.runs).items():
-        path = results_dir / f'{run}.json'
+        path = results_dir / f'{run}.txt'
         if not path.exists():
             print(f'skip {run}: {path} is missing')
             continue
-        records.append(make_record(run, info, json.loads(path.read_text())))
+        records.append(make_record(run, info, read_result(path)))
 
     if not records:
         print('no evaluated A2 runs yet')
