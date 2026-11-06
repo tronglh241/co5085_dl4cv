@@ -17,6 +17,8 @@ CELEBA_112_MARKERS = (
     'splits/test.csv',
     'pairs/val.csv',
     'pairs/test.csv',
+    'identification/test_gallery.csv',
+    'identification/test_probe.csv',
     'images',
 )
 

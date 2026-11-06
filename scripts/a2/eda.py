@@ -1,5 +1,3 @@
-'''Exploratory data analysis for A2's prepared CelebA copy.'''
-
 import argparse
 import csv
 import json
@@ -36,9 +34,10 @@ def write_counts(splits, results, out):
             writer.writerow([split, len(dataset), len(set(dataset.identities))])
 
     figure, axes = plt.subplots(1, 2, figsize=(9, 3.4))
-    axes[0].bar(splits, [len(dataset) for dataset in splits.values()])
+    labels = list(splits)
+    axes[0].bar(labels, [len(dataset) for dataset in splits.values()])
     axes[0].set_title('Images')
-    axes[1].bar(splits, [len(set(dataset.identities)) for dataset in splits.values()])
+    axes[1].bar(labels, [len(set(dataset.identities)) for dataset in splits.values()])
     axes[1].set_title('Identities')
     for axis in axes:
         axis.set_yscale('log')
@@ -106,9 +105,9 @@ def plot_alignment(train, raw_root, out, seed, count=4):
     for row, index in enumerate(picks):
         image_id = train.ids[index]
         with Image.open(source_folder / image_id) as image:
-            axes[row][0].imshow(image.convert('RGB').resize((112, 112)))
+            axes[row][0].imshow(image.convert('RGB'), aspect='equal')
         axes[row][0].set_title('raw img_align_celeba', fontsize=8)
-        axes[row][1].imshow(train.load_image(index))
+        axes[row][1].imshow(train.load_image(index), aspect='equal')
         axes[row][1].set_title('aligned 112x112', fontsize=8)
         for axis in axes[row]:
             axis.set_axis_off()
