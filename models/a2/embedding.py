@@ -1,6 +1,3 @@
-'''ArcFace-style embedding networks on torchvision backbones.'''
-
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
@@ -63,11 +60,9 @@ class FaceEmbeddingModel(nn.Module):
             nn.BatchNorm1d(embedding_dim),
         )
 
-        if head == 'softmax':
-            self.classifier = nn.Linear(embedding_dim, num_classes)
-        else:
-            self.weight = nn.Parameter(torch.empty(num_classes, embedding_dim))
-            nn.init.xavier_uniform_(self.weight)
+        self.classifier = nn.Linear(embedding_dim, num_classes, bias=head == 'softmax')
+        if head == 'arcface':
+            nn.init.xavier_uniform_(self.classifier.weight)
 
     def embedding_for_eval(self, x):
         return self.embedding(self.net(x))
@@ -78,10 +73,9 @@ class FaceEmbeddingModel(nn.Module):
             return embedding
 
         if self.head == 'softmax':
-            return {'embedding': embedding, 'logits': self.classifier(embedding)}
+            return self.classifier(embedding)
 
-        cosine = F.linear(F.normalize(embedding), F.normalize(self.weight))
-        return {'embedding': embedding, 'cosine': cosine}
+        return F.linear(F.normalize(embedding), F.normalize(self.classifier.weight))
 
     def num_params(self):
         return sum(param.numel() for param in self.parameters())
