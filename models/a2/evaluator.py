@@ -1,5 +1,3 @@
-'''Open-set verification and identification for A2.'''
-
 import csv
 from pathlib import Path
 

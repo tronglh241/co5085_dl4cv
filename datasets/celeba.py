@@ -1,16 +1,3 @@
-'''CelebA splits and fixed verification pairs from data/celeba_112.
-
-scripts/a2/prepare_data.py writes:
-    images/<image id>             112x112 aligned JPEGs
-    splits/{train,val,test}.csv  id,identity,label
-    pairs/{val,test}.csv         id_a,id_b,label
-    identification/{test_gallery,test_probe}.csv
-
-The prepared split CSVs are the single source of order: CelebA and
-VerificationPairs both read them, so pair indices line up with full-split
-embeddings without another join.
-'''
-
 import csv
 from pathlib import Path
 

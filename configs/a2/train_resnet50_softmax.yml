@@ -109,7 +109,7 @@ data:
       drop_last: false
 model:
   module: models.a2.embedding
-  name: A2Model
+  name: FaceEmbeddingModel
   kwargs:
     backbone: "'resnet50'"
     num_classes: 8192

@@ -13,6 +13,12 @@ BACKBONES = {
         960,
         'classifier',
     ),
+    'mobilenetv3_small': (
+        models.mobilenet_v3_small,
+        models.MobileNet_V3_Small_Weights.IMAGENET1K_V1,
+        576,
+        'classifier',
+    ),
 }
 BACKBONES['mobilenetv3_large'] = BACKBONES['mobilenetv3']
 
@@ -27,7 +33,7 @@ def build_backbone(name, pretrained=True):
     return net, features
 
 
-class A2Model(nn.Module):
+class FaceEmbeddingModel(nn.Module):
     def __init__(
         self,
         backbone='resnet50',

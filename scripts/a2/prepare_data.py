@@ -8,12 +8,22 @@ _repo_root = Path(__file__).resolve().parents[2]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
+import gdown
 import numpy as np
 from PIL import Image
 from torchvision.datasets import CelebA as _TorchvisionCelebA
+from torchvision.datasets.utils import extract_archive
 
 SPLITS = ('train', 'val', 'test')
 SPLIT_IDS = {0: 'train', 1: 'val', 2: 'test'}
+CELEBA_URL = 'https://drive.google.com/drive/folders/1Lu7p9CmTKLvyQZEkXRuKlyC_6it7ql8S'
+CELEBA_METADATA = (
+    'identity_CelebA.txt',
+    'list_attr_celeba.txt',
+    'list_bbox_celeba.txt',
+    'list_eval_partition.txt',
+    'list_landmarks_align_celeba.txt',
+)
 TEMPLATE = np.array([
     [38.2946, 51.6963],
     [73.5318, 51.5014],
@@ -28,12 +38,34 @@ def _read_partition(path):
     return {name: int(split) for name, split in rows}
 
 
+def _download_celeba(raw_root):
+    celeba_dir = raw_root / 'celeba'
+    images_dir = celeba_dir / 'img_align_celeba'
+    archive = celeba_dir / 'img_align_celeba.zip'
+    missing = [name for name in CELEBA_METADATA if not (celeba_dir / name).exists()]
+    if missing or (not images_dir.exists() and not archive.exists()):
+        celeba_dir.mkdir(parents=True, exist_ok=True)
+        gdown.download_folder(
+            CELEBA_URL,
+            output=str(celeba_dir),
+            quiet=False,
+            use_cookies=False,
+            resume=True,
+        )
+    if not images_dir.exists():
+        if not archive.exists():
+            raise SystemExit(f'{archive} is missing after download')
+        extract_archive(str(archive), str(celeba_dir))
+
+
 def _load_metadata(raw_root, download):
+    if download:
+        _download_celeba(raw_root)
     dataset = _TorchvisionCelebA(
         raw_root,
         split='all',
         target_type=['identity', 'landmarks'],
-        download=download,
+        download=False,
     )
     names = [Path(name).name for name in dataset.filename]
     identities = {name: int(row[0]) for name, row in zip(names, dataset.identity.tolist())}
@@ -220,7 +252,11 @@ def main():
     parser = argparse.ArgumentParser(description='Prepare CelebA for A2.')
     parser.add_argument('--raw', default='data/celeba', help='torchvision CelebA root')
     parser.add_argument('--out', default='data/celeba_112')
-    parser.add_argument('--download', action='store_true')
+    parser.add_argument(
+        '--download',
+        action='store_true',
+        help='download CelebA from the shared Google Drive folder',
+    )
     parser.add_argument('--pairs', type=int, default=10000, help='verification pairs per split')
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
