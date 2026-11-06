@@ -10,12 +10,13 @@ fi
 
 python scripts/a2/eda.py
 
-for config in configs/a2/train_*.yml; do
+for config in configs/a2/test_*.yml; do
   name="$(basename "$config" .yml)"
-  if compgen -G "checkpoints/a2/$name/*/best_*.pt" > /dev/null; then
+  run="${name#test_}"
+  if compgen -G "checkpoints/a2/train_$run/*/best_*.pt" > /dev/null; then
     python scripts/a2/evaluate.py --config "$config"
   else
-    echo "no checkpoint for $name, skipping"
+    echo "no checkpoint for train_$run, skipping"
   fi
 done
 

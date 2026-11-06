@@ -67,43 +67,6 @@ data:
       batch_size: 512
       shuffle: false
       num_workers: 0
-      collate_fn: collate_pairs
-      pin_memory: true
-      persistent_workers: false
-      drop_last: false
-  test:
-    module: torch.utils.data
-    name: DataLoader
-    kwargs:
-      dataset:
-        module: datasets.celeba
-        name: CelebA
-        kwargs:
-          root: "'data/celeba_112'"
-          split: "'test'"
-          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
-      batch_size: 256
-      shuffle: false
-      num_workers: 2
-      collate_fn: collate_batch
-      pin_memory: true
-      persistent_workers: true
-      drop_last: false
-  test_pairs:
-    module: torch.utils.data
-    name: DataLoader
-    kwargs:
-      dataset:
-        module: datasets.celeba
-        name: VerificationPairs
-        kwargs:
-          root: "'data/celeba_112'"
-          split: "'test'"
-          pairs: "'data/celeba_112/pairs/test.csv'"
-      batch_size: 512
-      shuffle: false
-      num_workers: 0
-      collate_fn: collate_pairs
       pin_memory: true
       persistent_workers: false
       drop_last: false
@@ -236,6 +199,3 @@ extralibs:
   collate_batch:
     module: datasets.celeba
     name: collate_batch
-  collate_pairs:
-    module: datasets.celeba
-    name: collate_pairs

@@ -10,9 +10,8 @@ _repo_root = Path(__file__).resolve().parents[2]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-import torch
-
 from common.config.config import CfgNode
+from common.config.validate import validate_eval_config
 from models.a2.evaluator import VerificationEvaluator, identification_metrics
 
 
@@ -35,29 +34,26 @@ def main():
         cfg.model.kwargs.pretrained = False
     cfg = cfg.eval()
 
-    checkpoint_path = Path(args.checkpoint) if args.checkpoint else latest_best(cfg.best_checkpoint.root)
+    run = config_path.stem.removeprefix('test_')
+    checkpoint_root = Path('checkpoints/a2') / f'train_{run}'
+    checkpoint_path = Path(args.checkpoint) if args.checkpoint else latest_best(checkpoint_root)
     if checkpoint_path is None:
-        raise SystemExit(f'no best checkpoint under {cfg.best_checkpoint.root}')
+        raise SystemExit(f'no best checkpoint under {checkpoint_root}')
 
-    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-    cfg.model.load_state_dict(checkpoint['model'])
+    cfg.loader.path = str(checkpoint_path)
+    validate_eval_config(cfg)
+    cfg.loader.attach(cfg.evaluator, cfg)
 
-    val = VerificationEvaluator(
-        cfg.data.valid_pairs,
-        cfg.data.valid,
-        cfg.model,
-        device=cfg.trainer.device,
-        channels_last=cfg.trainer.channels_last,
-    )
-    val_result = val.run()
+    val_result = cfg.evaluator.run()
 
     test = VerificationEvaluator(
         cfg.data.test_pairs,
         cfg.data.test,
         cfg.model,
-        device=cfg.trainer.device,
-        channels_last=cfg.trainer.channels_last,
+        device=cfg.evaluator.device,
+        channels_last=cfg.evaluator.channels_last,
         threshold=val_result['threshold'],
+        amp=cfg.evaluator.amp,
     )
     test_result = test.run()
 
@@ -70,7 +66,6 @@ def main():
     else:
         print(f'warn: identification files missing under {ident_dir}')
 
-    run = config_path.stem.removeprefix('train_')
     out_dir = Path(args.out_dir)
     scores_dir = Path(args.scores_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

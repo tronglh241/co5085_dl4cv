@@ -1,19 +1,64 @@
 import csv
+import shutil
+import tempfile
 from pathlib import Path
 
+import gdown
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision.datasets.utils import extract_archive
+
+CELEBA_112_URL = 'https://drive.google.com/file/d/1Mw10GLhCDVAqPb2GPE7zjMpeJxKrt1l1'
+CELEBA_112_ARCHIVE = 'celeba_112.zip'
+CELEBA_112_MARKERS = (
+    'splits/train.csv',
+    'splits/val.csv',
+    'splits/test.csv',
+    'pairs/val.csv',
+    'pairs/test.csv',
+    'images',
+)
+
+
+def _is_prepared(root):
+    return all((root / marker).exists() for marker in CELEBA_112_MARKERS)
+
+
+def ensure_celeba_112(root, download=True):
+    root = Path(root)
+    if _is_prepared(root):
+        return root
+
+    if not download:
+        raise FileNotFoundError(f'{root} is missing prepared CelebA files; pass download=True')
+
+    root.parent.mkdir(parents=True, exist_ok=True)
+    archive = root.parent / CELEBA_112_ARCHIVE
+    if not archive.is_file():
+        gdown.download(CELEBA_112_URL, str(archive), quiet=False, resume=True, use_cookies=False)
+    if not archive.is_file():
+        raise RuntimeError(f'download did not create {archive}')
+
+    with tempfile.TemporaryDirectory(dir=root.parent) as temporary:
+        extract_archive(str(archive), temporary)
+        source = Path(temporary) / 'celeba_112'
+        if not source.is_dir():
+            raise RuntimeError(f'{archive} does not contain celeba_112/')
+        if root.exists():
+            shutil.copytree(source, root, dirs_exist_ok=True)
+        else:
+            shutil.move(str(source), str(root))
+
+    missing = [marker for marker in CELEBA_112_MARKERS if not (root / marker).exists()]
+    if missing:
+        raise RuntimeError(f'{root} is incomplete after extraction: missing {missing}')
+    return root
 
 
 def collate_batch(batch):
     images, labels = zip(*batch)
     return torch.stack(images), torch.tensor(labels)
-
-
-def collate_pairs(batch):
-    index_a, index_b, labels = zip(*batch)
-    return torch.tensor(index_a), torch.tensor(index_b), torch.tensor(labels)
 
 
 def read_rows(path, required):
@@ -27,11 +72,11 @@ def read_rows(path, required):
 
 
 class CelebA(Dataset):
-    def __init__(self, root, split='train', transform=None):
+    def __init__(self, root, split='train', transform=None, download=True):
         if split not in ('train', 'val', 'test'):
             raise ValueError(f'unknown split: {split!r} (expected "train", "val" or "test")')
 
-        self.root = Path(root)
+        self.root = ensure_celeba_112(root, download=download)
         self.split = split
         self.transform = transform
         self.images_folder = self.root / 'images'
@@ -56,11 +101,11 @@ class CelebA(Dataset):
 
 
 class VerificationPairs(Dataset):
-    def __init__(self, root, split='val', pairs=None):
+    def __init__(self, root, split='val', pairs=None, download=True):
         if split not in ('val', 'test'):
             raise ValueError(f'unknown pair split: {split!r} (expected "val" or "test")')
 
-        self.root = Path(root)
+        self.root = ensure_celeba_112(root, download=download)
         self.split = split
         pairs_path = Path(pairs) if pairs is not None else self.root / 'pairs' / f'{split}.csv'
 

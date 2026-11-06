@@ -18,9 +18,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import roc_auc_score, roc_curve
 
+from common.config.config import CfgNode
 from scripts.tensorboard.extract import extract_run
 
-RUNS_JSON = _repo_root / 'configs' / 'a2' / 'runs.json'
+CONFIG_DIR = _repo_root / 'configs' / 'a2'
 COLUMNS = (
     'run', 'model', 'loss', 'params', 'best_epoch', 'val_roc_auc', 'val_eer',
     'test_roc_auc', 'test_eer', 'test_acc', 'test_threshold', 'tar_far_1e-3',
@@ -30,17 +31,24 @@ COLUMNS = (
 
 
 def load_runs(selection):
-    spec = json.loads(RUNS_JSON.read_text())
+    runs = {}
+    for path in sorted(CONFIG_DIR.glob('test_*.yml')):
+        name = path.stem.removeprefix('test_')
+        cfg = CfgNode.load(path, evaluate=False)
+        runs[name] = {
+            'model': cfg.model.kwargs.backbone.strip("'"),
+            'loss': cfg.model.kwargs.head.strip("'"),
+        }
+
     if selection is None:
-        names = list(spec['runs'])
-    elif selection in spec['sets']:
-        names = spec['sets'][selection]
+        names = list(runs)
     else:
         names = [name.strip() for name in selection.split(',') if name.strip()]
-        unknown = sorted(set(names) - set(spec['runs']))
+        unknown = sorted(set(names) - set(runs))
         if unknown:
             raise SystemExit(f'unknown runs: {unknown}')
-    return {name: spec['runs'][name] for name in names}
+
+    return {name: runs[name] for name in names}
 
 
 def read_series(run, result):
@@ -266,7 +274,7 @@ def plot_curves(records, figures_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Build A2 tables and figures.')
-    parser.add_argument('--runs', default=None, help='run name, set name, or comma-separated runs')
+    parser.add_argument('--runs', default=None, help='comma-separated run names; default all test configs')
     parser.add_argument('--results-dir', default='reports/results/a2')
     parser.add_argument('--figures-dir', default='docs/assets/a2')
     args = parser.parse_args()
