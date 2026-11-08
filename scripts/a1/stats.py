@@ -13,6 +13,9 @@ run's per-image predictions. That allows three things beyond a bare accuracy:
 All three measure the sampling error of the test set. None of them measures
 the run-to-run variation of training, which needs several seeds; every run
 here has one. The verdict column therefore also demands a minimum effect size.
+It calls a difference clear only if the bootstrap interval excludes 0, the
+Holm-adjusted McNemar p is below ALPHA (where there is one: the difference of
+differences has none), and the gap is at least MIN_EFFECT_PTS.
 '''
 
 import csv
@@ -25,6 +28,8 @@ Z95 = 1.959963984540054
 # least this many accuracy points; smaller gaps are within what another seed
 # could change.
 MIN_EFFECT_PTS = 1.0
+# Level of the Holm-adjusted McNemar p-value that the verdict also requires.
+ALPHA = 0.05
 MODES = ('scratch', 'head', 'partial', 'full')
 MODELS = ('resnet50', 'deit_s')
 
@@ -128,8 +133,15 @@ def holm(p_values):
     return adjusted
 
 
-def verdict(low, high, estimate_pts):
-    if low > 0 or high < 0:
+def verdict(low, high, estimate_pts, p_holm=None):
+    '''clear / small / inconclusive.
+
+    The bootstrap interval must exclude 0. When the comparison has a McNemar test,
+    its Holm-adjusted p must also be below ALPHA. A difference of differences has
+    no such test (it is not a paired contrast of two runs), so the interval alone
+    decides it.
+    '''
+    if (low > 0 or high < 0) and (p_holm is None or p_holm < ALPHA):
         return 'clear' if abs(estimate_pts) >= MIN_EFFECT_PTS else 'small'
 
     return 'inconclusive'
@@ -161,12 +173,15 @@ def compare(correct, resamples=2000):
             second = next(run for run, weight in weights.items() if weight < 0)
             row['only_first'], row['only_second'], row['p'] = mcnemar_exact(correct[first], correct[second])
 
-        row['verdict'] = verdict(low, high, 100 * estimate)
         rows.append(row)
 
     pairs = [row for row in rows if row['p'] is not None]
     for row, adjusted in zip(pairs, holm([row['p'] for row in pairs])):
         row['p_holm'] = adjusted
+
+    # After Holm, because the verdict reads the adjusted p.
+    for row in rows:
+        row['verdict'] = verdict(row['ci_low_pts'], row['ci_high_pts'], row['diff_pts'], row.get('p_holm'))
 
     return rows
 

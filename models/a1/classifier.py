@@ -93,15 +93,26 @@ class A1Classifier(nn.Module):
         pretrained=False,
         freeze='none',
         freeze_prefixes=None,
+        dropout=0.0,
     ):
         super().__init__()
         if freeze != 'none' and not pretrained:
             raise ValueError(f'freeze={freeze!r} keeps random weights fixed; it needs pretrained=True')
 
+        if not 0 <= dropout < 1:
+            raise ValueError(f'dropout must be in [0, 1), got {dropout}')
+
         self.model_name = model_name
         self.freeze = freeze
         self.net = build_network(model_name, num_classes, pretrained)
         freeze_parameters(self.net, freeze, freeze_prefixes)
+
+        # Dropout on the pooled features that feed the classifier. A pre-hook
+        # keeps the state-dict keys of the plain Hugging Face model, and it is
+        # the same place in the CNN and the Transformer (the Hugging Face
+        # configs expose dropout only for the Transformer).
+        self.dropout = nn.Dropout(dropout)
+        self.net.classifier.register_forward_pre_hook(lambda module, args: (self.dropout(args[0]),))
 
     def train(self, mode=True):
         super().train(mode)
