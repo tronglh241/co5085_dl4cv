@@ -9,7 +9,7 @@ data:
         kwargs:
           root: "'data/celeba_112'"
           split: "'train'"
-          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+          transform: transforms.Compose([transforms.RandomHorizontalFlip(p=0.5), transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2), transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
       batch_size: 128
       shuffle: true
       num_workers: 4
@@ -79,19 +79,17 @@ model:
   name: FaceEmbeddingModel
   kwargs:
     backbone: "'resnet50'"
-    num_classes: 8192
+    num_classes: data.train.dataset.num_classes
     embedding_dim: 512
     pretrained: true
     head: "'arcface'"
     dropout: 0.4
-    scale: 64.0
-    margin: 0.5
 optimizer:
   module: torch.optim
   name: SGD
   kwargs:
     params: model.parameters()
-    lr: 0.01
+    lr: 0.001
     momentum: 0.9
     weight_decay: 0.0005
 loss_fn:
@@ -102,15 +100,15 @@ loss_fn:
     margin: 0.5
     label_smoothing: 0.0
 trainer:
-  module: common.engine.trainer
-  name: Trainer
+  module: models.a2.trainer
+  name: LossTrainer
   kwargs:
     data: data.train
     model: model
     optimizer: optimizer
     loss_fn: loss_fn
     device: null
-    max_epochs: 1000
+    max_epochs: 100
     amp: false
     channels_last: true
     clip_grad_norm: null
@@ -136,7 +134,7 @@ lr_scheduler:
         optimizer: optimizer
         mode: "'max'"
         factor: 0.5
-        patience: 5
+        patience: 2
         threshold: 0.0001
         min_lr: 0.000001
     evaluator: evaluators.valid
@@ -145,7 +143,7 @@ early_stopping:
   module: common.handlers.early_stopping
   name: EarlyStopping
   kwargs:
-    patience: 30
+    patience: 5
     evaluator: evaluators.valid
     mode: "'max'"
     score_name: "'roc_auc'"

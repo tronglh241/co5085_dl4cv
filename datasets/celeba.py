@@ -91,6 +91,11 @@ class CelebA(Dataset):
     def __len__(self):
         return len(self.ids)
 
+    @property
+    def num_classes(self):
+        # Meaningful on the train split only; val and test identities are unseen and labelled -1.
+        return max(self.labels) + 1 if self.labels else 0
+
     def load_image(self, index):
         with Image.open(self.images_folder / self.ids[index]) as image:
             return image.convert('RGB')

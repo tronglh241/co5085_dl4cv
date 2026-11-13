@@ -24,11 +24,12 @@ SEED = 42
 BATCH_SIZE = 128
 EVAL_BATCH_SIZE = 256
 WEIGHT_DECAY = 0.05
-LABEL_SMOOTHING = 0.1
-# The train-split evaluator reads this nested subset of train, not all 68k
-# images, to keep the per-epoch evaluation cheap. The two evaluation loaders
-# get half the workers: they run only between epochs.
-TRAIN_EVAL_FRACTION = 0.1
+LABEL_SMOOTHING = 0.2
+# The train-split evaluator reads this nested subset of train (without
+# augmentation) every epoch: 20% of each class, 135 of 675 images, 13,635 in
+# all. The two evaluation loaders get half the workers: they run only between
+# epochs.
+TRAIN_EVAL_FRACTION = 0.2
 
 # Hugging Face repos, both pretrained on ImageNet-1k only, so pretraining data
 # is not a confound.
@@ -42,6 +43,8 @@ MODELS = {
 # prepare_data.py already saved the 224px center crop, so train only augments
 # it and eval only normalizes it.
 TRAIN_STEPS = [
+    # Crops a random 50-100% of the stored 224px image and resizes it back to 224px.
+    'transforms.RandomResizedCrop(224, scale=(0.5, 1.0))',
     'transforms.RandomHorizontalFlip(p=0.5)',
     'transforms.RandomRotation(degrees=15)',
     'transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)',
@@ -50,22 +53,28 @@ TRAIN_STEPS = [
 EVAL_STEPS = []
 
 # Starting points; check the LRs on val before the final runs (README).
+# patience: val-accuracy epochs without a new best that early stopping tolerates;
+# the run stops on the next one. Val noise is about 0.5 points, so a short
+# patience would stop a run on noise while the cosine LR is still high.
+# dropout: on the pooled features before the classifier, the same in both
+# models. It grows with the number of trainable weights: a linear probe has
+# little to overfit.
 MODES = {
     'scratch': {
-        'pretrained': False, 'freeze': 'none', 'epochs': 40, 'warmup': 5,
-        'lr': 5e-4, 'clip_grad_norm': 1.0,
+        'pretrained': False, 'freeze': 'none', 'epochs': 100, 'warmup': 5,
+        'lr': 5e-4, 'clip_grad_norm': 1.0, 'patience': 10, 'dropout': 0.4,
     },
     'head': {
-        'pretrained': True, 'freeze': 'head', 'epochs': 15, 'warmup': 1,
-        'lr': 1e-3, 'clip_grad_norm': None,
+        'pretrained': True, 'freeze': 'head', 'epochs': 100, 'warmup': 1,
+        'lr': 1e-3, 'clip_grad_norm': None, 'patience': 10, 'dropout': 0.2,
     },
     'partial': {
-        'pretrained': True, 'freeze': 'partial', 'epochs': 15, 'warmup': 1,
-        'lr': 2e-4, 'clip_grad_norm': None,
+        'pretrained': True, 'freeze': 'partial', 'epochs': 100, 'warmup': 1,
+        'lr': 2e-4, 'clip_grad_norm': None, 'patience': 10, 'dropout': 0.3,
     },
     'full': {
-        'pretrained': True, 'freeze': 'none', 'epochs': 15, 'warmup': 1,
-        'lr': 1e-4, 'clip_grad_norm': None,
+        'pretrained': True, 'freeze': 'none', 'epochs': 100, 'warmup': 1,
+        'lr': 1e-4, 'clip_grad_norm': None, 'patience': 10, 'dropout': 0.4,
     },
 }
 
@@ -120,6 +129,7 @@ def model_block(spec, mode, pretrained=None):
             'num_classes': NUM_CLASSES,
             'pretrained': mode['pretrained'] if pretrained is None else pretrained,
             'freeze': q(mode['freeze'] if pretrained is None else 'none'),
+            'dropout': mode['dropout'],
         },
     }
 
@@ -210,6 +220,16 @@ def train_config(run, spec, mode, seed, root, workers,
                 },
             },
         },
+        'early_stopping': {
+            'module': 'common.handlers.early_stopping',
+            'name': 'EarlyStopping',
+            'kwargs': {
+                'patience': mode['patience'],
+                'evaluator': 'evaluators.valid',
+                'mode': q('max'),
+                'score_name': q('accuracy'),
+            },
+        },
         'logging': {
             'tensorboard': {
                 'module': 'common.handlers.logging.tensorboard',
@@ -245,7 +265,7 @@ def train_config(run, spec, mode, seed, root, workers,
             'name': 'BackupCheckpoint',
             'kwargs': {
                 'dirname': q(f'checkpoints/a1/train_{run}'),
-                'modules': [q(name) for name in ('model', 'optimizer', 'trainer', 'lr_scheduler', 'best_checkpoint')],
+                'modules': [q(name) for name in ('model', 'optimizer', 'trainer', 'lr_scheduler', 'early_stopping', 'best_checkpoint')],
                 'n_saved': 1,
             },
         },
@@ -337,7 +357,9 @@ def main():
             'freeze': mode['freeze'],
             'seed': SEED,
             'epochs': mode['epochs'],
+            'patience': mode['patience'],
             'lr': mode['lr'],
+            'dropout': mode['dropout'],
         }
         sets.setdefault('core', []).append(run)
 

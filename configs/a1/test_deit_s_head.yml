@@ -28,6 +28,7 @@ model:
     num_classes: 101
     pretrained: false
     freeze: "'none'"
+    dropout: 0.2
 evaluator:
   module: common.engine.evaluator
   name: Evaluator

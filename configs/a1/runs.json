@@ -8,8 +8,10 @@
       "pretrained": false,
       "freeze": "none",
       "seed": 42,
-      "epochs": 40,
-      "lr": 0.0005
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.0005,
+      "dropout": 0.4
     },
     "resnet50_head": {
       "set": "core",
@@ -19,8 +21,10 @@
       "pretrained": true,
       "freeze": "head",
       "seed": 42,
-      "epochs": 15,
-      "lr": 0.001
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.001,
+      "dropout": 0.2
     },
     "resnet50_partial": {
       "set": "core",
@@ -30,8 +34,10 @@
       "pretrained": true,
       "freeze": "partial",
       "seed": 42,
-      "epochs": 15,
-      "lr": 0.0002
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.0002,
+      "dropout": 0.3
     },
     "resnet50_full": {
       "set": "core",
@@ -41,8 +47,10 @@
       "pretrained": true,
       "freeze": "none",
       "seed": 42,
-      "epochs": 15,
-      "lr": 0.0001
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.0001,
+      "dropout": 0.4
     },
     "deit_s_scratch": {
       "set": "core",
@@ -52,8 +60,10 @@
       "pretrained": false,
       "freeze": "none",
       "seed": 42,
-      "epochs": 40,
-      "lr": 0.0005
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.0005,
+      "dropout": 0.4
     },
     "deit_s_head": {
       "set": "core",
@@ -63,8 +73,10 @@
       "pretrained": true,
       "freeze": "head",
       "seed": 42,
-      "epochs": 15,
-      "lr": 0.001
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.001,
+      "dropout": 0.2
     },
     "deit_s_partial": {
       "set": "core",
@@ -74,8 +86,10 @@
       "pretrained": true,
       "freeze": "partial",
       "seed": 42,
-      "epochs": 15,
-      "lr": 0.0002
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.0002,
+      "dropout": 0.3
     },
     "deit_s_full": {
       "set": "core",
@@ -85,8 +99,10 @@
       "pretrained": true,
       "freeze": "none",
       "seed": 42,
-      "epochs": 15,
-      "lr": 0.0001
+      "epochs": 100,
+      "patience": 10,
+      "lr": 0.0001,
+      "dropout": 0.4
     }
   },
   "sets": {

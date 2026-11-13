@@ -79,8 +79,6 @@ model:
     pretrained: false
     head: "'arcface'"
     dropout: 0.4
-    scale: 64.0
-    margin: 0.5
 evaluator:
   module: models.a2.evaluator
   name: VerificationEvaluator

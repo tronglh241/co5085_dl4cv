@@ -206,7 +206,7 @@ def augmentation(dataset, out, images=4, versions=6, seed=0):
     axes[0][0].set_title('fixed crop', fontsize=8)
     for col in range(1, versions + 1):
         axes[0][col].set_title(f'train #{col}', fontsize=8)
-    figure.suptitle('flip + rotate 15° + ColorJitter + translate 10%', fontsize=9)
+    figure.suptitle('random resized crop + flip + rotate 15° + ColorJitter + translate 10%', fontsize=9)
     figure.tight_layout()
     figure.savefig(out / 'augmentation.png', dpi=200)
     plt.close(figure)

@@ -39,8 +39,6 @@ class FaceEmbeddingModel(nn.Module):
         pretrained=True,
         head='arcface',
         dropout=0.4,
-        scale=64.0,
-        margin=0.5,
     ):
         super().__init__()
         if head not in ('softmax', 'arcface'):
@@ -50,8 +48,6 @@ class FaceEmbeddingModel(nn.Module):
 
         self.backbone_name = backbone
         self.head = head
-        self.scale = float(scale)
-        self.margin = float(margin)
         self.net, features = build_backbone(backbone, pretrained)
         self.embedding = nn.Sequential(
             nn.BatchNorm1d(features),
@@ -79,3 +75,7 @@ class FaceEmbeddingModel(nn.Module):
 
     def num_params(self):
         return sum(param.numel() for param in self.parameters())
+
+    def num_inference_params(self):
+        # The classifier only exists to train the embedding; inference runs backbone + embedding.
+        return sum(param.numel() for module in (self.net, self.embedding) for param in module.parameters())

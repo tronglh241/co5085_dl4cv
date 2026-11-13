@@ -1,15 +1,23 @@
 '''Build the A1 tables and figures from the finished runs.
 
-For every run in configs/a1/runs.json that has a best_*.pt:
-- evaluate test_<run>.yml on the test split once (accuracy, macro P/R/F1,
-  confusion matrix) and keep the per-image predictions,
+For every run in configs/a1/runs.json that has a finished session with a best_*.pt:
+- evaluate test_<run>.yml on the test split (accuracy, macro P/R/F1, confusion
+  matrix) and keep the per-image predictions. The checkpoint is fixed by val
+  before this step; running the script again scores the same checkpoint again,
 - read the TensorBoard run with the same stamp as the checkpoint (val curves,
-  time/epoch, peak memory),
+  time/epoch, peak memory) and check that its best val epoch is the epoch in the
+  checkpoint's file name,
 - count total and trainable parameters of its freezing mode,
-- add a Wilson interval for its test accuracy and its per-class accuracy,
+- add a Wilson interval for its test accuracy and write its per-class accuracy,
 
 then compare the runs on the planned contrasts of scripts/a1/stats.py
-(paired bootstrap interval, exact McNemar test, Holm correction).
+(paired bootstrap interval, exact McNemar test, Holm correction) and write the
+macro metrics table and confusion matrices (scripts/a1/metrics_report.py).
+
+A session counts as finished when it reached the last epoch of runs.json, or
+stopped earlier because early stopping fired (its backup holds a bad-epoch
+counter above the run's patience). A shorter session (a smoke test, a run still
+going) never replaces a finished one.
 
     python scripts/a1/analyze.py                 # every run that has a checkpoint
     python scripts/a1/analyze.py --runs resnet50_full,deit_s_full   # only some runs
@@ -19,6 +27,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import statistics
 import sys
 import time
@@ -39,7 +48,11 @@ from common.config.config import CfgNode
 from common.engine.engine import Events
 from common.metrics.confusion_matrix import ConfusionMatrix
 from models.a1.classifier import build_network, freeze_parameters
+from scripts.a1.metrics_report import summarize
 from scripts.a1.stats import compare, wilson_interval, write_comparisons
+from scripts.a1.texutil import bold_best
+
+MODEL_NAMES = {'resnet50': 'ResNet-50', 'deit_s': 'DeiT-S'}
 from scripts.tensorboard.extract import extract_run
 
 RUNS_JSON = _repo_root / 'configs' / 'a1' / 'runs.json'
@@ -65,11 +78,44 @@ def load_runs(selection):
     return {name: spec['runs'][name] for name in names}
 
 
-def latest_best(run):
-    '''best_*.pt of the newest stamp folder of this run.'''
+def session_finished(directory, epochs, patience):
+    '''Did this session run to the end: all its epochs, or until early stopping fired?'''
+    backups = {int(path.stem.rsplit('_', 1)[1]): path for path in directory.glob('backup_epoch_*.pt')}
+    if not backups:
+        return False
+
+    last = max(backups)
+    if last >= epochs:
+        return True
+
+    if patience is None:
+        return False
+
+    # Stopped early: the backup of the last epoch holds the early-stopping counter.
+    state = torch.load(backups[last], map_location='cpu', weights_only=False).get('early_stopping')
+    return state is not None and state['bad_epochs'] > patience
+
+
+def latest_best(run, epochs, patience=None):
+    '''best_*.pt of the newest finished stamp folder of this run.
+
+    A short or interrupted session of the same run must not replace the real one.
+    '''
     found = sorted((_repo_root / 'checkpoints' / 'a1' / f'train_{run}').glob('*/best_*.pt'),
                    key=lambda path: path.parent.name)
-    return found[-1] if found else None
+    finished = [path for path in found if session_finished(path.parent, epochs, patience)]
+    for path in found:
+        if path not in finished:
+            print(f'warn {run}: ignoring unfinished session {path.parent.name}')
+    return finished[-1] if finished else None
+
+
+def checkpoint_epoch(checkpoint):
+    '''Epoch in best_epoch_<n>_accuracy=<score>.pt.'''
+    match = re.fullmatch(r'best_epoch_(\d+)_accuracy=.+\.pt', checkpoint.name)
+    if match is None:
+        raise SystemExit(f'cannot read the epoch from checkpoint name {checkpoint.name}')
+    return int(match.group(1))
 
 
 def read_series(run, checkpoint):
@@ -184,31 +230,28 @@ def write_tables(records, results_dir):
             return f'{value / 1e6:.2f}M'
         return f'{value * scale:.{digits}f}'
 
-    def interval_cell(record):
-        low, high = record['test_ci_low'], record['test_ci_high']
-        return '--' if low is None else f'[{100 * low:.1f}, {100 * high:.1f}]'
-
     core = [record for record in records if record['set'] == 'core']
     lines = [
-        r'\begin{tabular}{llrrrrrrrr}',
+        r'\begin{tabular}{llrrrrrrr}',
         r'\toprule',
-        r'Model & Mode & Trainable & Val acc (\%) & Test acc (\%) & KTC 95\% & Test F1 (\%) & s/epoch & GB & img/s \\',
+        r'Mô hình & Chế độ & Tham số học & Val acc (\%) & Test acc (\%) & Test F1 (\%) & s/epoch & GB & img/s \\',
         r'\midrule',
     ]
     for record in sorted(core, key=lambda item: (item['model'], MODES.index(item['mode']))):
         lines.append(' & '.join((
-            record['model'].replace('_', r'\_'),
+            MODEL_NAMES[record['model']],
             record['mode'],
             cell(record['trainable']),
             cell(record['val_acc'], scale=100),
             cell(record['test_acc'], scale=100),
-            interval_cell(record),
             cell(record['test_f1'], scale=100),
             cell(record['time_per_epoch_s'], digits=0),
             cell(record['peak_mem_gb']),
             cell(record['images_per_s'], digits=0),
         )) + r' \\')
     lines += [r'\bottomrule', r'\end{tabular}', '']
+    # Best value per column: higher is better for the accuracies, F1 and img/s; lower for s/epoch and GB.
+    lines = bold_best(lines, higher=(3, 4, 5, 8), lower=(6, 7))
     (results_dir / 'results_a1.tex').write_text('\n'.join(lines))
 
 
@@ -360,13 +403,19 @@ def main():
     records = []
     dataset = None
     for run, info in load_runs(args.runs).items():
-        checkpoint = latest_best(run)
+        checkpoint = latest_best(run, info['epochs'], info.get('patience'))
         if checkpoint is None:
-            print(f'skip {run}: no best_*.pt')
+            print(f'skip {run}: no finished session with a best_*.pt')
             continue
         print(f'analyze {run} <- {checkpoint.relative_to(_repo_root)}')
-        result, dataset = evaluate(run, checkpoint, results_dir)
         series = read_series(run, checkpoint)
+        # The TensorBoard curve and BestCheckpoint are written by different handlers; a run
+        # killed between them would make the table describe another epoch than the one scored.
+        logged = scalar_stats(series)['best_epoch']
+        if logged is not None and logged != checkpoint_epoch(checkpoint):
+            raise SystemExit(f'{run}: best val epoch is {logged} in TensorBoard but '
+                             f'{checkpoint_epoch(checkpoint)} in {checkpoint.name}')
+        result, dataset = evaluate(run, checkpoint, results_dir)
         total, trainable = count_params(info)
         matrix = result['confusion_matrix']
         low, high = wilson_interval(int(matrix.trace()), int(matrix.sum()))
@@ -393,6 +442,7 @@ def main():
     write_significance(records, results_dir)
     plot_curves(records, figures_dir)
     plot_cost(records, figures_dir)
+    summarize(records, dataset.classes, results_dir, figures_dir)
 
     # Error analysis on the best CNN and the best Transformer (chosen on val, not test).
     for model in sorted({record['model'] for record in records}):
