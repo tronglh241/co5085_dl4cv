@@ -23,7 +23,7 @@ from scripts.tensorboard.extract import extract_run
 
 CONFIG_DIR = _repo_root / 'configs' / 'a2'
 COLUMNS = (
-    'run', 'model', 'loss', 'params', 'best_epoch', 'val_roc_auc', 'val_eer',
+    'run', 'model', 'loss', 'params', 'params_inference', 'best_epoch', 'val_roc_auc', 'val_eer',
     'test_roc_auc', 'test_eer', 'test_acc', 'test_threshold', 'tar_far_1e-3',
     'tar_far_1e-2', 'rank1', 'recall5', 'map', 'time_per_epoch_s',
     'train_time_min', 'peak_mem_gb',
@@ -105,6 +105,7 @@ def make_record(run, info, result):
         'model': info['model'],
         'loss': info['loss'],
         'params': result.get('params'),
+        'params_inference': result.get('params_inference'),
         'best_epoch': stats['best_epoch'],
         'val_roc_auc': val.get('roc_auc'),
         'val_eer': val.get('eer'),
@@ -160,21 +161,21 @@ def write_tables(records, results_dir):
     lines = [
         r'\begin{tabular}{llrrrrrrrr}',
         r'\toprule',
-        r'Run & Loss & Params & Val ROC-AUC & Test ROC-AUC & EER (\%) & Acc. (\%) '
-        r'& TAR@FAR $10^{-3}$ & TAR@FAR $10^{-2}$ & Rank-1 (\%) \\',
+        r'Run & Loss & Infer. params & Val ROC-AUC & Test ROC-AUC & EER (\%) & Acc. (\%) '
+        r'& TAR@FAR $10^{-3}$ (\%) & TAR@FAR $10^{-2}$ (\%) & Rank-1 (\%) \\',
         r'\midrule',
     ]
     for record in records:
         lines.append(' & '.join((
             _tex(record['run']),
             record['loss'],
-            _millions(record['params']),
-            _percent(record['val_roc_auc'], 3),
-            _percent(record['test_roc_auc'], 3),
+            _millions(record['params_inference']),
+            _fmt(record['val_roc_auc'], 4),
+            _fmt(record['test_roc_auc'], 4),
             _percent(record['test_eer']),
             _percent(record['test_acc']),
-            _fmt(record['tar_far_1e-3'], 3),
-            _fmt(record['tar_far_1e-2'], 3),
+            _percent(record['tar_far_1e-3']),
+            _percent(record['tar_far_1e-2']),
             _percent(record['rank1']),
         )) + r' \\')
     lines += [r'\bottomrule', r'\end{tabular}', '']
@@ -272,6 +273,34 @@ def plot_curves(records, figures_dir):
     plt.close(figure)
 
 
+def plot_loss(records, figures_dir):
+    '''Mean training loss per epoch. The softmax and ArcFace losses have different scales, so each
+    loss gets its own panel and only runs with the same loss are drawn together.'''
+    losses = sorted({record['loss'] for record in records})
+    figure, axes = plt.subplots(1, len(losses), figsize=(5.2 * len(losses), 3.8), squeeze=False)
+    drawn = False
+
+    for axis, loss in zip(axes[0], losses):
+        for record in records:
+            points = record['series'].get('training/loss', [])
+            if record['loss'] != loss or not points:
+                continue
+            axis.plot([step for step, _ in points], [value for _, value in points], label=record['run'])
+            drawn = True
+        axis.set_title(str(loss), fontsize=9)
+        axis.set_xlabel('Epoch')
+        axis.set_ylabel('Training loss')
+        axis.legend(fontsize=7)
+
+    if not drawn:
+        plt.close(figure)
+        return
+
+    figure.tight_layout()
+    figure.savefig(figures_dir / 'loss_a2.png', dpi=300)
+    plt.close(figure)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Build A2 tables and figures.')
     parser.add_argument('--runs', default=None, help='comma-separated run names; default all test configs')
@@ -302,6 +331,7 @@ def main():
     plot_roc(records, scores_dir, figures_dir)
     plot_bars(records, figures_dir)
     plot_curves(records, figures_dir)
+    plot_loss(records, figures_dir)
 
 
 if __name__ == '__main__':
