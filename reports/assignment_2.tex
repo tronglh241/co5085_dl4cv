@@ -47,7 +47,7 @@
             ~~                                                                     \\
             \hline
             \\ \\
-            \textbf{{\Large Báo cáo Bài tập lớn A2}}                                \\[0.5em]
+            \textbf{{\Large Báo cáo Bài tập lớn A2}}                               \\[0.5em]
             \textbf{{\huge Chủ đề tự chọn và phân tích paper}}                     \\
             \\ \\
             \hline
@@ -68,7 +68,7 @@
     \vspace{1.5cm}
 
     \begin{center}
-        {\footnotesize THÀNH PHỐ HỒ CHÍ MINH, THÁNG 10/2026}
+        {\footnotesize THÀNH PHỐ HỒ CHÍ MINH, THÁNG 11/2026}
     \end{center}
 \end{titlepage}
 \newpage
@@ -80,7 +80,7 @@
 \subsection{Bài toán và động lực}
 Nhận dạng khuôn mặt (face recognition) là bài toán xác định hoặc kiểm tra danh tính của một người từ ảnh khuôn mặt. Bài toán thường được chia thành hai nhiệm vụ. Nhiệm vụ thứ nhất là xác minh (verification), trong đó hệ thống quyết định hai ảnh có thuộc cùng một người hay không. Nhiệm vụ thứ hai là định danh (identification), trong đó hệ thống tìm danh tính đúng của một ảnh truy vấn trong một tập ảnh đã biết danh tính. Trong cả hai nhiệm vụ, mô hình ánh xạ mỗi ảnh thành một vector đặc trưng (embedding), sau đó so sánh các vector này bằng một độ đo tương đồng.
 
-Trong thực tế, các danh tính xuất hiện khi kiểm thử thường không có trong tập huấn luyện (training). Vì vậy mô hình cần học một không gian đặc trưng khái quát hóa được sang danh tính mới, thay vì chỉ phân loại các lớp đã thấy. Báo cáo này đánh giá mô hình trên các danh tính không giao với tập training để phản ánh đúng yêu cầu đó.
+Trong thực tế, các danh tính xuất hiện khi kiểm thử (test) thường không có trong tập huấn luyện (training). Vì vậy mô hình cần học một không gian đặc trưng khái quát hóa được sang danh tính mới, thay vì chỉ phân loại các lớp đã thấy. Báo cáo này đánh giá mô hình trên các danh tính không giao với tập training để phản ánh đúng yêu cầu đó.
 
 \subsection{Paper chính}
 Báo cáo phân tích bài báo ArcFace \cite{deng2019arcface}, được trình bày tại hội nghị CVPR 2019. Bài báo đề xuất hàm loss Additive Angular Margin, thêm một độ lệch góc cố định vào góc giữa vector đặc trưng và tâm lớp của danh tính đúng. Nhóm xây dựng pipeline huấn luyện xoay quanh việc tái hiện ý tưởng này ở quy mô nhỏ hơn trên tập CelebA \cite{liu2015celeba}.
