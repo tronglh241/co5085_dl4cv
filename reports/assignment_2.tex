@@ -5,6 +5,8 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{caption}
 \usepackage{minted}
 \usepackage[top=2.5cm, bottom=2.0cm, left=3.0cm, right=2.0cm]{geometry}
 \usepackage{setspace}\onehalfspacing
@@ -14,15 +16,26 @@
 \setsansfont{Latin Modern Sans}
 \setmonofont{Latin Modern Mono}
 
-% TODO: remove later
-\newcommand{\chuaco}{\textit{Nội dung này sẽ được bổ sung ở mốc A2.2.}}
-\newcommand{\hinhtam}[2]{%
-  \begin{figure}[ht]
+% Hình và bảng của A2 được sinh bởi scripts/a2 vào docs/assets/a2 và reports/results/a2.
+% Nếu tệp chưa có thì chèn dòng báo thay vì làm hỏng bản dịch.
+\newcommand{\atwoasset}[1]{../docs/assets/a2/#1}
+\newcommand{\atworesult}[1]{../reports/results/a2/#1}
+\newcommand{\atwomissing}[2]{\textit{[Hình hoặc bảng này chưa có.]}}
+\newcommand{\atwofigure}[5]{%
+  \begin{figure}[!htbp]
     \centering
-    \fbox{\parbox{0.8\textwidth}{\centering\vspace{2cm}\textit{Hình minh họa sẽ được bổ sung}\vspace{2cm}}}
-    \caption{#1}
-    \label{#2}
+    \IfFileExists{\atwoasset{#1}}{\includegraphics[width=#2\linewidth]{\atwoasset{#1}}}{\atwomissing{#1}{#5}}
+    \caption{#3}\label{#4}
   \end{figure}}
+\newcommand{\atwotable}[4]{%
+  \begin{table}[!htbp]
+    \centering
+    \IfFileExists{\atworesult{#1}}{\small\begin{adjustbox}{max width=\linewidth}\input{\atworesult{#1}}\end{adjustbox}}{\atwomissing{#1}{#4}}
+    \caption{#2}\label{#3}
+  \end{table}}
+\newcommand{\dien}[1]{\mbox{\textbf{[#1]}}}
+\captionsetup{font=small,labelfont=bf}
+\captionsetup[table]{position=bottom}
 
 \begin{document}
 \begin{titlepage}
@@ -47,7 +60,7 @@
             ~~                                                                     \\
             \hline
             \\ \\
-            \textbf{{\Large Báo cáo Bài tập lớn 2}}                                \\[0.5em]
+            \textbf{{\Large Báo cáo Bài tập lớn A2}}                               \\[0.5em]
             \textbf{{\huge Chủ đề tự chọn và phân tích paper}}                     \\
             \\ \\
             \hline
@@ -68,7 +81,7 @@
     \vspace{1.5cm}
 
     \begin{center}
-        {\footnotesize THÀNH PHỐ HỒ CHÍ MINH, THÁNG 10/2026}
+        {\footnotesize THÀNH PHỐ HỒ CHÍ MINH, THÁNG 11/2026}
     \end{center}
 \end{titlepage}
 \newpage
@@ -80,7 +93,7 @@
 \subsection{Bài toán và động lực}
 Nhận dạng khuôn mặt (face recognition) là bài toán xác định hoặc kiểm tra danh tính của một người từ ảnh khuôn mặt. Bài toán thường được chia thành hai nhiệm vụ. Nhiệm vụ thứ nhất là xác minh (verification), trong đó hệ thống quyết định hai ảnh có thuộc cùng một người hay không. Nhiệm vụ thứ hai là định danh (identification), trong đó hệ thống tìm danh tính đúng của một ảnh truy vấn trong một tập ảnh đã biết danh tính. Trong cả hai nhiệm vụ, mô hình ánh xạ mỗi ảnh thành một vector đặc trưng (embedding), sau đó so sánh các vector này bằng một độ đo tương đồng.
 
-Trong thực tế, các danh tính xuất hiện khi kiểm thử thường không có trong tập huấn luyện (training). Vì vậy mô hình cần học một không gian đặc trưng khái quát hóa được sang danh tính mới, thay vì chỉ phân loại các lớp đã thấy. Báo cáo này đánh giá mô hình trên các danh tính không giao với tập training để phản ánh đúng yêu cầu đó.
+Trong thực tế, các danh tính xuất hiện khi kiểm thử (test) thường không có trong tập huấn luyện (train). Vì vậy mô hình cần học một không gian đặc trưng khái quát hóa được sang danh tính mới, thay vì chỉ phân loại các lớp đã thấy. Báo cáo này đánh giá mô hình trên các danh tính không giao với tập train để phản ánh đúng yêu cầu đó.
 
 \subsection{Paper chính}
 Báo cáo phân tích bài báo ArcFace \cite{deng2019arcface}, được trình bày tại hội nghị CVPR 2019. Bài báo đề xuất hàm loss Additive Angular Margin, thêm một độ lệch góc cố định vào góc giữa vector đặc trưng và tâm lớp của danh tính đúng. Nhóm xây dựng pipeline huấn luyện xoay quanh việc tái hiện ý tưởng này ở quy mô nhỏ hơn trên tập CelebA \cite{liu2015celeba}.
@@ -98,18 +111,48 @@ Gọi $f(\cdot)$ là hàm ánh xạ một ảnh thành embedding. Độ tương 
 \begin{equation}
     s(x,y) = \frac{f(x)^\top f(y)}{\lVert f(x)\rVert \, \lVert f(y)\rVert}.
 \end{equation}
-Với verification, hệ thống kết luận hai ảnh thuộc cùng một người khi $s(x,y) > \tau$, trong đó $\tau$ là ngưỡng quyết định. Với identification, hệ thống tính $s$ giữa ảnh truy vấn và mọi ảnh trong gallery, rồi xếp hạng các danh tính theo độ tương đồng giảm dần.
 
-Các metric cho verification gồm accuracy trên các cặp ảnh ở một ngưỡng cố định, đường cong ROC, TAR@FAR và EER. Các metric cho identification gồm Rank-1, Recall@k và mAP. Trong báo cáo này, accuracy của verification là tỉ lệ các cặp được phân loại đúng ở ngưỡng được chọn trên tập kiểm định (validation), còn accuracy của identification chính là Rank-1. Recall@k và mAP là các metric xếp hạng nên chỉ áp dụng cho identification.
+\paragraph{Verification.} Tập đánh giá gồm các cặp ảnh $(x,y)$. Gọi $\mathcal{P}$ là tập các cặp cùng danh tính và $\mathcal{N}$ là tập các cặp khác danh tính. Hệ thống kết luận hai ảnh thuộc cùng một người khi $s(x,y) > \tau$, trong đó $\tau$ là ngưỡng quyết định. Nhóm dùng hai metric cho nhiệm vụ này.
+
+Metric thứ nhất là accuracy, tức tỉ lệ các cặp được phân loại đúng ở một ngưỡng cố định:
+\begin{equation}
+    \mathrm{Acc}(\tau) = \frac{\bigl|\{(x,y)\in\mathcal{P} : s(x,y) > \tau\}\bigr| + \bigl|\{(x,y)\in\mathcal{N} : s(x,y) \le \tau\}\bigr|}{|\mathcal{P}| + |\mathcal{N}|}.
+\end{equation}
+Ngưỡng $\tau^\ast$ được chọn trên tập kiểm định (validation) để accuracy cao nhất, sau đó giữ nguyên khi đánh giá trên tập test. Tỉ lệ cặp dương và cặp âm trong các tập đánh giá xấp xỉ nhau nên accuracy phản ánh được chất lượng phân loại.
+
+Metric thứ hai là TAR@FAR, tức tỉ lệ chấp nhận đúng (True Accept Rate, TAR) tại một mức tỉ lệ chấp nhận sai (False Accept Rate, FAR) cho trước. Hai tỉ lệ này được định nghĩa theo ngưỡng $\tau$:
+\begin{equation}
+    \mathrm{TAR}(\tau) = \frac{\bigl|\{(x,y)\in\mathcal{P} : s(x,y) > \tau\}\bigr|}{|\mathcal{P}|}, \qquad
+    \mathrm{FAR}(\tau) = \frac{\bigl|\{(x,y)\in\mathcal{N} : s(x,y) > \tau\}\bigr|}{|\mathcal{N}|}.
+\end{equation}
+Với mức $\alpha$ cho trước, ngưỡng $\tau_\alpha$ được chọn sao cho $\mathrm{FAR}(\tau_\alpha) = \alpha$, và metric là $\mathrm{TAR}(\tau_\alpha)$. Nhóm báo cáo $\alpha = 10^{-2}$ và $\alpha = 10^{-1}$. Khác với accuracy, ngưỡng $\tau_\alpha$ được xác định từ chính các cặp âm của tập đang đánh giá, nên TAR@FAR đo khả năng phân tách của embedding ở một điểm vận hành chứ không đo hiệu năng ở một ngưỡng đã chọn trước.
+
+\paragraph{Identification.} Hệ thống tính $s$ giữa ảnh truy vấn (probe) và mọi ảnh trong tập ảnh đã biết danh tính (gallery), rồi xếp hạng các danh tính theo độ tương đồng giảm dần. Mọi danh tính của probe đều có mặt trong gallery, nên đây là bài toán đóng. Gallery chứa đúng một ảnh cho mỗi danh tính, vì vậy xếp hạng ảnh cũng là xếp hạng danh tính. Gọi $Q$ là tập probe và $r_q$ là vị trí của danh tính đúng trong danh sách xếp hạng của probe $q$. Rank-$k$ là tỉ lệ probe có danh tính đúng nằm trong $k$ vị trí đầu:
+\begin{equation}
+    \text{Rank-}k = \frac{1}{|Q|}\sum_{q\in Q} \mathbf{1}\left[r_q \le k\right].
+\end{equation}
+Nhóm báo cáo Rank-$1$ và Rank-$5$. Rank-$1$ cho biết hệ thống có trả về đúng danh tính ngay lần đầu hay không, còn Rank-$5$ cho biết danh tính đúng có nằm trong năm ứng viên đầu hay không.
+
+\paragraph{Metric dùng để chọn mô hình.} Tập validation có danh tính không giao với các lớp của tập train, nên không thể dùng loss hoặc độ chính xác phân loại để chọn mô hình. Nhóm dùng diện tích dưới đường cong ROC (ROC-AUC) trên các cặp validation để chọn checkpoint, giảm learning rate và dừng sớm (mục~\ref{sec:training}). Đại lượng này bằng xác suất một cặp cùng danh tính có độ tương đồng cao hơn một cặp khác danh tính được chọn ngẫu nhiên:
+\begin{equation}
+    \mathrm{AUC} = \Pr\bigl[s(x,y) > s(x',y')\bigr], \quad (x,y)\in\mathcal{P},\ (x',y')\in\mathcal{N}.
+\end{equation}
+Nhóm chọn ROC-AUC vì nó không phụ thuộc vào ngưỡng, dùng toàn bộ các cặp và thay đổi mượt theo epoch, nên ổn định hơn accuracy và TAR@FAR ở mức FAR thấp khi làm tín hiệu cho việc giảm learning rate và dừng sớm. Hạn chế của nó là lấy trung bình trên mọi mức FAR, kể cả vùng FAR cao mà hệ thống ít khi vận hành, nên checkpoint tối ưu theo ROC-AUC có thể không trùng với checkpoint tối ưu theo accuracy hay Rank-1. Vì vậy ROC-AUC chỉ được báo cáo như một metric phụ ở mục~\ref{sec:results}, còn kết luận chính dựa trên accuracy, TAR@FAR và Rank-$k$.
 
 \subsection{Tập dữ liệu CelebA}
-CelebA \cite{liu2015celeba} là tập ảnh khuôn mặt của người nổi tiếng gồm $202\,599$ ảnh thuộc $10\,177$ danh tính. Tập dữ liệu được phát hành cho mục đích nghiên cứu phi thương mại, phù hợp với phạm vi học tập của bài tập này. Nhóm sử dụng phiên bản \texttt{img\_align\_celeba}, trong đó ảnh được căn chỉnh sơ bộ theo vị trí hai mắt bằng phép biến đổi đồng dạng và đổi kích thước thành $218 \times 178$. Kèm theo đó là tệp \texttt{list\_landmarks\_align\_celeba.txt} chứa năm điểm mốc khuôn mặt gồm hai mắt, mũi và hai khóe miệng.
+CelebA \cite{liu2015celeba} là tập ảnh khuôn mặt của người nổi tiếng gồm $202\,599$ ảnh thuộc $10\,177$ danh tính. Ảnh được chụp ngoài điều kiện kiểm soát nên có nhiều thay đổi về tư thế, biểu cảm, ánh sáng và vật che. Tập dữ liệu được phát hành cho mục đích nghiên cứu phi thương mại, phù hợp với phạm vi học tập của bài tập này.
 
-Nhóm dùng phân chia mặc định của CelebA. Nhóm đã kiểm tra rằng ba tập training, validation và kiểm thử (test) không có danh tính chung, nên việc đánh giá trên tập test là đánh giá trên danh tính chưa từng thấy. Bảng~\ref{tab:celeba-split} thống kê số ảnh và số danh tính của từng tập.
+Nhóm sử dụng phiên bản \texttt{img\_align\_celeba}, trong đó ảnh đã được căn chỉnh sơ bộ theo vị trí hai mắt bằng phép biến đổi đồng dạng và đổi kích thước thành $218 \times 178$. Nhóm dùng thêm hai tệp đi kèm. Tệp nhãn danh tính cho biết mỗi ảnh thuộc danh tính nào. Tệp \texttt{list\_landmarks\_align\_celeba.txt} chứa năm điểm mốc khuôn mặt gồm hai mắt, mũi và hai khóe miệng của từng ảnh, và được dùng để căn chỉnh lại ảnh ở mục~\ref{sec:data-pipeline}.
+
+Nhóm dùng cách chia tập mặc định của CelebA thành train, validation và test. Chi tiết về số ảnh, số danh tính và việc kiểm tra các tập không giao nhau được trình bày ở mục~\ref{sec:eda}.
+
+\subsection{Phân tích khám phá dữ liệu}\label{sec:eda}
+
+\paragraph{Số ảnh và số danh tính của từng tập.} Bảng~\ref{tab:celeba-split} thống kê số ảnh và số danh tính của ba tập. Nhóm đã kiểm tra rằng ba tập không có danh tính chung, nên đánh giá trên tập test là đánh giá trên danh tính chưa từng thấy.
 
 \begin{table}[ht]
     \centering
-    \caption{Thống kê các tập của CelebA.}
+    \caption{Số ảnh và số danh tính của các tập CelebA.}
     \label{tab:celeba-split}
     \begin{tabular}{lrr}
         \toprule
@@ -124,39 +167,230 @@ Nhóm dùng phân chia mặc định của CelebA. Nhóm đã kiểm tra rằng 
     \end{tabular}
 \end{table}
 
-\subsection{Phân tích khám phá dữ liệu}
+\paragraph{Số ảnh trên mỗi danh tính.} Bảng~\ref{tab:ipi} thống kê số ảnh trên mỗi danh tính của từng tập. Ba tập có phân bố gần giống nhau, với cùng trung vị $21$ và trung bình từ $19.9$ đến $20.2$, còn giá trị lớn nhất là $35$ ở train và validation và $32$ ở test. Vì vậy điểm đánh giá không bị lệch do khác biệt về phân bố này giữa các tập. Mỗi tập có rất ít danh tính chỉ một ảnh. Các danh tính này không tạo được cặp ảnh cùng người nên không dùng được cho các cặp dương của verification, và cũng không có ảnh probe cho identification.
 
-\subsection{Giao thức và metric đánh giá}
-Nhóm đánh giá trên tập test của CelebA. Tập validation chỉ dùng để chọn checkpoint tốt nhất và không dùng để huấn luyện. Tập test được đánh giá một lần sau khi đã chọn checkpoint.
+\begin{table}[ht]
+    \centering
+    \caption{Số ảnh trên mỗi danh tính ở từng tập.}
+    \label{tab:ipi}
+    \begin{tabular}{lrrrrr}
+        \toprule
+        Tập        & Nhỏ nhất & Trung vị & Trung bình & Lớn nhất & Số danh tính một ảnh \\
+        \midrule
+        Train      & $1$      & $21$     & $19.9$     & $35$     & $36$                 \\
+        Validation & $1$      & $21$     & $20.2$     & $35$     & $5$                  \\
+        Test       & $1$      & $21$     & $20.0$     & $32$     & $3$                  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-Với verification, nhóm sinh các cặp ảnh cùng danh tính và khác danh tính từ mỗi tập với một seed cố định, rồi lưu vào tệp để mọi lần chạy dùng chung. Với identification, nhóm chia ảnh của mỗi danh tính trong tập test thành gallery và probe, và chỉ dùng các danh tính có ít nhất hai ảnh.
+Hình~\ref{fig:identity-hist} cho thấy phân bố số ảnh trên mỗi danh tính ở tập train. Phân bố bị chặn ở phía trên, với giá trị lớn nhất là $35$ ảnh. Histogram có hai đỉnh rõ quanh $20$ và $30$ ảnh, và số danh tính có từ $31$ ảnh trở lên giảm mạnh sau đỉnh thứ hai. Phần lớn danh tính nằm giữa hai đỉnh này.
+
+\atwofigure{eda/identity_hist.png}{0.75}{Phân bố số ảnh trên mỗi danh tính ở tập train. Đường nét đứt đánh dấu trung vị, đường chấm đánh dấu trung bình.}{fig:identity-hist}{identity_hist}
+
+Không có danh tính nào chiếm ưu thế: năm danh tính nhiều ảnh nhất chỉ chiếm $0.1\%$ số ảnh train. Dữ liệu chỉ mất cân bằng nhẹ nên nhóm không gán lại trọng số cho các lớp. Tuy nhiên, chỉ khoảng $20$ ảnh mỗi danh tính trên $8\,192$ lớp là rất ít so với tập lớn mà paper dùng. Đây là lý do nhóm dùng augmentation ở tập train, và cũng là một khó khăn cho hàm loss có margin, vì mỗi lớp có ít mẫu để học tâm lớp.
+
+\paragraph{Ảnh mẫu.} Hình~\ref{fig:samples} minh họa các ảnh gốc \texttt{img\_align\_celeba} kích thước $218 \times 178$. Mỗi hàng là một danh tính, mỗi cột là một ảnh chọn ngẫu nhiên. Ảnh của cùng một danh tính khác nhau nhiều về tư thế, biểu cảm, ánh sáng, màu tóc và trang điểm. Một số ảnh có vật che mặt như mũ, tay hoặc tóc. Vùng ảnh còn chứa cả tóc, vai và phông nền, nên khuôn mặt chỉ chiếm một phần khung hình. Vị trí và kích thước khuôn mặt cũng chưa đồng đều giữa các ảnh, vì ảnh gốc mới được căn chỉnh sơ bộ theo hai mắt.
+
+\atwofigure{eda/samples.png}{0.7}{Ảnh mẫu từ \texttt{img\_align\_celeba} trước khi căn chỉnh: mỗi hàng là một danh tính, mỗi cột là một ảnh chọn ngẫu nhiên.}{fig:samples}{samples}
+
+\subsection{Giao thức đánh giá}
+Nhóm đánh giá trên các danh tính không giao với tập train. Tập validation chỉ dùng để chọn checkpoint tốt nhất và ngưỡng cho accuracy, không dùng để huấn luyện. Tập test được đánh giá một lần sau khi đã chọn checkpoint và ngưỡng. Mọi mô hình được so sánh trên đúng cùng các cặp ảnh và cùng gallery, probe, nên khác biệt giữa các mô hình không đến từ việc lấy mẫu dữ liệu đánh giá.
+
+\paragraph{Cặp ảnh cho verification.} Nhóm sinh $10\,000$ cặp ảnh cho mỗi tập validation và test với một seed cố định, rồi lưu vào tệp để mọi lần chạy dùng chung. Mỗi cặp được chọn là cặp dương với xác suất $1/2$ (Bảng~\ref{tab:eval-ver}). Các cặp dương chỉ lấy từ những danh tính có ít nhất hai ảnh.
+
+\begin{table}[ht]
+    \centering
+    \caption{Các cặp ảnh dùng cho verification.}
+    \label{tab:eval-ver}
+    \begin{tabular}{lrrr}
+        \toprule
+        Tập        & Số cặp    & Cặp dương & Cặp âm   \\
+        \midrule
+        Validation & $10\,000$ & $4\,846$  & $5\,154$ \\
+        Test       & $10\,000$ & $4\,885$  & $5\,115$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Với khoảng $5\,100$ cặp âm ở tập test, mức FAR bằng $10^{-2}$ ứng với khoảng $51$ cặp âm và mức $10^{-1}$ ứng với khoảng $510$ cặp âm. Mức $10^{-3}$ chỉ ứng với khoảng $5$ cặp âm, quá ít để cho kết quả ổn định, nên nhóm không báo cáo mức này.
+
+\paragraph{Gallery và probe cho identification.} Identification chỉ được đánh giá trên tập test. Nhóm chỉ dùng các danh tính có ít nhất hai ảnh, và với mỗi danh tính nhóm chọn ảnh đầu tiên theo tên tệp làm ảnh gallery. Các ảnh còn lại của danh tính đó đều là probe. Cách chọn này là tất định và không phụ thuộc seed, nhưng Rank-$k$ vì thế phụ thuộc vào ảnh được chọn. Bảng~\ref{tab:eval-ident} thống kê gallery và probe. Gallery có $997$ ảnh, mỗi danh tính một ảnh, và $18\,962$ probe. Ba danh tính chỉ có một ảnh ở tập test không được dùng.
+
+\begin{table}[ht]
+    \centering
+    \caption{Gallery và probe dùng cho identification trên tập test.}
+    \label{tab:eval-ident}
+    \begin{tabular}{lrr}
+        \toprule
+        Số danh tính & Ảnh gallery & Ảnh probe \\
+        \midrule
+        $997$        & $997$       & $18\,962$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Chọn ngưỡng và tính TAR@FAR.} Ngưỡng $\tau^\ast$ của accuracy được chọn trên các cặp validation rồi giữ nguyên cho các cặp test. TAR@FAR được tính trực tiếp từ đường ROC của các cặp test bằng nội suy tuyến tính, nên ngưỡng $\tau_\alpha$ được xác định từ chính các cặp âm của tập test. Nhóm đã kiểm tra trên điểm số test rằng cách lấy TAR lớn nhất với FAR không vượt quá $\alpha$ cho cùng giá trị đến bốn chữ số thập phân.
 
 \section{Pipeline dữ liệu}\label{sec:data-pipeline}
 
-\subsection{Căn chỉnh và tiền xử lý}
-Nhóm căn chỉnh mọi ảnh về kích thước $112 \times 112$ bằng phép biến đổi đồng dạng dựa trên năm điểm mốc. Gọi $p_k$ là năm điểm mốc của ảnh và $q_k$ là năm điểm tương ứng của mẫu chuẩn $112 \times 112$ thường dùng trong các pipeline kiểu ArcFace. Phép biến đổi được tìm bằng bình phương tối thiểu:
+\subsection{Căn chỉnh và tiền xử lý}\label{sec:alignment}
+Nhóm căn chỉnh mọi ảnh về kích thước $112 \times 112$ bằng phép biến đổi đồng dạng dựa trên năm điểm mốc. Gọi $p_k$ là năm điểm mốc của ảnh và $q_k$ là năm điểm tương ứng của mẫu chuẩn (template) $112 \times 112$. Mẫu chuẩn này là bộ tọa độ thường dùng trong các pipeline kiểu ArcFace và được cho ở Bảng~\ref{tab:template}. Phép biến đổi được tìm bằng bình phương tối thiểu:
 \begin{equation}
     \min_{s,\,R,\,t} \sum_{k=1}^{5} \left\lVert s R p_k + t - q_k \right\rVert^2,
 \end{equation}
 trong đó $s$ là hệ số tỉ lệ, $R$ là ma trận xoay và $t$ là vector tịnh tiến. Nhóm dùng trực tiếp các điểm mốc có sẵn trong \texttt{list\_landmarks\_align\_celeba.txt}, nên không cần chạy bộ phát hiện khuôn mặt. Ảnh sau khi căn chỉnh được lưu lại một lần để các lần huấn luyện sau không phải lặp lại bước này.
 
-\subsection{Augmentation}
+\begin{table}[ht]
+    \centering
+    \caption{Tọa độ $(x, y)$ của mẫu chuẩn $112 \times 112$, tính theo điểm ảnh với gốc ở góc trên bên trái.}
+    \label{tab:template}
+    \begin{tabular}{lrr}
+        \toprule
+        Điểm mốc        & $x$       & $y$       \\
+        \midrule
+        Mắt trái        & $38.2946$ & $51.6963$ \\
+        Mắt phải        & $73.5318$ & $51.5014$ \\
+        Mũi             & $56.0252$ & $71.7366$ \\
+        Khóe miệng trái & $41.5493$ & $92.3655$ \\
+        Khóe miệng phải & $70.7299$ & $92.2041$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-\subsection{Xây dựng tập đánh giá}
-Các cặp ảnh cho verification và cách chia gallery và probe cho identification được xây dựng một lần với seed cố định, lưu vào tệp và dùng lại ở mọi lần chạy. Cách làm này bảo đảm các mô hình được so sánh trên đúng cùng một dữ liệu đánh giá.
+\paragraph{Kết quả căn chỉnh.} Hình~\ref{fig:alignment} so sánh ảnh gốc với ảnh sau căn chỉnh. Sau căn chỉnh, hai mắt, mũi và hai khóe miệng nằm ở cùng vị trí trên các ảnh, nên mạng không phải học thêm sự khác biệt do khung cắt. Khung cắt sau căn chỉnh chặt hơn ảnh gốc, nên phần tóc, vai và phông nền giảm đi và khuôn mặt chiếm phần lớn khung hình.
+
+\atwofigure{eda/alignment.png}{0.7}{Ảnh gốc \texttt{img\_align\_celeba} (cột trái) và ảnh sau căn chỉnh $112 \times 112$ (cột phải), bốn ảnh chọn ngẫu nhiên.}{fig:alignment}{alignment}
+
+\subsection{Augmentation}
+Ảnh đã căn chỉnh về $112 \times 112$ như ở mục~\ref{sec:alignment}. Ở tập train, nhóm áp dụng hai phép biến đổi ngẫu nhiên. Phép thứ nhất là lật ngang với xác suất $0.5$. Phép thứ hai là \texttt{ColorJitter} nhẹ, trong đó độ sáng, độ tương phản và độ bão hòa mỗi đại lượng biến thiên tối đa $0.2$. Lật ngang không làm đổi danh tính và gần như giữ nguyên vị trí các điểm mốc, vì mẫu chuẩn ở Bảng~\ref{tab:template} gần đối xứng qua trục dọc. \texttt{ColorJitter} mô phỏng sự khác nhau về điều kiện chiếu sáng giữa các ảnh. Mỗi danh tính trong tập train chỉ có khoảng $20$ ảnh, nên augmentation giúp giảm overfit. Nhóm không dùng phép xoay hoặc cắt ảnh để không làm lệch mẫu căn chỉnh năm điểm. Hình~\ref{fig:augmentation} minh họa ảnh trước và sau augmentation.
+
+\atwofigure{eda/augmentation.png}{0.85}{Ảnh trước (cột trái) và sau augmentation (các cột còn lại).}{fig:augmentation}{augmentation}
+
+Sau đó ảnh được chuẩn hóa với trung bình và độ lệch chuẩn bằng $0.5$ cho cả ba kênh, đưa giá trị điểm ảnh về khoảng $[-1, 1]$. Tập validation, tập test và các cặp đánh giá chỉ được chuẩn hóa và không có augmentation.
 
 \section{Phân tích paper ArcFace}\label{sec:arcface}
 
 \subsection{Thông tin paper}
-Bài báo được phân tích là \emph{ArcFace: Additive Angular Margin Loss for Deep Face Recognition} \cite{deng2019arcface}, trình bày tại CVPR 2019. Nhóm chọn bài báo này vì nó thuộc một hội nghị hàng đầu và có ảnh hưởng lớn đến các hệ thống nhận dạng khuôn mặt sau đó. Thay đổi chính của bài báo nằm ở hàm loss, nên có thể tái hiện bằng cách thay lớp phân loại cuối của một backbone sẵn có.
+Bài báo được phân tích là \emph{ArcFace: Additive Angular Margin Loss for Deep Face Recognition} \cite{deng2019arcface, deng2018arcfacev1}, trình bày tại CVPR 2019. Nhóm chọn bài báo này vì nó thuộc một hội nghị hàng đầu và có ảnh hưởng lớn đến các hệ thống nhận dạng khuôn mặt sau đó. Thay đổi chính của bài báo nằm ở hàm loss, nên có thể tái hiện bằng cách thay lớp phân loại cuối của một backbone sẵn có.
 
 \subsection{Tóm tắt phương pháp}
+\paragraph{Động lực.} Softmax không trực tiếp ép embedding của hai ảnh cùng danh tính gần nhau và của hai ảnh khác danh tính xa nhau, nên đặc trưng học được chưa tối ưu cho bài toán so khớp khuôn mặt. Contrastive loss và triplet loss giải quyết vấn đề này bằng huấn luyện theo cặp, nhưng việc chọn mẫu huấn luyện hiệu quả rất khó. ArcFace giữ cách huấn luyện phân loại và thêm một margin góc vào logit của lớp đúng, nên không cần bước chọn mẫu phức tạp.
+
+\paragraph{Từ softmax đến ArcFace.} Logit của softmax có dạng $W_j^\top x_i + b_j$. ArcFace biến đổi logit này theo ba bước. Thứ nhất, đặt $b_j = 0$. Thứ hai, chuẩn hóa $\ell_2$ trọng số để $\|W_j\| = 1$. Thứ ba, chuẩn hóa $\ell_2$ đặc trưng để $\|x_i\| = 1$, rồi đưa đặc trưng về bán kính $s$:
+$$
+    W_j \leftarrow \frac{W_j}{\|W_j\|},
+    \qquad
+    x_i \leftarrow \frac{x_i}{\|x_i\|},
+    \qquad
+    \cos\theta_j = W_j^\top x_i,
+    \qquad
+    \|x_i\| = s.
+$$
+Khi đó logit chỉ phụ thuộc vào góc $\theta_j$ giữa đặc trưng $x_i$ và vector trọng số $W_j$ của lớp $j$. Paper chọn $s = 64$; $s$ đóng vai trò bán kính siêu cầu và hệ số tỉ lệ của logit. ArcFace chỉ thay logit của lớp đúng bằng:
+$$
+    s\cos(\theta_{y_i}+m),
+$$
+trong khi các lớp khác giữ nguyên $s\cos\theta_j$. Hàm mất mát của ArcFace là:
+\begin{equation}
+    L = -\frac{1}{N}\sum_{i=1}^{N}\log\frac{e^{s\cos(\theta_{y_i}+m)}}{e^{s\cos(\theta_{y_i}+m)}+\sum_{j\ne y_i}e^{s\cos\theta_j}}.
+\end{equation}
+Paper chọn $m = 0.5$. Với $\theta \in [0,\pi-m]$, ta có $\cos(\theta+m) < \cos\theta$, nên để đạt cùng xác suất thì mẫu phải nằm gần tâm lớp đúng hơn so với softmax đã chuẩn hóa. Margin được cộng trực tiếp vào góc nên tương ứng với khoảng cách cung trên siêu cầu; đây là lý do phương pháp có tên additive angular margin.
+
+\paragraph{Ý nghĩa hình học.} Trên siêu cầu bán kính $s$, margin góc tương ứng với khoảng cách trắc địa (geodesic) giữa các lớp. Trong bài toán hai lớp, biên quyết định của ArcFace là:
+$$
+    s\left(\cos(\theta_1+m)-\cos\theta_2\right)=0,
+$$
+trong đó $\theta_1$ và $\theta_2$ là góc giữa đặc trưng với hai vector trọng số lớp. Biên này tách hai lớp theo hướng góc, khác với việc dịch cosine như CosineFace hay nhân góc như SphereFace.
+
+\paragraph{So sánh với SphereFace và CosineFace.} SphereFace đặt margin bằng cách nhân góc, cho logit $\cos(m\theta_{y_i})$, nên cần hàm từng khúc và softmax hỗ trợ để hội tụ. CosineFace đặt margin trong không gian cosine, cho logit $s(\cos\theta_{y_i}-m)$, dễ tối ưu hơn. ArcFace đặt margin trong không gian góc, cho logit $s\cos(\theta_{y_i}+m)$, nên margin tương ứng với khoảng cách cung trên siêu cầu và có diễn giải hình học rõ hơn. Trong bài toán hai lớp, biên quyết định của ba phương pháp lần lượt là $\cos(m\theta_1)=\cos\theta_2$, $\cos\theta_1-m=\cos\theta_2$ và $\cos(\theta_1+m)=\cos\theta_2$.
+
+\paragraph{Phân tích logit mục tiêu.} Paper so sánh đường cong logit của lớp đúng theo $\theta$. CosineFace dịch đường cong theo chiều âm của trục tung, còn ArcFace dịch theo chiều âm của trục hoành. Theo ước lượng thô của paper, margin có ích nhất với các mẫu có góc từ $30^\circ$ đến $60^\circ$, ít ảnh hưởng khi góc nhỏ hơn $30^\circ$ và có thể làm huấn luyện phân kỳ khi góc từ $60^\circ$ đến $90^\circ$. Với $m = 0.5$, logit mục tiêu của ArcFace tăng trở lại khi $\theta > 151.35^\circ$. Paper cho rằng vùng này gần như không bao giờ xảy ra khi huấn luyện từ khởi tạo ngẫu nhiên, vì góc lớn nhất quan sát được nhỏ hơn $105^\circ$, nên không xử lý riêng. Bản v1 không có pseudo-code, hàm mất mát chỉ được cho dưới dạng công thức.
+
+\paragraph{Giả thiết ngầm.} Paper không nêu giả thiết thành một mục riêng. Từ công thức, nhóm rút ra bốn giả thiết: (i) khuôn mặt của cùng một danh tính tạo thành một cụm quanh một tâm lớp trên siêu cầu, nên một vector trọng số cho mỗi lớp là đủ; (ii) một margin cố định $m$ có độ khó phù hợp cho mọi lớp và mọi mẫu; (iii) nhãn đủ sạch, vì margin ép mẫu về tâm của lớp đã gán; (iv) mỗi lớp có đủ mẫu để học tâm lớp. Phân tích góc của paper còn dựa trên huấn luyện từ khởi tạo ngẫu nhiên với dữ liệu rất lớn, khác với thí nghiệm của nhóm dùng khởi tạo ImageNet và CelebA nhỏ hơn nhiều.
 
 \subsection{Thí nghiệm của paper}
+\paragraph{Dữ liệu và mạng.} Paper dùng VGG2 cho các thử nghiệm cấu hình mạng và MS-Celeb-1M đã làm sạch cho so sánh loss và MegaFace. VGG2 có $8631$ danh tính và $3.14$ triệu ảnh, không làm sạch; MS-Celeb-1M sau khi làm sạch còn khoảng $85$ nghìn danh tính và $3.8$ triệu ảnh, giảm từ khoảng $100$ nghìn danh tính và $10$ triệu ảnh ban đầu. Ảnh đầu vào có kích thước $112 \times 112$, được căn chỉnh bằng năm điểm mốc khuôn mặt và chuẩn hóa bằng $(x - 127.5)/128$. Backbone gốc là ResNet cải tiến (khối IR, conv đầu $3\times3$ stride $1$); trong các lựa chọn đầu ra, cấu trúc BN-Dropout-FC-BN với dropout $0.4$ cho embedding $512$ chiều cho kết quả tốt nhất. Các so sánh loss dùng LResNet100E-IR.
+
+\paragraph{Thiết lập huấn luyện.} Batch size $512$, SGD với momentum $0.9$, weight decay $5\times10^{-4}$, learning rate khởi tạo $0.1$ và chia $10$ tại các vòng lặp $100$k, $140$k, $160$k trong tổng số $200$k. Các thí nghiệm dùng bốn đến tám GPU Tesla P40 và MXNet. Bản v1 không nêu augmentation hay ghép đặc trưng ảnh lật khi kiểm tra.
+
+\paragraph{Benchmark và metric.} Paper đánh giá bằng độ chính xác verification trên LFW, CFP-FP và AgeDB-30, và bằng rank-1 identification cùng TAR tại FAR $10^{-6}$ trên MegaFace Challenge 1 (gallery hơn một triệu ảnh). Điểm tương đồng giữa hai đặc trưng là cosine; so sánh theo láng giềng gần nhất cho identification và theo ngưỡng cho verification.
+
+\paragraph{So sánh các hàm loss.} Bảng~\ref{tab:paper-loss} trích kết quả trên MS1M với LResNet100E-IR. ArcFace với $m = 0.5$ cao nhất trên LFW và AgeDB-30, trong khi CosineFace nhỉnh hơn trên CFP-FP. Chênh lệch giữa ArcFace và CosineFace nhỏ, còn chênh lệch so với softmax rõ nhất ở CFP-FP và AgeDB-30. Trên MegaFace bản gốc, ArcFace ($m = 0.5$) đạt rank-1 $83.27\%$ và TAR@FAR $=10^{-6}$ là $98.48\%$, so với $78.89\%$ và $94.95\%$ của softmax. Sau khi làm sạch distractors, rank-1 của ArcFace tăng lên $98.36\%$, còn softmax là $91.43\%$.
+
+\begin{table}[h]
+    \centering
+    \caption{Kết quả so sánh loss trong paper (độ chính xác verification, \%; LResNet100E-IR huấn luyện trên MS1M).}
+    \label{tab:paper-loss}
+    \begin{tabular}{lccc}
+        \toprule
+        Loss                  & LFW   & CFP-FP & AgeDB-30 \\
+        \midrule
+        Softmax               & 99.70 & 91.40  & 95.56    \\
+        SphereFace ($m=4$)    & 99.76 & 93.70  & 97.56    \\
+        CosineFace ($m=0.35$) & 99.80 & 94.40  & 97.91    \\
+        ArcFace ($m=0.5$)     & 99.83 & 94.04  & 98.08    \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Margin và backbone.} Khi quét $m$ từ $0.2$ đến $0.8$ trên LMobileNetE, $m = 0.5$ cho kết quả cao nhất trên cả ba benchmark ($99.50$, $88.50$ và $96.06$). Về backbone, các thử nghiệm dùng softmax trên VGG2 cho thấy LMobileNetE nhẹ hơn ($4.2$ ms mỗi ảnh, $112$ MB) và kém hơn LResNet50E-IR ($8.9$ ms, $167$ MB) một chút về độ chính xác ($99.63$, $95.81$, $91.85$ so với $99.75$, $96.58$, $93.53$ trên LFW, CFP-FP, AgeDB-30). Đây là cơ sở để nhóm kỳ vọng sự đánh đổi tương tự giữa ResNet-50 và MobileNetV3.
 
 \subsection{Hạn chế}
+Bài báo không có mục hạn chế riêng. Những hạn chế dưới đây gồm hai loại: phần paper tự nêu, và nhận xét của nhóm khi đọc paper.
+
+\paragraph{Do paper nêu.} Lớp phân loại tốn rất nhiều bộ nhớ GPU khi số danh tính lên cỡ hàng triệu; vì vậy sau khi huấn luyện bằng các loss dựa trên softmax, tác giả dùng triplet loss để tinh chỉnh ở quy mô lớn. Danh sách ảnh nhiễu trên MegaFace và FaceScrub được tác giả làm thủ công và không bảo đảm sạch hoàn toàn, nên kết quả trên tập đã tinh chỉnh có thể thay đổi khi danh sách được cập nhật.
+
+\paragraph{Nhận xét của nhóm.}
+\begin{itemize}
+    \item $m$ và $s$ được cố định dùng chung cho mọi lớp. Paper chỉ quét $m$ trên LMobileNetE rồi chọn $m=0.5$, còn $s=64$ lấy theo các nghiên cứu trước; không có lựa chọn riêng cho từng cấu hình.
+    \item Việc phải làm sạch MS1M trước khi huấn luyện cho thấy phương pháp phụ thuộc vào chất lượng nhãn. Paper không có thí nghiệm riêng đo độ nhạy với nhãn nhiễu.
+    \item Các bảng không ghi độ lệch chuẩn hay số lần chạy lặp, nên không đánh giá được mức dao động giữa các lần huấn luyện. Trên LFW, các loss trong Bảng~\ref{tab:paper-loss} chênh nhau chưa tới $0.2$ điểm phần trăm, nằm gần ngưỡng bão hòa của benchmark.
+    \item Một số chi tiết quan trọng khi tái hiện không có trong bản v1, như augmentation, cách xử lý khi $\theta + m > \pi$ và pseudo-code.
+    \item Thiết lập của paper ở quy mô hàng triệu ảnh và hàng chục nghìn danh tính, khác xa dữ liệu của nhóm.
+\end{itemize}
+
+\paragraph{Giả thiết không đúng trên tập của nhóm.} Đối chiếu bốn giả thiết ở mục trước với thí nghiệm của nhóm: giả thiết (iv) không đúng, vì tập train của nhóm chỉ có khoảng $20$ ảnh mỗi danh tính trên $8\,192$ lớp. Ngoài ra, paper phân tích target logit dựa trên huấn luyện từ khởi tạo ngẫu nhiên với dữ liệu rất lớn, trong khi nhóm fine-tune từ trọng số ImageNet trên CelebA nhỏ hơn; đây là khác biệt về chế độ huấn luyện, không phải hệ quả trực tiếp của (iv). Nhóm quan sát thấy hậu quả thực tế ở learning rate: với $0.01$, loss huấn luyện của ResNet-50 ArcFace kẹt và ROC-AUC trên validation chỉ đạt khoảng $0.91$, trong khi ở $0.001$ run hội tụ bình thường; nhóm chưa kiểm chứng nguyên nhân. Với giả thiết (ii), nhóm dùng $m = 0.5$ theo paper và không thử giá trị khác, nên không biết giá trị này có tối ưu trên CelebA hay không. Với giả thiết (iii), nhóm không đo mức nhiễu nhãn của CelebA nên không đánh giá được giả thiết này. Nhóm cũng chưa phân tích các trường hợp lỗi cụ thể của mô hình (failure case), nên chưa nói được ArcFace thất bại ở loại cặp ảnh nào.
 
 \subsection{Đối chiếu với nhóm}\label{sec:doi-chieu}
+Bảng~\ref{tab:doi-chieu} so sánh thiết lập của paper với thiết lập của nhóm.
+
+\begin{table}[h]
+    \centering
+    \caption{Đối chiếu giữa thiết lập của paper (bản v1) và của nhóm.}
+    \label{tab:doi-chieu}
+    \begin{tabular}{p{3.0cm}p{5.3cm}p{5.3cm}}
+        \toprule
+                               & Paper                                 & Nhóm                                                                 \\
+        \midrule
+        Dữ liệu                & VGG2, MS1M làm sạch ($85$K danh tính) & CelebA, cỡ vài nghìn danh tính ở tập train                           \\
+        Ảnh đầu vào            & $112\times112$, căn chỉnh $5$ điểm    & $112\times112$, căn chỉnh $5$ điểm từ tệp điểm mốc có sẵn            \\
+        Backbone               & LResNet100E-IR, so sánh với MobileNet & ResNet-50 và MobileNetV3 Large của torchvision, khởi tạo từ ImageNet \\
+        Embedding              & BN-Dropout-FC-BN, $512$ chiều         & Cùng cấu trúc, $512$ chiều                                           \\
+        Loss                   & ArcFace, $s=64$, $m=0.5$              & Softmax và ArcFace, $s=64$, $m=0.5$                                  \\
+        Batch, learning rate   & $512$, $0.1$                          & $128$, $0.001$                                                       \\
+        Lịch learning rate     & Chia $10$ tại vòng lặp cố định        & ReduceLROnPlateau theo ROC-AUC validation                            \\
+        Thời gian huấn luyện   & $200$k vòng lặp                       & Giới hạn số epoch, dừng sớm theo validation                          \\
+        Augmentation           & Không nêu                             & Lật ngang và ColorJitter nhẹ                                         \\
+        Weight decay, momentum & $5\times10^{-4}$, $0.9$               & $5\times10^{-4}$, $0.9$                                              \\
+        Xử lý $\theta+m>\pi$   & Không xử lý                           & Logit tuyến tính $\cos\theta - m\sin m$                              \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Phần tái hiện.} Nhóm giữ nguyên bản chất của phương pháp: chuẩn hóa đặc trưng và trọng số, hệ số $s = 64$, margin $m = 0.5$, cấu trúc embedding, kích thước ảnh, cách căn chỉnh, weight decay và momentum, cách đánh giá bằng cosine với ngưỡng.
+
+\paragraph{Phần khác biệt.} Nhóm dùng dữ liệu nhỏ hơn nhiều, backbone khởi tạo từ ImageNet thay vì huấn luyện từ đầu, batch và learning rate nhỏ hơn, lịch learning rate thích nghi và số epoch bị giới hạn. Nhóm có thêm augmentation, trong khi bản v1 không nêu. Nhóm cũng thêm nhánh tuyến tính cho trường hợp $\theta + m > \pi$ theo bản cài đặt tham chiếu của tác giả, vì lệch với paper ở điểm này chỉ ảnh hưởng đến các mẫu rất khó.
+
+\paragraph{Điều nhóm tái hiện được.} Do khác biệt về quy mô dữ liệu, các con số tuyệt đối của nhóm không so sánh trực tiếp được với paper, nên nhóm chỉ kiểm tra xu hướng. Xu hướng chính của paper, ArcFace tốt hơn softmax trên cùng backbone, được tái hiện: ở learning rate chung $0.001$, ROC-AUC trên test tăng khoảng $0.008$ với khoảng tin cậy bootstrap không chứa $0$, và Rank-1 tăng từ $14.5$ đến $23.1$ điểm phần trăm (mục~\ref{sec:results}). Nhóm không kiểm chứng được lựa chọn $m = 0.5$ vì không quét margin, và không so được con số tuyệt đối.
+
+\paragraph{Điều nhóm học được.}
+\begin{itemize}
+    \item \textbf{Không sao chép siêu tham số của paper khi đổi chế độ huấn luyện.} ArcFace rất nhạy với learning rate khi fine-tune từ trọng số pretrained: cùng cấu hình hội tụ ở $0.001$ nhưng kẹt ở $0.01$ với ResNet-50. Cần theo dõi training loss và chọn learning rate bằng thử nghiệm ngắn trước khi chạy đầy đủ.
+    \item \textbf{Nên báo cáo cả verification và identification.} Ở verification hai loss chỉ chênh khoảng $0.008$ ROC-AUC, còn ở identification chênh $14.5$ đến $23.1$ điểm Rank-1, nên chỉ nhìn verification sẽ đánh giá thấp khác biệt.
+    \item \textbf{Backbone nhỏ đủ dùng ở quy mô này.} MobileNetV3 cho verification tương đương ResNet-50 với chi phí thấp hơn nhiều, nên có thể dùng nó để thử nghiệm nhanh các lựa chọn khác.
+    \item \textbf{Ghi lại các chi tiết mà paper không nêu.} Augmentation, cách xử lý $\theta + m > \pi$, khởi tạo và lịch learning rate đều ảnh hưởng đến kết quả nhưng không có trong bản v1, nên pipeline của nhóm ghi rõ chúng và dùng seed cố định để người khác lặp lại được.
+\end{itemize}
 
 \section{Pipeline, huấn luyện và so sánh phương pháp}\label{sec:training}
 
@@ -167,25 +401,95 @@ Pipeline nhận ảnh đã căn chỉnh, đưa qua backbone và khối embedding
 Nhóm dùng hai backbone có sẵn trong torchvision là ResNet-50 \cite{he2016resnet} và MobileNetV3 \cite{howard2019mobilenetv3}, với phiên bản Large cho MobileNetV3.
 
 \subsection{Hàm loss}
-Nhóm cài đặt hai hàm loss là softmax thông thường và ArcFace. Với ArcFace, nhóm dự kiến dùng $s = 64$ và $m = 0.5$ theo thiết lập phổ biến của bài báo, cùng với cơ chế tăng dần margin ở giai đoạn đầu để hỗ trợ hội tụ. Nhóm cũng xử lý trường hợp $\theta + m > \pi$ để hàm $\cos(\theta + m)$ vẫn đơn điệu theo $\theta$.
+Nhóm cài đặt hai hàm loss là softmax thông thường và ArcFace. Với ArcFace, nhóm dùng cố định $s = 64$ và $m = 0.5$ theo thiết lập của paper, không dùng cơ chế tăng dần margin. Hàm $\cos(\theta + m)$ không còn đơn điệu theo $\theta$ khi $\theta + m > \pi$, nên với các mẫu mà $\cos\theta \le \cos(\pi - m)$, nhóm thay logit của lớp đúng bằng $\cos\theta - m \sin m$ để logit này không tăng trở lại khi $\theta$ tăng (đây là phép xấp xỉ có bước nhảy nhỏ tại ngưỡng, cùng cách xử lý với bản cài đặt tham chiếu của tác giả). Cosine của lớp đúng được kẹp vào $[-1 + 10^{-7}, 1 - 10^{-7}]$ trước khi tính $\sin\theta$ để tránh lỗi số.
 
 \subsection{Thiết lập huấn luyện}
+Nhóm huấn luyện bằng SGD với momentum $0.9$ và weight decay $5 \times 10^{-4}$, batch size $128$, learning rate khởi tạo $0.001$. Paper dùng batch $512$ và learning rate $0.1$. Nhóm dùng batch nhỏ hơn $4$ lần. Bộ nhớ GPU không phải ràng buộc (đỉnh bộ nhớ đo được chỉ khoảng $2.9$ GB với ResNet-50), còn batch nhỏ hơn cho nhiều bước cập nhật hơn trên tập huấn luyện nhỏ (khoảng $1271$ bước mỗi epoch, so với khoảng $317$ nếu dùng batch $512$). Learning rate $0.001$ nhỏ hơn paper $100$ lần và nhỏ hơn quy tắc scale tuyến tính (sẽ cho $0.025$) $25$ lần, vì mô hình khởi tạo từ trọng số ImageNet và được huấn luyện toàn bộ. Giá trị này được chọn sau một thử nghiệm ngắn trên ResNet-50 với ArcFace: với $0.01$, loss huấn luyện kẹt quanh $22$ đến $23$ và ROC-AUC trên validation chỉ đạt $0.849$ sau $9$ epoch, còn với $0.001$ ROC-AUC đạt $0.976$ và loss giảm đều. Nhóm chỉ thử hai giá trị này, chỉ trên cấu hình đó, rồi dùng chung $0.001$ cho cả bốn run, không tinh chỉnh riêng cho softmax hay MobileNetV3. Toàn bộ tham số của backbone và embedding được huấn luyện (full fine-tune) với cùng một learning rate. Mô hình chạy ở FP32, không dùng mixed precision. Mỗi run huấn luyện tối đa $100$ epoch và dừng sớm với patience $5$ epoch theo ROC-AUC trên tập validation. Learning rate được giảm theo ReduceLROnPlateau với factor $0.5$, patience $2$ và min learning rate $10^{-6}$, cũng theo dõi ROC-AUC trên validation. Checkpoint tốt nhất được chọn theo ROC-AUC trên validation.
 
 \subsection{Hiệu năng tính toán}
+Bảng~\ref{tab:cost} tổng hợp chi phí của bốn run trên một GPU A10G ở độ chính xác FP32. Số tham số suy luận chỉ gồm backbone và khối embedding, vì lớp phân loại bị bỏ khi đánh giá. ResNet-50 có $24.56$ triệu tham số suy luận, nhiều hơn MobileNetV3 ($3.47$ triệu) khoảng $7.1$ lần. Tổng số tham số lúc huấn luyện của MobileNetV3 ($7.66$ đến $7.67$ triệu) cao hơn nhiều phần suy luận, vì riêng lớp phân loại $512 \times 8192$ đã có khoảng $4.2$ triệu tham số. Một epoch của ResNet-50 mất khoảng $117$ giây, gấp khoảng $2.5$ lần MobileNetV3 ($46$ đến $47$ giây), và bộ nhớ đỉnh là $2.9$ GB, gấp khoảng $1.9$ lần MobileNetV3 ($1.5$ GB). Thời gian mỗi epoch chỉ tính phần huấn luyện, không gồm validation, và gần như không phụ thuộc loss.
+
+Khác biệt chi phí đáng kể giữa hai loss nằm ở số epoch cần để đạt checkpoint tốt nhất. ArcFace cần $14$ epoch với ResNet-50 và $20$ epoch với MobileNetV3, trong khi softmax cần $27$ và $51$. Tính theo thời gian, ArcFace đạt checkpoint tốt nhất sau $27.4$ và $15.7$ phút, so với $52.6$ và $38.7$ phút của softmax, tức nhanh hơn khoảng $1.9$ và $2.5$ lần. Nhóm chưa đo độ trễ hoặc thông lượng lúc suy luận, nên số tham số chỉ là chỉ báo gián tiếp cho chi phí suy luận.
+
+Một số run bị nền tảng huấn luyện thu hồi container giữa chừng (hai run ResNet-50 tại epoch $18$, MobileNetV3 softmax tại epoch $48$ và MobileNetV3 ArcFace tại epoch $26$) và được tiếp tục từ bản backup gần nhất. Thời gian khởi động lại không nằm trong số đo, và thứ tự lấy mẫu dữ liệu sau khi tiếp tục có thể khác một lần chạy liền mạch.
+
+\begin{table}[!htbp]
+    \centering
+    \small
+    \caption{Chi phí của bốn run (GPU A10G, FP32). Thời gian mỗi epoch không gồm validation.}
+    \label{tab:cost}
+    \begin{adjustbox}{max width=\linewidth}
+        \begin{tabular}{lrrrrrr}
+            \toprule
+            Run                  & \shortstack{Tham số\\suy luận} & \shortstack{Tham số\\tổng} & \shortstack{Giây\\mỗi epoch} & \shortstack{Bộ nhớ\\đỉnh (GB)} & \shortstack{Epoch tốt nhất\\/ đã chạy} & \shortstack{Phút đến\\epoch tốt nhất} \\
+            \midrule
+            resnet50\_softmax    & $24.56$M                       & $28.76$M                   & $116.9$                      & $2.91$                         & $27$ / $33$                            & $52.6$                                \\
+            resnet50\_arcface    & $24.56$M                       & $28.76$M                   & $117.6$                      & $2.94$                         & $14$ / $20$                            & $27.4$                                \\
+            mobilenetv3\_softmax & $3.47$M                        & $7.67$M                    & $45.6$                       & $1.49$                         & $51$ / $57$                            & $38.7$                                \\
+            mobilenetv3\_arcface & $3.47$M                        & $7.66$M                    & $47.2$                       & $1.54$                         & $20$ / $27$                            & $15.7$                                \\
+            \bottomrule
+        \end{tabular}
+    \end{adjustbox}
+\end{table}
 
 \section{Kết quả, thảo luận và hạn chế}\label{sec:results}
 
 \subsection{Đường cong huấn luyện}
+Hình~\ref{fig:curves} vẽ ROC-AUC trên tập validation theo epoch. Hai run ArcFace hội tụ nhanh hơn hẳn hai run softmax. ResNet-50 ArcFace đạt ROC-AUC $0.976$ ở epoch $9$ và đạt đỉnh ở epoch $14$ ($0.9795$), còn MobileNetV3 ArcFace đạt $0.973$ ở epoch $10$ và đạt đỉnh ở epoch $20$ ($0.9797$). Hai run softmax tăng chậm và đều: đỉnh ở epoch $27$ ($0.9720$) với ResNet-50 và epoch $51$ ($0.9741$) với MobileNetV3. Các run dừng sớm sau $20$ đến $57$ epoch nên trần $100$ epoch không bị chạm tới. Learning rate được giảm một nửa ở các epoch $27$ và $31$ (ResNet-50 softmax), $18$ (ResNet-50 ArcFace), $40$, $48$, $51$ và $55$ (MobileNetV3 softmax), $20$, $24$ và $27$ (MobileNetV3 ArcFace); mỗi lần giảm đều đi kèm một bước tăng nhỏ của ROC-AUC rồi bão hòa.
+
+\atwofigure{curves_a2.png}{0.8}{ROC-AUC trên tập validation theo epoch của bốn run.}{fig:curves}{curves}
+
+Hình~\ref{fig:loss} vẽ loss huấn luyện trung bình mỗi epoch. Loss của ArcFace giảm từ khoảng $40$ xuống $7.2$ (ResNet-50) và khoảng $12$ (MobileNetV3), còn loss của softmax giảm từ khoảng $9$ xuống $1.1$ và dưới $1$. Đây là loss đo trong lúc huấn luyện (dropout bật, có augmentation) và hai hàm loss có thang khác nhau, nên hình chỉ dùng để xem mức độ hội tụ của từng run, không so sánh trực tiếp giữa softmax và ArcFace. Ở cùng epoch $20$, ResNet-50 ArcFace có loss khoảng $7.2$, thấp hơn rõ so với khoảng $14$ của MobileNetV3 ArcFace, nhưng ROC-AUC trên validation của hai run gần như bằng nhau ($0.9795$ và $0.9797$). Điều này gợi ý rằng khả năng khớp tập huấn luyện tốt hơn của ResNet-50 không chuyển thành kết quả tốt hơn trên các danh tính mới.
+
+\atwofigure{loss_a2.png}{0.95}{Loss huấn luyện trung bình mỗi epoch; mỗi loss có một panel riêng vì thang đo khác nhau.}{fig:loss}{loss}
 
 \subsection{Kết quả trên tập test}
+Bảng~\ref{tab:results} và Bảng~\ref{tab:ident} tổng hợp kết quả trên tập test. Điểm test sát với điểm validation (chênh lệch tối đa $0.002$, ví dụ $0.9795$ và $0.9805$ với ResNet-50 ArcFace), nên việc chọn checkpoint và ngưỡng trên validation không làm lệch kết quả. Về verification, hai run ArcFace đạt accuracy $93.99\%$ và $94.10\%$ ở ngưỡng chọn trên validation, so với $92.40\%$ và $92.41\%$ của hai run softmax, và EER khoảng $6.1\%$ so với $7.5\%$. TAR@FAR=$10^{-2}$ của ArcFace ($84.28\%$ và $86.16\%$) cũng cao hơn softmax ($77.15\%$ và $73.37\%$). TAR@FAR=$10^{-3}$ chỉ dựa trên khoảng $5$ cặp âm của tập test, nên nhóm báo cáo nhưng không dùng nó để kết luận.
+
+Về identification, khoảng cách giữa hai loss lớn hơn nhiều so với verification: Rank-1 của ArcFace là $68.37\%$ (ResNet-50) và $66.50\%$ (MobileNetV3), so với $45.26\%$ và $52.04\%$ của softmax. Gallery chỉ có một ảnh cho mỗi danh tính nên chỉ có một mục đúng trong danh sách xếp hạng, do đó mAP ở đây trùng với mean reciprocal rank. Hình~\ref{fig:roc} cho thấy hai đường ROC của ArcFace nằm trên hai đường của softmax ở vùng FPR thấp và gần như trùng nhau từ FPR khoảng $0.2$ trở đi.
+
+\atwotable{results_a2.tex}{Kết quả verification và Rank-1 trên tập test. ROC-AUC là phân số; các cột còn lại tính theo phần trăm.}{tab:results}{results}
+
+\atwotable{identification_a2.tex}{Kết quả identification trên tập test ($997$ ảnh gallery, $18\,962$ probe).}{tab:ident}{identification}
+
+\atwofigure{roc_a2.png}{0.7}{Đường ROC của verification trên tập test; trong ngoặc là ROC-AUC.}{fig:roc}{roc}
 
 \subsection{Softmax so với ArcFace}
+Ở cùng learning rate $0.001$ và cùng backbone, ArcFace tốt hơn softmax trên mọi metric đã đo. Với verification (Bảng~\ref{tab:results}), ROC-AUC trên test tăng $+0.0084$ với ResNet-50 và $+0.0079$ với MobileNetV3; khoảng tin cậy bootstrap $95\%$ của cả hai chênh lệch đều không chứa $0$ (Bảng~\ref{tab:bootstrap}). EER giảm $1.38$ và $1.40$ điểm phần trăm, cũng với khoảng tin cậy không chứa $0$. Accuracy ở ngưỡng chọn trên validation tăng $1.69$ và $1.59$ điểm phần trăm, và TAR@FAR=$10^{-2}$ tăng $12.8$ và $7.1$ điểm phần trăm (nhóm không tính khoảng tin cậy cho hai chỉ số này).
+
+Với identification, khoảng cách lớn hơn nhiều (Bảng~\ref{tab:ident}). Rank-1 tăng $23.1$ điểm phần trăm với ResNet-50 và $14.5$ điểm với MobileNetV3, Recall@5 tăng $15.8$ và $9.5$ điểm, mAP tăng $19.6$ và $12.1$ điểm. Identification buộc embedding của một ảnh phải gần ảnh cùng danh tính nhất trong số $997$ danh tính trong gallery, nên nhạy với việc các lớp có tách nhau đủ xa hay không, đúng là điều margin của ArcFace nhắm tới. Nhóm chưa có thí nghiệm riêng để kiểm chứng cách giải thích này.
+
+Ngoài chất lượng, ArcFace còn đạt checkpoint tốt nhất sau ít epoch hơn khoảng $1.9$ đến $2.5$ lần (mục~\ref{sec:training}, Bảng~\ref{tab:cost}). Cần lưu ý rằng hai loss được so sánh ở cùng learning rate $0.001$, một giá trị chọn sau thử nghiệm ngắn chỉ với ArcFace (mục~\ref{sec:training}) và không được tinh chỉnh riêng cho softmax. Trong các lần chạy thử ban đầu ở learning rate $0.01$ (chỉ theo dõi trên tập validation), softmax với ResNet-50 đạt ROC-AUC validation $0.9794$, cao hơn $0.9720$ ở $0.001$, trong khi ArcFace với ResNet-50 không hội tụ ở $0.01$ (chỉ đạt $0.91$). Vì vậy khoảng cách giữa hai loss trong các bảng trên là khoảng cách ở một learning rate chung, và có thể lớn hơn khoảng cách nếu mỗi loss được chọn learning rate riêng.
+
+\atwotable{bootstrap_a2.tex}{Chênh lệch giữa các cặp run trên tập test và khoảng tin cậy bootstrap $95\%$ (bootstrap ghép cặp trên $10\,000$ cặp test, $2000$ lần lấy mẫu).}{tab:bootstrap}{bootstrap}
 
 \subsection{ResNet-50 so với MobileNetV3}
+Với ArcFace, ResNet-50 và MobileNetV3 gần như bằng nhau về verification: ROC-AUC trên test là $0.9805$ và $0.9816$, chênh lệch $+0.0011$ với khoảng tin cậy bootstrap $95\%$ là $[-0.0008, +0.0027]$ (xem Bảng~\ref{tab:bootstrap}), và EER là $6.16\%$ và $6.11\%$. Với softmax cũng vậy: $0.9721$ và $0.9736$, chênh lệch $+0.0016$ với khoảng $[-0.0007, +0.0041]$. Khoảng tin cậy ở cả hai trường hợp chứa $0$, nên dữ liệu không cho thấy bằng chứng về một backbone tốt hơn trong verification. Về identification, hướng chênh lệch không nhất quán: với ArcFace, ResNet-50 cao hơn MobileNetV3 ở Rank-1 ($68.37\%$ so với $66.50\%$), Recall@5 ($82.31\%$ so với $80.61\%$) và mAP ($74.81\%$ so với $73.05\%$); với softmax thì ngược lại, MobileNetV3 cao hơn ResNet-50 ($52.04\%$ so với $45.26\%$ ở Rank-1, $71.09\%$ so với $66.48\%$ ở Recall@5, $60.92\%$ so với $55.26\%$ ở mAP). Nhóm không tính được khoảng tin cậy cho identification vì embedding của các cặp không được lưu.
+
+Trong khi đó chi phí rất khác nhau (mục~\ref{sec:training}, Bảng~\ref{tab:cost}): MobileNetV3 có số tham số suy luận nhỏ hơn khoảng $7.1$ lần, mỗi epoch nhanh hơn khoảng $2.5$ lần và dùng bộ nhớ ít hơn khoảng $1.9$ lần. Trong thiết lập này, MobileNetV3 cho chất lượng tương đương ResNet-50 với chi phí thấp hơn nhiều, nên là lựa chọn hợp lý hơn trên CelebA. Kết luận này giới hạn ở một seed và ở quy mô dữ liệu của bài tập.
 
 \subsection{Thảo luận}
+\paragraph{Điều kết quả cho thấy.} Trên CelebA, ArcFace cho embedding tốt hơn softmax ở cả hai backbone: khác biệt về verification nhỏ nhưng ổn định (khoảng tin cậy không chứa $0$), còn khác biệt về identification lớn. Backbone không phải yếu tố quyết định: ResNet-50 và MobileNetV3 gần như bằng nhau về verification, trong khi MobileNetV3 có số tham số suy luận nhỏ hơn $7.1$ lần và huấn luyện mỗi epoch nhanh hơn $2.5$ lần.
+
+\paragraph{Đối chiếu với paper.} Xu hướng cùng chiều với paper: bảng so sánh loss của paper (Bảng~\ref{tab:paper-loss}) cũng cho ArcFace cao hơn softmax. Paper còn cho thấy khoảng cách nhỏ ở LFW (khoảng $0.13$ điểm phần trăm) nhưng lớn hơn ở các benchmark khó hơn như CFP-FP và AgeDB-30 (khoảng $2.6$ và $2.5$ điểm). Tương tự, ở thí nghiệm của nhóm khoảng cách trong verification nhỏ hơn nhiều so với identification, là tác vụ khó hơn. Độ lớn tuyệt đối không so sánh được với paper vì dữ liệu, backbone, cách khởi tạo và benchmark đều khác \cite{deng2018arcfacev1}.
+
+\paragraph{Hạn chế.}
+\begin{itemize}
+    \item \textbf{Một seed.} Mỗi cấu hình chỉ được huấn luyện một lần với seed $42$. Khoảng tin cậy bootstrap chỉ phản ánh nhiễu do việc lấy mẫu các cặp test, không phản ánh độ biến động giữa các lần huấn luyện, và các cặp có thể dùng chung ảnh nên không hoàn toàn độc lập. Với identification nhóm không tính được khoảng tin cậy.
+    \item \textbf{Learning rate chưa được tinh chỉnh.} Nhóm dùng chung learning rate $0.001$ cho bốn run, chọn từ thử nghiệm ngắn chỉ với ArcFace trên ResNet-50. ArcFace nhạy với learning rate hơn softmax: ở $0.01$, loss của ResNet-50 ArcFace kẹt và ROC-AUC chỉ đạt khoảng $0.91$. Paper không gặp tình huống này vì huấn luyện từ đầu với thiết lập khác. Softmax không được thử các giá trị khác, như đã nêu ở trên.
+    \item \textbf{Quy mô dữ liệu.} Tập train chỉ có khoảng $20$ ảnh mỗi danh tính trên $8\,192$ lớp, rất nhỏ so với dữ liệu của paper. Các kết luận chỉ áp dụng cho quy mô này và cho CelebA.
+    \item \textbf{Tập đánh giá.} Gallery có một ảnh cho mỗi danh tính (ảnh đầu tiên theo tên tệp) và không được lặp lại với các lựa chọn gallery khác, nên Rank-1 phụ thuộc vào ảnh được chọn. TAR@FAR=$10^{-3}$ chỉ dựa trên khoảng $5$ cặp âm.
+    \item \textbf{Thiết kế thí nghiệm.} Nhóm không thử các giá trị khác của $s$ và $m$, không ablation riêng cho augmentation và cho khởi tạo từ ImageNet, không đánh giá chéo tập dữ liệu (ví dụ LFW) và không phân tích các trường hợp lỗi. Nhóm cũng chưa đo độ trễ suy luận, nên so sánh chi phí giữa hai backbone chỉ dựa trên số tham số, thời gian huấn luyện và bộ nhớ.
+    \item \textbf{Dropout đứng trước BatchNorm cuối.} Đầu embedding theo cấu trúc BN--Dropout--FC--BN của paper, nên BN cuối lưu phương sai của tín hiệu có nhiễu dropout, còn lúc đánh giá dropout tắt. Nhóm đo trên $20\,000$ ảnh train (\texttt{scripts/a2/check\_bn.py}): phương sai đầu vào BN cuối khi tắt dropout thấp hơn \texttt{running\_var} đã lưu khoảng $9\%$ đến $16\%$, nhưng hệ số co gần như đồng đều giữa các chiều (hệ số biến thiên khoảng $1.5\%$ đến $1.8\%$), nên L2-normalize loại bỏ được phần lớn; cosine giữa embedding gốc và embedding khi BN cuối dùng thống kê của tín hiệu tắt dropout là $0.994$ đến $0.9996$. Hiệu chỉnh lại thống kê này chỉ làm ROC-AUC trên test thay đổi tối đa $0.0006$, Rank-1 tối đa $0.0016$ và accuracy tối đa $0.0021$ (cải thiện nhỏ, chỉ thấy ở ArcFace), nhỏ hơn nhiều so với khoảng cách giữa hai loss, nên nhóm giữ nguyên kết quả đã báo cáo.
+    \item \textbf{Huấn luyện bị gián đoạn.} Bốn run bị thu hồi container và tiếp tục từ bản backup, nên thứ tự lấy mẫu dữ liệu có thể khác một lần chạy liền mạch.
+\end{itemize}
 
 \section{Kết luận}\label{sec:conclusion}
+Báo cáo xây dựng pipeline định danh khuôn mặt trên CelebA và so sánh bốn cấu hình: ResNet-50 và MobileNetV3, mỗi loại với softmax và ArcFace. Các mô hình được huấn luyện để phân loại danh tính trong tập train, rồi được đánh giá trên những danh tính chưa từng thấy bằng verification (ROC-AUC, EER, accuracy, TAR@FAR) và identification (Rank-1, Recall@5, mAP).
+
+Kết quả chính ở learning rate chung $0.001$: ArcFace cho kết quả tốt hơn softmax ở cả hai backbone. ROC-AUC trên test tăng khoảng $0.008$ với khoảng tin cậy không chứa $0$, và Rank-1 tăng $14.5$ đến $23.1$ điểm phần trăm; ArcFace cũng đạt checkpoint tốt nhất sau ít epoch hơn khoảng $1.9$ đến $2.5$ lần. ResNet-50 và MobileNetV3 gần như bằng nhau về verification, nên MobileNetV3, với số tham số suy luận nhỏ hơn $7.1$ lần và huấn luyện nhanh hơn $2.5$ lần mỗi epoch, là lựa chọn hợp lý hơn trong thiết lập này.
+
+Nhóm tái hiện được công thức loss, các siêu tham số $s = 64$, $m = 0.5$, cấu trúc embedding và cách đánh giá của paper, nhưng không tái hiện được chế độ huấn luyện (từ đầu, dữ liệu lớn). Bài học thực tế lớn nhất là ArcFace rất nhạy với learning rate khi fine-tune từ trọng số pretrained: cùng một cấu hình cho ResNet-50 hội tụ ở $0.001$ nhưng kẹt ở $0.01$. Với nhiều thời gian hơn, bước tiếp theo hợp lý là chọn learning rate riêng cho từng loss, lặp lại với nhiều seed, thử các giá trị khác của $s$ và $m$, đánh giá chéo tập dữ liệu và đo độ trễ suy luận.
 
 \addcontentsline{toc}{section}{Tài liệu}
 \bibliographystyle{plain}

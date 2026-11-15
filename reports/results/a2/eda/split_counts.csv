@@ -1,0 +1,4 @@
+split,images,identities
+train,162770,8192
+val,19867,985
+test,19962,1000

@@ -1,3 +1,17 @@
+e24ed835dd177903dee140da0eab5ce6  checkpoints/a1/train_deit_s_full/261104095659/best_epoch_15_accuracy=0.7938.pt
+8b51fa91e0193602bfc60a86acb14559  checkpoints/a1/train_deit_s_head/261104095659/best_epoch_9_accuracy=0.6252.pt
+86ea4e832c25e95a4dd8fa285a08b79f  checkpoints/a1/train_deit_s_partial/261104095659/best_epoch_10_accuracy=0.7947.pt
+8bb0f87f56eb3845d6adaa636d5d80b8  checkpoints/a1/train_deit_s_scratch/261104095659/best_epoch_30_accuracy=0.4356.pt
+fb12b9bbe2a2a5d4ba513b277262c998  checkpoints/a1/train_resnet50_full/261104095659/best_epoch_43_accuracy=0.7753.pt
+bb94866eeb5e52e66e199e5fc5857534  checkpoints/a1/train_resnet50_head/261104095659/best_epoch_57_accuracy=0.6272.pt
+e6f6e3b1c70ce9a98229af715980e217  checkpoints/a1/train_resnet50_partial/261104095659/best_epoch_19_accuracy=0.7714.pt
+a344cf4f0c9e1463070dc7cb0bdc771c  checkpoints/a1/train_resnet50_scratch/261104095659/best_epoch_85_accuracy=0.7071.pt
+f56fa4e0b8285d2d7eba943e3ff9e690  checkpoints/a2/train_mobilenetv3_arcface/261111165415/best_epoch_20_roc_auc=0.9797.pt
+0e24773726e9cae8f1386816a99d0f4f  checkpoints/a2/train_mobilenetv3_softmax/261111165415/best_epoch_49_roc_auc=0.9744.pt
+5aa7f67ebb53fd8af08fc6eed69336c3  checkpoints/a2/train_mobilenetv3_softmax/261111165415/best_epoch_51_roc_auc=0.9741.pt
+fb6b24fc9ef329c08146578bacfb4221  checkpoints/a2/train_resnet50_arcface/261111150905/best_epoch_14_roc_auc=0.9795.pt
+ff675ba6c4366f8ab8ad0a697a7226a5  checkpoints/a2/train_resnet50_softmax/261111150905/best_epoch_19_roc_auc=0.9690.pt
+d87bafb0c653ec286ac6394c5b349545  checkpoints/a2/train_resnet50_softmax/261111150905/best_epoch_27_roc_auc=0.9720.pt
 39205d8f99846a7465ab3403650696a6  checkpoints/e1/cnn/261020005935/backup_epoch_28.pt
 439cad23c5eca712131024e71f6b1753  checkpoints/e1/cnn/261020005935/best_epoch_7_loss=0.0512.pt
 2697054bcf2d8ff9acbbfaf59cfcb2b1  checkpoints/e1/cnn/261020005935/train_cnn.yml
