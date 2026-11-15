@@ -6,6 +6,10 @@ import torch.nn.functional as F
 
 
 class ArcFaceLoss(nn.Module):
+    '''
+    https://github.com/deepinsight/insightface/blob/2e2e8c97c7bc3e79a4d5403ae12cd5dd2bd69658/recognition/arcface_torch/losses.py
+    '''
+
     def __init__(self, scale=64.0, margin=0.5, label_smoothing=0.0):
         super().__init__()
         self.scale = float(scale)

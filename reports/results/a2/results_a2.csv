@@ -1,0 +1,5 @@
+run,model,loss,params,params_inference,best_epoch,test_acc,test_threshold,tar_far_1e-3,tar_far_1e-2,rank1,rank5,time_per_epoch_s,train_time_min,peak_mem_gb
+mobilenetv3_arcface,mobilenetv3,arcface,7661232,3466928,,0.9400,0.2335,0.6845,0.8442,0.6648,0.8063,,,
+mobilenetv3_softmax,mobilenetv3,softmax,7669424,3466928,,0.9253,0.2172,0.5593,0.7718,0.5205,0.7105,,,
+resnet50_arcface,resnet50,arcface,28756544,24562240,,0.9410,0.2203,0.6909,0.8614,0.6837,0.8231,,,
+resnet50_softmax,resnet50,softmax,28764736,24562240,,0.9242,0.2104,0.4469,0.7353,0.4525,0.6652,,,

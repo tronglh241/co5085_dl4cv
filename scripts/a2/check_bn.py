@@ -88,13 +88,11 @@ def metrics_for(model, root, device, workers, batch_size):
     ident = evaluator.identification_metrics(
         *embeddings['test'], folder / 'test_gallery.csv', folder / 'test_probe.csv')
     return {
-        'val_roc_auc': val['roc_auc'],
-        'test_roc_auc': test['roc_auc'],
-        'test_eer': test['eer'],
         'test_accuracy': test['accuracy'],
+        'tar_far_1e-3': test['tar_at_far_1e-3'],
+        'tar_far_1e-2': test['tar_at_far_1e-2'],
         'rank1': ident['rank1'],
-        'recall5': ident['recall5'],
-        'map': ident['map'],
+        'rank5': ident['rank5'],
     }
 
 

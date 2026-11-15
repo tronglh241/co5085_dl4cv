@@ -100,7 +100,17 @@ def main():
         writer.writerow(['label', 'score'])
         writer.writerows(zip(test.labels.tolist(), test.scores.tolist()))
 
-    print(f'{label}: val ROC-AUC {val_result["roc_auc"]:.4f}; test ROC-AUC {test_result["roc_auc"]:.4f}')
+    parts = [
+        f'test accuracy {test_result["accuracy"]:.4f}',
+        f'TAR@FAR 1e-3 {test_result["tar_at_far_1e-3"]:.4f}',
+        f'TAR@FAR 1e-2 {test_result["tar_at_far_1e-2"]:.4f}',
+    ]
+    if identification is not None:
+        parts += [
+            f'Rank-1 {identification["rank1"]:.4f}',
+            f'Rank-5 {identification["rank5"]:.4f}',
+        ]
+    print(f'{label}: ' + '; '.join(parts))
 
 
 if __name__ == '__main__':

@@ -44,9 +44,6 @@ def verification_metrics(labels, scores, threshold=None):
 
     roc_auc = float(roc_auc_score(labels, scores))
     fpr, tpr, thresholds = roc_curve(labels, scores)
-    fnr = 1.0 - tpr
-    eer_index = int(np.nanargmin(np.abs(fpr - fnr)))
-    eer = float((fpr[eer_index] + fnr[eer_index]) / 2.0)
 
     positive = float(labels.sum())
     negative = float(len(labels) - positive)
@@ -63,7 +60,6 @@ def verification_metrics(labels, scores, threshold=None):
 
     result = {
         'roc_auc': roc_auc,
-        'eer': eer,
         'accuracy': accuracy_value,
         'threshold': threshold,
     }
@@ -105,8 +101,7 @@ def identification_metrics(embeddings, ids, gallery_csv, probe_csv):
 
     return {
         'rank1': float((ranks <= 1).float().mean()),
-        'recall5': float((ranks <= 5).float().mean()),
-        'map': float((1.0 / ranks.float()).mean()),
+        'rank5': float((ranks <= 5).float().mean()),
         'gallery': len(gallery_rows),
         'probes': len(probe_rows),
     }

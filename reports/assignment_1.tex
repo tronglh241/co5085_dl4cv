@@ -249,15 +249,15 @@ Sau bước đó, chỉ tập train được tăng cường dữ liệu (Bảng~
     \small
     \begin{tabular}{p{0.15\linewidth}p{0.45\linewidth}p{0.30\linewidth}}
         \toprule
-        Bước                           & Train                                                                                                          & Validation, test và tập train dùng để đánh giá \\
+        Bước                           & Train                                                                                                                                       & Validation, test và tập train dùng để đánh giá \\
         \midrule
-        Cắt cố định (một lần, mọi ảnh) & Đổi cạnh ngắn về 256 px, cắt giữa \(224\times224\)                                                             & như train                                      \\
-        Cắt co giãn                    & Cắt ngẫu nhiên một vùng chiếm 50--100\% diện tích ảnh \(224\times224\) (tỉ lệ cạnh từ \(3/4\) đến \(4/3\)), rồi đổi lại về \(224\times224\) & -- \\
-        Lật                            & Lật ngang với xác suất 0.5                                                                                     & --                                             \\
-        Xoay                           & Xoay ngẫu nhiên trong khoảng \(\pm15^\circ\)                                                                   & --                                             \\
-        Màu                            & Độ sáng, tương phản, độ bão hoà đổi trong \(\pm20\%\); sắc độ xoay trong \(\pm0.1\) vòng màu (\(\pm36^\circ\)) & --                                             \\
-        Dịch                           & Dịch ngẫu nhiên tối đa 10\% theo mỗi chiều                                                                     & --                                             \\
-        Chuẩn hoá                      & Đưa về tensor trong \([0,1]\), rồi trừ mean và chia std của ImageNet trên từng kênh                            & như train                                      \\
+        Cắt cố định (một lần, mọi ảnh) & Đổi cạnh ngắn về 256 px, cắt giữa \(224\times224\)                                                                                          & như train                                      \\
+        Cắt co giãn                    & Cắt ngẫu nhiên một vùng chiếm 50--100\% diện tích ảnh \(224\times224\) (tỉ lệ cạnh từ \(3/4\) đến \(4/3\)), rồi đổi lại về \(224\times224\) & --                                             \\
+        Lật                            & Lật ngang với xác suất 0.5                                                                                                                  & --                                             \\
+        Xoay                           & Xoay ngẫu nhiên trong khoảng \(\pm15^\circ\)                                                                                                & --                                             \\
+        Màu                            & Độ sáng, tương phản, độ bão hoà đổi trong \(\pm20\%\); sắc độ xoay trong \(\pm0.1\) vòng màu (\(\pm36^\circ\))                              & --                                             \\
+        Dịch                           & Dịch ngẫu nhiên tối đa 10\% theo mỗi chiều                                                                                                  & --                                             \\
+        Chuẩn hoá                      & Đưa về tensor trong \([0,1]\), rồi trừ mean và chia std của ImageNet trên từng kênh                                                         & như train                                      \\
         \bottomrule
     \end{tabular}
     \caption{Pipeline dữ liệu dùng chung, theo đúng thứ tự áp dụng.}
@@ -505,19 +505,19 @@ Cả 8 run dùng chung một công thức; chỉ learning rate, warmup và dropo
     \small
     \begin{tabular}{lrrrr}
         \toprule
-        Tham số & scratch & head & partial & full \\
+        Tham số                       & scratch                                                                       & head             & partial          & full             \\
         \midrule
-        Optimizer & \multicolumn{4}{c}{AdamW, weight decay 0.05} \\
-        Hàm loss & \multicolumn{4}{c}{cross-entropy, label smoothing 0.2} \\
-        Lịch learning rate & \multicolumn{4}{c}{warmup tuyến tính rồi cosine về 0, cập nhật mỗi iteration} \\
-        Batch (train / đánh giá) & \multicolumn{4}{c}{128 / 256} \\
-        Độ chính xác số, seed & \multicolumn{4}{c}{bf16 autocast, seed 42} \\
-        Epoch tối đa & \multicolumn{4}{c}{100} \\
-        Early stopping (patience) & \multicolumn{4}{c}{10 epoch theo validation accuracy} \\
+        Optimizer                     & \multicolumn{4}{c}{AdamW, weight decay 0.05}                                                                                           \\
+        Hàm loss                      & \multicolumn{4}{c}{cross-entropy, label smoothing 0.2}                                                                                 \\
+        Lịch learning rate            & \multicolumn{4}{c}{warmup tuyến tính rồi cosine về 0, cập nhật mỗi iteration}                                                          \\
+        Batch (train / đánh giá)      & \multicolumn{4}{c}{128 / 256}                                                                                                          \\
+        Độ chính xác số, seed         & \multicolumn{4}{c}{bf16 autocast, seed 42}                                                                                             \\
+        Epoch tối đa                  & \multicolumn{4}{c}{100}                                                                                                                \\
+        Early stopping (patience)     & \multicolumn{4}{c}{10 epoch theo validation accuracy}                                                                                  \\
         \midrule
-        Learning rate & $5\times10^{-4}$ & $1\times10^{-3}$ & $2\times10^{-4}$ & $1\times10^{-4}$ \\
-        Warmup (epoch) & 5 & 1 & 1 & 1 \\
-        Dropout (trước lớp phân loại) & 0.4 & 0.2 & 0.3 & 0.4 \\
+        Learning rate                 & $5\times10^{-4}$                                                              & $1\times10^{-3}$ & $2\times10^{-4}$ & $1\times10^{-4}$ \\
+        Warmup (epoch)                & 5                                                                             & 1                & 1                & 1                \\
+        Dropout (trước lớp phân loại) & 0.4                                                                           & 0.2              & 0.3              & 0.4              \\
         \bottomrule
     \end{tabular}
     \caption{Siêu tham số. Ba dòng cuối khác nhau theo chế độ. Patience là số epoch liên tiếp không có validation accuracy tốt hơn mà run còn chịu được; checkpoint giữ lại luôn là epoch có validation accuracy cao nhất, nên 100 là số epoch tối đa. Dropout đặt trên đặc trưng đã gộp ngay trước lớp phân loại cuối, cùng một vị trí ở hai kiến trúc. Weight decay không áp dụng cho bias, scale của lớp chuẩn hoá, class token và positional embedding.}
@@ -561,13 +561,13 @@ Bảng~\ref{tab:a1-results} gồm accuracy, F1 và chi phí của 8 run; Bảng~
     \begin{adjustbox}{max width=\linewidth}
         \begin{tabular}{@{}llrrrrrr@{}}
             \toprule
-            & & \multicolumn{3}{c}{ResNet-50} & \multicolumn{3}{c}{DeiT-S} \\
+                                            &                      & \multicolumn{3}{c}{ResNet-50} & \multicolumn{3}{c}{DeiT-S}                                                         \\
             \cmidrule(lr){3-5}\cmidrule(l){6-8}
-            Nội dung so sánh & Chuyển chế độ & Từ & Đến & Thay đổi & Từ & Đến & Thay đổi \\
+            Nội dung so sánh                & Chuyển chế độ        & Từ                            & Đến                        & Thay đổi           & Từ   & Đến  & Thay đổi           \\
             \midrule
-            Pretrain giúp được bao nhiêu            & scratch \(\to\) full    & 75.5 & 81.8 & \textbf{+6.3}  & 47.7 & 83.5 & \textbf{+35.8} \\
-            Chỉ train head mất bao nhiêu            & full \(\to\) head       & 81.8 & 66.7 & \textbf{\(-\)15.1} & 83.5 & 66.3 & \textbf{\(-\)17.2} \\
-            Đóng băng nửa đầu mất bao nhiêu         & full \(\to\) partial    & 81.8 & 81.7 & \textbf{\(-\)0.1}  & 83.5 & 83.6 & \textbf{+0.1}  \\
+            Pretrain giúp được bao nhiêu    & scratch \(\to\) full & 75.5                          & 81.8                       & \textbf{+6.3}      & 47.7 & 83.5 & \textbf{+35.8}     \\
+            Chỉ train head mất bao nhiêu    & full \(\to\) head    & 81.8                          & 66.7                       & \textbf{\(-\)15.1} & 83.5 & 66.3 & \textbf{\(-\)17.2} \\
+            Đóng băng nửa đầu mất bao nhiêu & full \(\to\) partial & 81.8                          & 81.7                       & \textbf{\(-\)0.1}  & 83.5 & 83.6 & \textbf{+0.1}      \\
             \bottomrule
         \end{tabular}
     \end{adjustbox}
@@ -596,14 +596,14 @@ Trên test, DeiT-S partial đạt 83.6\% và DeiT-S full đạt 83.5\%. Hai run 
         \toprule
         Mô hình   & Chế độ  & Epoch tốt nhất & Epoch dừng & Train (\%) & Val (\%) \\
         \midrule
-        ResNet-50 & scratch & 85             & 97         & 99.8       & 70.7 \\
-        ResNet-50 & head    & 57             & 68         & 66.3       & 62.7 \\
-        ResNet-50 & partial & 19             & 30         & 92.3       & 77.1 \\
-        ResNet-50 & full    & 43             & 54         & 94.7       & 77.5 \\
-        DeiT-S    & scratch & 30             & 41         & 67.4       & 43.6 \\
-        DeiT-S    & head    & 9              & 20         & 63.2       & 62.5 \\
-        DeiT-S    & partial & 10             & 21         & 93.3       & 79.5 \\
-        DeiT-S    & full    & 15             & 26         & 95.6       & 79.4 \\
+        ResNet-50 & scratch & 85             & 97         & 99.8       & 70.7     \\
+        ResNet-50 & head    & 57             & 68         & 66.3       & 62.7     \\
+        ResNet-50 & partial & 19             & 30         & 92.3       & 77.1     \\
+        ResNet-50 & full    & 43             & 54         & 94.7       & 77.5     \\
+        DeiT-S    & scratch & 30             & 41         & 67.4       & 43.6     \\
+        DeiT-S    & head    & 9              & 20         & 63.2       & 62.5     \\
+        DeiT-S    & partial & 10             & 21         & 93.3       & 79.5     \\
+        DeiT-S    & full    & 15             & 26         & 95.6       & 79.4     \\
         \bottomrule
     \end{tabular}
     \caption{Epoch có validation accuracy cao nhất, epoch run dừng (epoch tốt nhất cộng 11, vì run dừng khi số epoch liên tiếp không cải thiện vượt patience 10; riêng ResNet-50 scratch cộng 12 vì được chạy làm hai đợt), và accuracy trên train và validation (Val) ở epoch tốt nhất.}

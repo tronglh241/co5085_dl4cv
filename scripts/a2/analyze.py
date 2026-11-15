@@ -15,7 +15,7 @@ if str(_repo_root) not in sys.path:
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_curve
 
 from common.config.config import CfgNode
 from scripts.a2.result_io import read_result
@@ -23,10 +23,9 @@ from scripts.tensorboard.extract import extract_run
 
 CONFIG_DIR = _repo_root / 'configs' / 'a2'
 COLUMNS = (
-    'run', 'model', 'loss', 'params', 'params_inference', 'best_epoch', 'val_roc_auc', 'val_eer',
-    'test_roc_auc', 'test_eer', 'test_acc', 'test_threshold', 'tar_far_1e-3',
-    'tar_far_1e-2', 'rank1', 'recall5', 'map', 'time_per_epoch_s',
-    'train_time_min', 'peak_mem_gb',
+    'run', 'model', 'loss', 'params', 'params_inference', 'best_epoch',
+    'test_acc', 'test_threshold', 'tar_far_1e-3', 'tar_far_1e-2',
+    'rank1', 'rank5', 'time_per_epoch_s', 'train_time_min', 'peak_mem_gb',
 )
 
 
@@ -89,7 +88,6 @@ def series_stats(series):
     peak = [value for _, value in series.get('training/peak_mem_gb', [])]
     return {
         'best_epoch': best[0],
-        'val_roc_auc_from_log': best[1],
         'time_per_epoch_s': statistics.mean(epoch_time) if epoch_time else None,
         'train_time_min': sum(epoch_time) / 60 if epoch_time else None,
         'peak_mem_gb': max(peak) if peak else None,
@@ -97,7 +95,7 @@ def series_stats(series):
 
 
 def make_record(run, info, result):
-    val, test, ident = result['val'], result['test'], result.get('identification') or {}
+    test, ident = result['test'], result.get('identification') or {}
     series = read_series(run, result)
     stats = series_stats(series)
     return {
@@ -107,17 +105,12 @@ def make_record(run, info, result):
         'params': result.get('params'),
         'params_inference': result.get('params_inference'),
         'best_epoch': stats['best_epoch'],
-        'val_roc_auc': val.get('roc_auc'),
-        'val_eer': val.get('eer'),
-        'test_roc_auc': test.get('roc_auc'),
-        'test_eer': test.get('eer'),
         'test_acc': test.get('accuracy'),
         'test_threshold': test.get('threshold'),
         'tar_far_1e-3': test.get('tar_at_far_1e-3'),
         'tar_far_1e-2': test.get('tar_at_far_1e-2'),
         'rank1': ident.get('rank1'),
-        'recall5': ident.get('recall5'),
-        'map': ident.get('map'),
+        'rank5': ident.get('rank5'),
         'time_per_epoch_s': stats['time_per_epoch_s'],
         'train_time_min': stats['train_time_min'],
         'peak_mem_gb': stats['peak_mem_gb'],
@@ -159,10 +152,9 @@ def _percent(value, digits=2):
 
 def write_tables(records, results_dir):
     lines = [
-        r'\begin{tabular}{llrrrrrrrr}',
+        r'\begin{tabular}{llrrrr}',
         r'\toprule',
-        r'Run & Loss & Infer. params & Val ROC-AUC & Test ROC-AUC & EER (\%) & Acc. (\%) '
-        r'& TAR@FAR $10^{-3}$ (\%) & TAR@FAR $10^{-2}$ (\%) & Rank-1 (\%) \\',
+        r'Run & Loss & Infer. params & Acc. (\%) & TAR@FAR $10^{-3}$ (\%) & TAR@FAR $10^{-2}$ (\%) \\',
         r'\midrule',
     ]
     for record in records:
@@ -170,13 +162,9 @@ def write_tables(records, results_dir):
             _tex(record['run']),
             record['loss'],
             _millions(record['params_inference']),
-            _fmt(record['val_roc_auc'], 4),
-            _fmt(record['test_roc_auc'], 4),
-            _percent(record['test_eer']),
             _percent(record['test_acc']),
             _percent(record['tar_far_1e-3']),
             _percent(record['tar_far_1e-2']),
-            _percent(record['rank1']),
         )) + r' \\')
     lines += [r'\bottomrule', r'\end{tabular}', '']
     path = results_dir / 'results_a2.tex'
@@ -184,17 +172,16 @@ def write_tables(records, results_dir):
     print(f'wrote {path}')
 
     ident = [
-        r'\begin{tabular}{lrrr}',
+        r'\begin{tabular}{lrr}',
         r'\toprule',
-        r'Run & Rank-1 (\%) & Recall@5 (\%) & mAP (\%) \\',
+        r'Run & Rank-1 (\%) & Rank-5 (\%) \\',
         r'\midrule',
     ]
     for record in records:
         ident.append(' & '.join((
             _tex(record['run']),
             _percent(record['rank1']),
-            _percent(record['recall5']),
-            _percent(record['map']),
+            _percent(record['rank5']),
         )) + r' \\')
     ident += [r'\bottomrule', r'\end{tabular}', '']
     (results_dir / 'identification_a2.tex').write_text('\n'.join(ident))
@@ -212,7 +199,7 @@ def plot_roc(records, scores_dir, figures_dir):
         labels = np.array([int(row['label']) for row in rows])
         scores = np.array([float(row['score']) for row in rows])
         fpr, tpr, _ = roc_curve(labels, scores)
-        axis.plot(fpr, tpr, label=f"{record['run']} ({roc_auc_score(labels, scores):.4f})")
+        axis.plot(fpr, tpr, label=record['run'])
         drawn = True
 
     if not drawn:
@@ -230,14 +217,14 @@ def plot_roc(records, scores_dir, figures_dir):
 
 
 def plot_bars(records, figures_dir):
-    with_values = [record for record in records if record['test_roc_auc'] is not None]
+    with_values = [record for record in records if record['test_acc'] is not None]
     if not with_values:
         return
 
     names = [record['run'] for record in with_values]
     figure, axes = plt.subplots(1, 2, figsize=(10, 0.5 * len(names) + 2.5))
     for axis, key, title in (
-        (axes[0], 'test_roc_auc', 'Test ROC-AUC'),
+        (axes[0], 'test_acc', 'Test accuracy'),
         (axes[1], 'rank1', 'Test Rank-1'),
     ):
         values = [record[key] for record in with_values]

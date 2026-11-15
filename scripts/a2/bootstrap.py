@@ -1,14 +1,16 @@
 '''Paired bootstrap confidence intervals for the A2 test verification results.
 
 Reads the per-pair test scores written by evaluate.py (reports/results/a2/scores/<run>_test.csv) and
-resamples the 10,000 test pairs with replacement. The same resample is applied to every run, so the
-difference between two runs is paired. Only verification can be done here: the identification
-embeddings are not saved.
+the validation-selected threshold stored in reports/results/a2/<run>.txt, then resamples the test
+pairs with replacement. The same resample is applied to every run, so the difference between two
+runs is paired. The reported metrics are accuracy at the fixed validation threshold and TAR@FAR.
+Only verification can be done here: the identification embeddings are not saved.
 '''
 
 import argparse
 import csv
 import sys
+from functools import partial
 from pathlib import Path
 
 _repo_root = Path(__file__).resolve().parents[2]
@@ -16,7 +18,9 @@ if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
 import numpy as np
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_curve
+
+from scripts.a2.result_io import read_result
 
 RUNS = ('resnet50_softmax', 'resnet50_arcface', 'mobilenetv3_softmax', 'mobilenetv3_arcface')
 # (a, b): the difference reported is metric(a) - metric(b).
@@ -35,18 +39,20 @@ def read_scores(path):
     return np.array([int(row['label']) for row in rows]), np.array([float(row['score']) for row in rows])
 
 
-def auc(labels, scores):
-    return float(roc_auc_score(labels, scores))
+def accuracy(labels, scores, threshold):
+    return float(((scores >= threshold) == labels).mean())
 
 
-def eer(labels, scores):
+def tar_at_far(labels, scores, threshold, far):
     fpr, tpr, _ = roc_curve(labels, scores)
-    fnr = 1.0 - tpr
-    index = int(np.nanargmin(np.abs(fpr - fnr)))
-    return float((fpr[index] + fnr[index]) / 2.0)
+    return float(np.interp(far, fpr, tpr))
 
 
-METRICS = {'roc_auc': auc, 'eer': eer}
+METRICS = {
+    'accuracy': accuracy,
+    'tar_at_far_1e-3': partial(tar_at_far, far=1e-3),
+    'tar_at_far_1e-2': partial(tar_at_far, far=1e-2),
+}
 
 
 def interval(values):
@@ -54,8 +60,12 @@ def interval(values):
     return float(low), float(high)
 
 
-# Label, scale and decimals of each metric in the table: the EER difference is shown in percentage points.
-TEX_METRICS = {'roc_auc': ('ROC-AUC', 1.0, 4), 'eer': (r'EER (điểm \%)', 100.0, 2)}
+# Label, scale and decimals of each metric in the table.
+TEX_METRICS = {
+    'accuracy': ('Accuracy (\\%)', 100.0, 2),
+    'tar_at_far_1e-3': (r'TAR@FAR $10^{-3}$ (\%)', 100.0, 2),
+    'tar_at_far_1e-2': (r'TAR@FAR $10^{-2}$ (\%)', 100.0, 2),
+}
 
 
 def write_tex(rows, path):
@@ -92,6 +102,13 @@ def main():
     if missing:
         raise SystemExit(f'no test scores for {missing} in {scores_dir}')
 
+    thresholds = {}
+    for run in data:
+        path = out_dir / f'{run}.txt'
+        if not path.is_file():
+            raise SystemExit(f'no test result for {run}: {path}')
+        thresholds[run] = float(read_result(path)['test']['threshold'])
+
     reference = data[RUNS[0]][0]
     for run, (labels, _) in data.items():
         if len(labels) != len(reference) or not np.array_equal(labels, reference):
@@ -105,10 +122,11 @@ def main():
     boot = {run: {name: np.empty(args.resamples) for name in METRICS} for run in data}
     point = {}
     for run, (labels, scores) in data.items():
-        point[run] = {name: function(labels, scores) for name, function in METRICS.items()}
+        threshold = thresholds[run]
+        point[run] = {name: function(labels, scores, threshold) for name, function in METRICS.items()}
         for index, picks in enumerate(resamples):
             for name, function in METRICS.items():
-                boot[run][name][index] = function(labels[picks], scores[picks])
+                boot[run][name][index] = function(labels[picks], scores[picks], threshold)
 
     per_run = []
     for run in data:
