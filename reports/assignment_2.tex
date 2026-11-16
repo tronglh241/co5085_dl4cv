@@ -125,7 +125,7 @@ Metric thứ hai là TAR@FAR, tức tỉ lệ chấp nhận đúng (True Accept 
     \mathrm{TAR}(\tau) = \frac{\bigl|\{(x,y)\in\mathcal{P} : s(x,y) > \tau\}\bigr|}{|\mathcal{P}|}, \qquad
     \mathrm{FAR}(\tau) = \frac{\bigl|\{(x,y)\in\mathcal{N} : s(x,y) > \tau\}\bigr|}{|\mathcal{N}|}.
 \end{equation}
-Với mức $\alpha$ cho trước, ngưỡng $\tau_\alpha$ được chọn sao cho $\mathrm{FAR}(\tau_\alpha) = \alpha$, và metric là $\mathrm{TAR}(\tau_\alpha)$. Nhóm báo cáo $\alpha = 10^{-2}$ và $\alpha = 10^{-1}$. Khác với accuracy, ngưỡng $\tau_\alpha$ được xác định từ chính các cặp âm của tập đang đánh giá, nên TAR@FAR đo khả năng phân tách của embedding ở một điểm vận hành chứ không đo hiệu năng ở một ngưỡng đã chọn trước.
+Với mức $\alpha$ cho trước, ngưỡng $\tau_\alpha$ được chọn sao cho $\mathrm{FAR}(\tau_\alpha) = \alpha$, và metric là $\mathrm{TAR}(\tau_\alpha)$. Nhóm báo cáo $\alpha = 10^{-2}$ và $\alpha = 10^{-3}$. Khác với accuracy, ngưỡng $\tau_\alpha$ được xác định từ chính các cặp âm của tập đang đánh giá, nên TAR@FAR đo khả năng phân tách của embedding ở một điểm vận hành chứ không đo hiệu năng ở một ngưỡng đã chọn trước.
 
 \paragraph{Identification.} Hệ thống tính $s$ giữa ảnh truy vấn (probe) và mọi ảnh trong tập ảnh đã biết danh tính (gallery), rồi xếp hạng các danh tính theo độ tương đồng giảm dần. Mọi danh tính của probe đều có mặt trong gallery, nên đây là bài toán đóng. Gallery chứa đúng một ảnh cho mỗi danh tính, vì vậy xếp hạng ảnh cũng là xếp hạng danh tính. Gọi $Q$ là tập probe và $r_q$ là vị trí của danh tính đúng trong danh sách xếp hạng của probe $q$. Rank-$k$ là tỉ lệ probe có danh tính đúng nằm trong $k$ vị trí đầu:
 \begin{equation}
@@ -213,7 +213,7 @@ Nhóm đánh giá trên các danh tính không giao với tập train. Tập val
     \end{tabular}
 \end{table}
 
-Với khoảng $5\,100$ cặp âm ở tập test, mức FAR bằng $10^{-2}$ ứng với khoảng $51$ cặp âm và mức $10^{-1}$ ứng với khoảng $510$ cặp âm. Mức $10^{-3}$ chỉ ứng với khoảng $5$ cặp âm, quá ít để cho kết quả ổn định, nên nhóm không báo cáo mức này.
+Với khoảng $5\,100$ cặp âm ở tập test, mức FAR bằng $10^{-2}$ ứng với khoảng $51$ cặp âm và mức $10^{-3}$ ứng với khoảng $5$ cặp âm.
 
 \paragraph{Gallery và probe cho identification.} Identification chỉ được đánh giá trên tập test. Nhóm chỉ dùng các danh tính có ít nhất hai ảnh, và với mỗi danh tính nhóm chọn ảnh đầu tiên theo tên tệp làm ảnh gallery. Các ảnh còn lại của danh tính đó đều là probe. Cách chọn này là tất định và không phụ thuộc seed, nhưng Rank-$k$ vì thế phụ thuộc vào ảnh được chọn. Bảng~\ref{tab:eval-ident} thống kê gallery và probe. Gallery có $997$ ảnh, mỗi danh tính một ảnh, và $18\,962$ probe. Ba danh tính chỉ có một ảnh ở tập test không được dùng.
 
@@ -337,20 +337,32 @@ trong đó $\theta_1$ và $\theta_2$ là góc giữa đặc trưng với hai vec
 \paragraph{Margin và backbone.} Khi quét $m$ từ $0.2$ đến $0.8$ trên LMobileNetE, $m = 0.5$ cho kết quả cao nhất trên cả ba benchmark ($99.50$, $88.50$ và $96.06$). Về backbone, các thử nghiệm dùng softmax trên VGG2 cho thấy LMobileNetE nhẹ hơn ($4.2$ ms mỗi ảnh, $112$ MB) và kém hơn LResNet50E-IR ($8.9$ ms, $167$ MB) một chút về độ chính xác ($99.63$, $95.81$, $91.85$ so với $99.75$, $96.58$, $93.53$ trên LFW, CFP-FP, AgeDB-30). Đây là cơ sở để nhóm kỳ vọng sự đánh đổi tương tự giữa ResNet-50 và MobileNetV3.
 
 \subsection{Hạn chế}
-Bài báo không có mục hạn chế riêng. Những hạn chế dưới đây gồm hai loại: phần paper tự nêu, và nhận xét của nhóm khi đọc paper.
+Bài báo không có mục hạn chế riêng và phần kết luận chỉ liệt kê đóng góp. Các hạn chế dưới đây gồm hai loại: phần paper tự nêu rải rác trong bài, và nhận xét của nhóm khi đọc paper và tái hiện.
 
-\paragraph{Do paper nêu.} Lớp phân loại tốn rất nhiều bộ nhớ GPU khi số danh tính lên cỡ hàng triệu; vì vậy sau khi huấn luyện bằng các loss dựa trên softmax, tác giả dùng triplet loss để tinh chỉnh ở quy mô lớn. Danh sách ảnh nhiễu trên MegaFace và FaceScrub được tác giả làm thủ công và không bảo đảm sạch hoàn toàn, nên kết quả trên tập đã tinh chỉnh có thể thay đổi khi danh sách được cập nhật.
+\paragraph{Do paper nêu.}
+\begin{itemize}
+    \item Các phương pháp phân loại cần nhiều bộ nhớ GPU cho lớp phân loại khi số danh tính lên cỡ hàng triệu, và cần dữ liệu cân bằng, đủ mẫu cho mỗi danh tính. Với quy mô đó, tác giả dùng triplet loss để tinh chỉnh một mô hình đã huấn luyện bằng softmax, và ghi nhận triplet loss hội tụ chậm; kết hợp triplet loss với margin góc được để lại cho công việc sau.
+    \item Danh sách ảnh nhiễu của FaceScrub và MegaFace được tác giả làm thủ công (khoảng $605$ và $707$ ảnh) và, theo chính tác giả, không bảo đảm sạch hoàn toàn dù đã được bảy người kiểm tra. Kết quả trên MegaFace đã tinh chỉnh vì vậy có thể thay đổi khi danh sách được cập nhật.
+    \item Khi $m$ quá lớn, huấn luyện có thể phân kỳ (với $m = 2$ không hội tụ), và lợi ích của margin bão hòa ở $m = 0.5$. Paper cũng nhận LFW gần bão hòa nên cải thiện trên đó không rõ ràng.
+    \item Với $m = 0.5$, logit của lớp đúng tăng trở lại khi $\theta > 151.35^\circ$. Tác giả cho rằng vùng này hầu như không bao giờ đạt được khi huấn luyện nên không xử lý riêng. Đây là một giả thiết thực nghiệm, không được chứng minh.
+\end{itemize}
 
 \paragraph{Nhận xét của nhóm.}
 \begin{itemize}
-    \item $m$ và $s$ được cố định dùng chung cho mọi lớp. Paper chỉ quét $m$ trên LMobileNetE rồi chọn $m=0.5$, còn $s=64$ lấy theo các nghiên cứu trước; không có lựa chọn riêng cho từng cấu hình.
-    \item Việc phải làm sạch MS1M trước khi huấn luyện cho thấy phương pháp phụ thuộc vào chất lượng nhãn. Paper không có thí nghiệm riêng đo độ nhạy với nhãn nhiễu.
-    \item Các bảng không ghi độ lệch chuẩn hay số lần chạy lặp, nên không đánh giá được mức dao động giữa các lần huấn luyện. Trên LFW, các loss trong Bảng~\ref{tab:paper-loss} chênh nhau chưa tới $0.2$ điểm phần trăm, nằm gần ngưỡng bão hòa của benchmark.
-    \item Một số chi tiết quan trọng khi tái hiện không có trong bản v1, như augmentation, cách xử lý khi $\theta + m > \pi$ và pseudo-code.
-    \item Thiết lập của paper ở quy mô hàng triệu ảnh và hàng chục nghìn danh tính, khác xa dữ liệu của nhóm.
+    \item \emph{Siêu tham số.} Margin $m$ và hệ số $s$ được chọn thủ công và dùng chung cho mọi lớp. Paper chỉ quét $m$ trên một backbone nhỏ (LMobileNetE) rồi dùng giá trị đó cho mọi cấu hình khác.
+    \item \emph{Nhãn.} Việc phải làm sạch MS1M trước khi huấn luyện cho thấy phương pháp phụ thuộc vào chất lượng nhãn. Paper không có thí nghiệm riêng đo độ nhạy với nhãn nhiễu.
+    \item \emph{Huấn luyện và đánh giá lệch nhau.} ArcFace được tối ưu như bài toán phân loại trên các danh tính đã thấy, còn mục tiêu thực là phân biệt người chưa từng thấy. Margin góc chỉ gián tiếp làm embedding tổng quát hóa sang người lạ; paper không có phân tích lý thuyết cho bước chuyển này.
+    \item \emph{Thống kê.} Các bảng không ghi độ lệch chuẩn hay số lần chạy lặp nên không biết chênh lệch nhỏ giữa các loss có vượt nhiễu giữa các lần huấn luyện hay không. Trên LFW, bốn loss trong Bảng~\ref{tab:paper-loss} chênh nhau tối đa $0.13$ điểm phần trăm, nên khó kết luận loss nào tốt hơn chỉ từ một lần chạy.
+    \item \emph{Khả năng tái hiện.} Bản v1 không có pseudo-code và không nêu augmentation, nên nhóm phải tự quyết định các chi tiết này (mục~\ref{sec:doi-chieu}). Với $\theta + m > \pi$, paper chọn không xử lý; nhóm thêm một nhánh dự phòng tuyến tính kiểu insightface trong \texttt{ArcFaceLoss} để loss không tăng ở vùng đó.
 \end{itemize}
 
-\paragraph{Giả thiết không đúng trên tập của nhóm.} Đối chiếu bốn giả thiết ở mục trước với thí nghiệm của nhóm: giả thiết (iv) không đúng, vì tập train của nhóm chỉ có khoảng $20$ ảnh mỗi danh tính trên $8\,192$ lớp. Ngoài ra, paper phân tích target logit dựa trên huấn luyện từ khởi tạo ngẫu nhiên với dữ liệu rất lớn, trong khi nhóm fine-tune từ trọng số ImageNet trên CelebA nhỏ hơn; đây là khác biệt về chế độ huấn luyện, không phải hệ quả trực tiếp của (iv). Nhóm quan sát thấy hậu quả thực tế ở learning rate: với $0.01$, loss huấn luyện của ResNet-50 ArcFace kẹt và ROC-AUC trên validation chỉ đạt khoảng $0.91$, trong khi ở $0.001$ run hội tụ bình thường; nhóm chưa kiểm chứng nguyên nhân. Với giả thiết (ii), nhóm dùng $m = 0.5$ theo paper và không thử giá trị khác, nên không biết giá trị này có tối ưu trên CelebA hay không. Với giả thiết (iii), nhóm không đo mức nhiễu nhãn của CelebA nên không đánh giá được giả thiết này. Nhóm cũng chưa phân tích các trường hợp lỗi cụ thể của mô hình (failure case), nên chưa nói được ArcFace thất bại ở loại cặp ảnh nào.
+\paragraph{Giả thiết không đúng trên tập của nhóm.} Đối chiếu các giả thiết ở mục trước với thí nghiệm của nhóm:
+\begin{itemize}
+    \item \emph{Giả thiết (iv)} (đủ dữ liệu, huấn luyện từ đầu) không đúng. Tập train của nhóm chỉ có khoảng $20$ ảnh mỗi danh tính trên $8\,192$ lớp (mục~\ref{sec:data}), và mạng được fine-tune từ trọng số ImageNet. Hệ quả quan sát được là ở learning rate $0.01$, loss huấn luyện của ResNet-50 ArcFace kẹt và ROC-AUC validation chỉ đạt khoảng $0.91$, trong khi ở $0.001$ run hội tụ bình thường. Nhóm chưa kiểm chứng nguyên nhân; một giả thuyết là $s = 64$ làm gradient lớn khi fine-tune toàn mạng với learning rate cao.
+    \item \emph{Giả thiết (ii)} (margin $m = 0.5$ phù hợp): nhóm dùng $m = 0.5$ theo paper và không thử giá trị khác, nên không biết giá trị này có tối ưu trên CelebA hay không.
+    \item \emph{Giả thiết (iii)} (nhãn đủ sạch): nhóm không đo mức nhiễu nhãn của CelebA nên không đánh giá được.
+    \item \emph{Phân tích lỗi.} Nhóm đã xem các trường hợp mô hình sai ở mục~\ref{sec:errors}: ArcFace giảm chủ yếu false accept, và các ca sai điển hình là cặp cùng người khác nhau nhiều về ngoại hình hoặc cặp khác người có ngoại hình giống nhau. Đây là nhận xét định tính, nhóm chưa phân tích theo thuộc tính của CelebA.
+\end{itemize}
 
 \subsection{Đối chiếu với nhóm}\label{sec:doi-chieu}
 Bảng~\ref{tab:doi-chieu} so sánh thiết lập của paper với thiết lập của nhóm.
@@ -468,6 +480,38 @@ Với ArcFace, ResNet-50 và MobileNetV3 gần như bằng nhau về verificatio
 
 Trong khi đó chi phí rất khác nhau (mục~\ref{sec:training}, Bảng~\ref{tab:cost}): MobileNetV3 có số tham số suy luận nhỏ hơn khoảng $7.1$ lần, mỗi epoch nhanh hơn khoảng $2.5$ lần và dùng bộ nhớ ít hơn khoảng $1.9$ lần. Trong thiết lập này, MobileNetV3 cho chất lượng tương đương ResNet-50 với chi phí thấp hơn nhiều, nên là lựa chọn hợp lý hơn trên CelebA. Kết luận này giới hạn ở một seed và ở quy mô dữ liệu của bài tập.
 
+\subsection{Phân tích lỗi}\label{sec:errors}
+Phần này xem mô hình sai ở đâu, dựa trên điểm cosine của $10\,000$ cặp test ($4\,885$ cặp cùng người, $5\,115$ cặp khác người) và ngưỡng chọn trên validation của từng run. Một cặp cùng người bị loại là \emph{false reject}, một cặp khác người bị nhận là \emph{false accept}.
+
+\begin{table}[h]
+    \centering
+    \caption{Số lỗi trên tập test ở ngưỡng chọn trên validation. FAR là tỉ lệ false accept trên các cặp khác người, FRR là tỉ lệ false reject trên các cặp cùng người.}
+    \label{tab:errors}
+    \begin{tabular}{lrrrrr}
+        \toprule
+        Run                 & False accept & FAR (\%) & False reject & FRR (\%) & Tổng lỗi \\
+        \midrule
+        ResNet-50 softmax   & 300          & 5.87     & 459          & 9.40     & 759      \\
+        ResNet-50 ArcFace   & 197          & 3.85     & 393          & 8.05     & 590      \\
+        MobileNetV3 softmax & 401          & 7.84     & 359          & 7.35     & 760      \\
+        MobileNetV3 ArcFace & 254          & 4.97     & 347          & 7.10     & 601      \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{ArcFace giảm chủ yếu false accept.} So với softmax cùng backbone, số false accept giảm $34\%$ với ResNet-50 ($300 \to 197$) và $37\%$ với MobileNetV3 ($401 \to 254$), trong khi số false reject chỉ giảm $14\%$ ($459 \to 393$) và $3\%$ ($359 \to 347$). Điều này phù hợp với việc margin đẩy các danh tính khác nhau ra xa nhau. Cần thận trọng vì ngưỡng mỗi run khác nhau (khoảng $0.21$ với softmax và $0.23$ với ArcFace) nên cách lỗi chia giữa hai loại phụ thuộc vào ngưỡng; ROC-AUC (Bảng~\ref{tab:results}) không phụ thuộc ngưỡng và cho cùng kết luận ArcFace tốt hơn.
+
+\paragraph{Lỗi chung giữa các run.} Có $208$ trong $10\,000$ cặp bị cả bốn run phân loại sai, và $1\,392$ cặp bị sai ở ít nhất một run. Trong số lỗi của ArcFace, $56\%$ (ResNet-50) và $63\%$ (MobileNetV3) cũng là lỗi của softmax cùng backbone, và $61\%$ lỗi của ResNet-50 ArcFace cũng là lỗi của MobileNetV3 ArcFace. Như vậy phần lớn lỗi nằm ở những cặp khó nói chung, nhưng vẫn có một phần đáng kể là lỗi riêng của từng mô hình.
+
+\paragraph{Các ca sai điển hình.} Hình~\ref{fig:fr} và Hình~\ref{fig:fa} cho $12$ cặp sai chắc chắn nhất của MobileNetV3 ArcFace. Đây là nhận xét định tính từ $12$ cặp mỗi loại, nhóm không định lượng các đặc điểm này. Các false reject thường là cùng một người nhưng khác nhau rõ về trang điểm, màu và kiểu tóc, độ tuổi, biểu cảm, ánh sáng hoặc phụ kiện. Các false accept thường là hai người khác nhau nhưng cùng giới tính, trông cùng nhóm tuổi và sắc tộc, có kiểu tóc, tư thế hoặc biểu cảm tương tự. Nhóm chưa kiểm tra lại nhãn của các cặp này nên không loại trừ nhiễu nhãn.
+
+\atwofigure{errors_false_reject_a2.png}{0.98}{Các cặp cùng người bị loại sai chắc chắn nhất (cosine thấp nhất) của MobileNetV3 ArcFace; số trên mỗi cặp là cosine.}{fig:fr}{errors_false_reject_a2}
+\atwofigure{errors_false_accept_a2.png}{0.98}{Các cặp khác người bị nhận sai chắc chắn nhất (cosine cao nhất) của MobileNetV3 ArcFace.}{fig:fa}{errors_false_accept_a2}
+
+\paragraph{Chất lượng ảnh.} Nhóm chia các cặp thành ba nhóm bằng nhau theo độ sắc nét (phương sai Laplacian) của ảnh mờ hơn trong cặp (Hình~\ref{fig:sharp}). Với cặp cùng người, nhóm mờ nhất có FRR cao hơn nhóm trung bình ở cả bốn run (ví dụ MobileNetV3 ArcFace $9.1\%$ so với $5.5\%$, mỗi nhóm khoảng $1\,630$ cặp); nhưng ở ba trong bốn run nhóm sắc nét nhất lại cao hơn nhóm trung bình, nên quan hệ không đơn điệu. Với cặp khác người, FAR gần như không đổi theo độ sắc nét. Độ lệch độ sáng giữa hai ảnh có tác động tương tự: nhóm lệch nhiều nhất có FRR $9.2\%$ so với $5.8\%$ ở nhóm giữa (MobileNetV3 ArcFace). Các chênh lệch này vài điểm phần trăm và lớn hơn sai số lấy mẫu thô (khoảng một điểm), nhưng nhóm chưa kiểm định và chỉ có một seed, nên chỉ xem là xu hướng. Do không có thuộc tính của CelebA (tư thế, kính, tuổi) trong dữ liệu đã xử lý, nhóm không phân tích theo các thuộc tính này.
+
+\atwofigure{errors_sharpness_a2.png}{0.9}{Tỉ lệ lỗi theo độ sắc nét của ảnh mờ hơn trong cặp (chia ba nhóm bằng nhau): trái là cặp cùng người, phải là cặp khác người.}{fig:sharp}{errors_sharpness_a2}
+
 \subsection{Thảo luận}
 \paragraph{Điều kết quả cho thấy.} Trên CelebA, ArcFace cho embedding tốt hơn softmax ở cả hai backbone: khác biệt về verification nhỏ nhưng ổn định (khoảng tin cậy không chứa $0$), còn khác biệt về identification lớn. Backbone không phải yếu tố quyết định: ResNet-50 và MobileNetV3 gần như bằng nhau về verification, trong khi MobileNetV3 có số tham số suy luận nhỏ hơn $7.1$ lần và huấn luyện mỗi epoch nhanh hơn $2.5$ lần.
 
@@ -479,8 +523,8 @@ Trong khi đó chi phí rất khác nhau (mục~\ref{sec:training}, Bảng~\ref{
     \item \textbf{Learning rate chưa được tinh chỉnh.} Nhóm dùng chung learning rate $0.001$ cho bốn run, chọn từ thử nghiệm ngắn chỉ với ArcFace trên ResNet-50. ArcFace nhạy với learning rate hơn softmax: ở $0.01$, loss của ResNet-50 ArcFace kẹt và ROC-AUC chỉ đạt khoảng $0.91$. Paper không gặp tình huống này vì huấn luyện từ đầu với thiết lập khác. Softmax không được thử các giá trị khác, như đã nêu ở trên.
     \item \textbf{Quy mô dữ liệu.} Tập train chỉ có khoảng $20$ ảnh mỗi danh tính trên $8\,192$ lớp, rất nhỏ so với dữ liệu của paper. Các kết luận chỉ áp dụng cho quy mô này và cho CelebA.
     \item \textbf{Tập đánh giá.} Gallery có một ảnh cho mỗi danh tính (ảnh đầu tiên theo tên tệp) và không được lặp lại với các lựa chọn gallery khác, nên Rank-1 phụ thuộc vào ảnh được chọn. TAR@FAR=$10^{-3}$ chỉ dựa trên khoảng $5$ cặp âm.
-    \item \textbf{Thiết kế thí nghiệm.} Nhóm không thử các giá trị khác của $s$ và $m$, không ablation riêng cho augmentation và cho khởi tạo từ ImageNet, không đánh giá chéo tập dữ liệu (ví dụ LFW) và không phân tích các trường hợp lỗi. Nhóm cũng chưa đo độ trễ suy luận, nên so sánh chi phí giữa hai backbone chỉ dựa trên số tham số, thời gian huấn luyện và bộ nhớ.
-    \item \textbf{Dropout đứng trước BatchNorm cuối.} Đầu embedding theo cấu trúc BN--Dropout--FC--BN của paper, nên BN cuối lưu phương sai của tín hiệu có nhiễu dropout, còn lúc đánh giá dropout tắt. Nhóm đo trên $20\,000$ ảnh train (\texttt{scripts/a2/check\_bn.py}): phương sai đầu vào BN cuối khi tắt dropout thấp hơn \texttt{running\_var} đã lưu khoảng $9\%$ đến $16\%$, nhưng hệ số co gần như đồng đều giữa các chiều (hệ số biến thiên khoảng $1.5\%$ đến $1.8\%$), nên L2-normalize loại bỏ được phần lớn; cosine giữa embedding gốc và embedding khi BN cuối dùng thống kê của tín hiệu tắt dropout là $0.994$ đến $0.9996$. Hiệu chỉnh lại thống kê này chỉ làm ROC-AUC trên test thay đổi tối đa $0.0006$, Rank-1 tối đa $0.0016$ và accuracy tối đa $0.0021$ (cải thiện nhỏ, chỉ thấy ở ArcFace), nhỏ hơn nhiều so với khoảng cách giữa hai loss, nên nhóm giữ nguyên kết quả đã báo cáo.
+    \item \textbf{Thiết kế thí nghiệm.} Nhóm không thử các giá trị khác của $s$ và $m$, không ablation riêng cho augmentation và cho khởi tạo từ ImageNet, và không đánh giá chéo tập dữ liệu (ví dụ LFW). Phân tích lỗi (mục~\ref{sec:errors}) chỉ định tính và chưa theo thuộc tính của CelebA. Nhóm cũng chưa đo độ trễ suy luận, nên so sánh chi phí giữa hai backbone chỉ dựa trên số tham số, thời gian huấn luyện và bộ nhớ.
+    \item \textbf{Dropout đứng trước BatchNorm cuối.} Đầu embedding theo cấu trúc BN--Dropout--FC--BN của paper, nên BN cuối lưu phương sai của tín hiệu có nhiễu dropout, còn lúc đánh giá dropout tắt. Nhóm đo trên $20\,000$ ảnh train: phương sai đầu vào BN cuối khi tắt dropout thấp hơn \texttt{running\_var} đã lưu khoảng $9\%$ đến $16\%$, nhưng hệ số co gần như đồng đều giữa các chiều (hệ số biến thiên khoảng $1.5\%$ đến $1.8\%$), nên L2-normalize loại bỏ được phần lớn; cosine giữa embedding gốc và embedding khi BN cuối dùng thống kê của tín hiệu tắt dropout là $0.994$ đến $0.9996$. Hiệu chỉnh lại thống kê này chỉ làm ROC-AUC trên test thay đổi tối đa $0.0006$, Rank-1 tối đa $0.0016$ và accuracy tối đa $0.0021$ (cải thiện nhỏ, chỉ thấy ở ArcFace), nhỏ hơn nhiều so với khoảng cách giữa hai loss, nên nhóm giữ nguyên kết quả đã báo cáo.
     \item \textbf{Huấn luyện bị gián đoạn.} Bốn run bị thu hồi container và tiếp tục từ bản backup, nên thứ tự lấy mẫu dữ liệu có thể khác một lần chạy liền mạch.
 \end{itemize}
 

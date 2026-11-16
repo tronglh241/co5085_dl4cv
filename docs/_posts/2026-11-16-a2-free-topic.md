@@ -1,9 +1,7 @@
 ---
 layout: post
 title: "A2 Chủ đề tự chọn và phân tích bài báo"
-author:
-    - trong
-    - thien
+authors: [trong, thien]
 date: 2026-11-16 10:00
 toc: true
 math: true
@@ -12,359 +10,320 @@ comments: false
 
 ## Giới thiệu
 
-Bài A2 gồm hai phần: phân tích paper **ArcFace** và tái hiện ý tưởng của paper trên một tập dữ liệu nhỏ hơn. ArcFace thay đổi lớp phân loại cuối của mạng: thay vì chỉ dùng softmax, nó chuẩn hóa đặc trưng và trọng số rồi cộng một margin góc vào logit của lớp đúng. Mục tiêu là làm cho các đặc trưng của cùng một người nằm gần nhau hơn trên siêu cầu, còn các đặc trưng của người khác xa nhau hơn.
+**Chủ đề:** Bài A2 xây dựng hệ thống nhận dạng khuôn mặt cho cả hai tác vụ xác minh và định danh, sử dụng hàm loss **ArcFace** và đánh giá trên các danh tính không xuất hiện trong quá trình huấn luyện.
 
-Chúng tôi huấn luyện bốn cấu hình trên CelebA:
+Bài A2 tái hiện ở quy mô nhỏ ý tưởng của bài báo ArcFace trên tập CelebA và trả lời hai câu hỏi sau:
 
-- ResNet-50 với softmax
-- ResNet-50 với ArcFace
-- MobileNetV3 Large với softmax
-- MobileNetV3 Large với ArcFace
+- **Angular margin của ArcFace cải thiện kết quả bao nhiêu so với softmax?** Nhóm giữ nguyên backbone và chỉ thay đổi hàm loss.
+- **Backbone nhỏ phải đánh đổi những gì so với backbone lớn?** Nhóm giữ nguyên hàm loss ArcFace và so sánh ResNet-50 với MobileNetV3.
 
-Các câu hỏi chính:
+Thông tin chính của bài:
 
-- **ArcFace có tốt hơn softmax không?** So sánh trên cùng backbone, cùng learning rate và cùng dữ liệu.
-- **Backbone có phải yếu tố quyết định không?** So sánh ResNet-50 và MobileNetV3 Large ở cùng loss.
-- **Chênh lệch nằm ở verification hay identification?** Verification đo trên cặp ảnh, identification đo trên gallery/probe.
-- **Chi phí là bao nhiêu?** Số tham số suy luận, thời gian huấn luyện và bộ nhớ GPU.
-
-Thông tin chính:
-
-- **Paper:** [ArcFace: Additive Angular Margin Loss for Deep Face Recognition](https://arxiv.org/abs/1801.07698v1), CVPR 2019.
-- **Dữ liệu:** [CelebA](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html), bản đã căn chỉnh về $112 \times 112$.
-- **Backbone:** ResNet-50 và MobileNetV3 Large của torchvision, khởi tạo từ ImageNet.
-- **Embedding:** BN–Dropout–FC–BN, $512$ chiều.
-- **Loss:** softmax và ArcFace với $s = 64$, $m = 0.5$.
-- **Code:** [scripts/a2](https://github.com/tronglh241/co5085_dl4cv/tree/main/scripts/a2), [models/a2](https://github.com/tronglh241/co5085_dl4cv/tree/main/models/a2), [configs/a2](https://github.com/tronglh241/co5085_dl4cv/tree/main/configs/a2).
-- **Báo cáo PDF:** [assignment_2.pdf](https://github.com/tronglh241/co5085_dl4cv/blob/main/reports/assignment_2.pdf).
+- **Bài báo:** *ArcFace: Additive Angular Margin Loss for Deep Face Recognition*. [Link](https://arxiv.org/abs/1801.07698v1).
+- **Tập dữ liệu:** Large-scale CelebFaces Attributes Dataset [CelebA](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html).
+- **Mô hình:** ResNet-50 và MobileNetV3 Large.
+- **Code:** thư mục [`scripts/a2`](https://github.com/tronglh241/co5085_dl4cv/tree/main/scripts/a2), [`models/a2`](https://github.com/tronglh241/co5085_dl4cv/tree/main/models/a2), [`configs/a2`](https://github.com/tronglh241/co5085_dl4cv/tree/main/configs/a2) và [`datasets`](https://github.com/tronglh241/co5085_dl4cv/tree/main/datasets) trên GitHub.
+- **Báo cáo PDF:** [assignment_2.pdf](https://github.com/tronglh241/co5085_dl4cv/blob/main/reports/assignment_2.pdf)
 
 Kết quả chính:
 
-- ArcFace tốt hơn softmax ở cả hai backbone trên mọi metric đã đo. Với ResNet-50, accuracy tăng từ $92{,}42\%$ lên $94{,}10\%$, TAR@FAR=$10^{-2}$ tăng từ $73{,}53\%$ lên $86{,}14\%$, Rank-1 tăng từ $45{,}25\%$ lên $68{,}37\%$.
-- Với MobileNetV3 Large, ArcFace cũng tăng accuracy từ $92{,}53\%$ lên $94{,}00\%$, TAR@FAR=$10^{-2}$ từ $77{,}18\%$ lên $84{,}42\%$, Rank-1 từ $52{,}05\%$ lên $66{,}48\%$.
-- ResNet-50 và MobileNetV3 Large gần như bằng nhau về verification. MobileNetV3 có $3{,}47$ triệu tham số suy luận so với $24{,}56$ triệu của ResNet-50, tức nhỏ hơn khoảng $7{,}1$ lần.
-- Chênh lệch giữa hai backbone ở identification không nhất quán: với ArcFace, ResNet-50 cao hơn ở Rank-1; với softmax, MobileNetV3 cao hơn.
+- ArcFace tốt hơn softmax ở cả hai backbone.
+- ResNet-50 và MobileNetV3 gần như ngang nhau về hiệu năng.
 
-## Bài toán và dữ liệu
+## Dữ liệu
 
-### Nhiệm vụ
+### Tập dữ liệu CelebA
 
-Gọi $f(x)$ là embedding của ảnh $x$. Độ tương đồng giữa hai ảnh được đo bằng cosine:
+CelebA gồm ảnh những người nổi tiếng chụp trong điều kiện không kiểm soát và chỉ được phát hành cho nghiên cứu phi thương mại. Nhóm sử dụng phiên bản `img_align_celeba` với kích thước $218 \times 178$, kèm năm land mark có sẵn, và giữ nguyên cách chia tập mặc định của CelebA.
 
-$$
-s(x,y)=\frac{f(x)^\top f(y)}{\|f(x)\|\,\|f(y)\|}.
-$$
+| Tập | Số ảnh | Số danh tính |
+|---|---:|---:|
+| Train | 162.770 | 8.192 |
+| Validation | 19.867 | 985 |
+| Test | 19.962 | 1.000 |
+| Tổng | 202.599 | 10.177 |
 
-Có hai nhiệm vụ:
+*Bảng 1. Ba tập dữ liệu của CelebA.*
 
-- **Verification:** cho hai ảnh, quyết định chúng có cùng danh tính hay không. Nhiều cặp ảnh được tạo sẵn, mỗi cặp có nhãn $1$ hoặc $0$.
-- **Identification:** cho một ảnh probe, tìm ảnh cùng danh tính trong một gallery đã biết trước. Mỗi probe được xếp hạng theo độ tương đồng với toàn bộ gallery.
+### Phân tích khám phá dữ liệu
 
-### Tập dữ liệu
+![Phân bố số ảnh mỗi danh tính ở tập train](/assets/a2/eda/identity_hist.png)
 
-CelebA có $202.599$ ảnh và $10.177$ danh tính. Chúng tôi dùng bản đã căn chỉnh, chia thành ba tập không giao nhau về danh tính:
+*Hình 1. Số ảnh mỗi danh tính ở tập train.*
 
-| Tập | Số ảnh | Số danh tính | Ảnh mỗi danh tính (trung vị) |
+| Số ảnh mỗi danh tính | Train | Validation | Test |
 |---|---:|---:|---:|
-| Train | 162.770 | 8.192 | 21 |
-| Validation | 19.867 | 985 | 21 |
-| Test | 19.962 | 1.000 | 21 |
+| 1 | 36 (0,4%) | 5 (0,5%) | 3 (0,3%) |
+| 2–4 | 648 (7,9%) | 73 (7,4%) | 69 (6,9%) |
+| 5–9 | 774 (9,4%) | 96 (9,7%) | 104 (10,4%) |
+| 10–19 | 1.631 (19,9%) | 182 (18,5%) | 208 (20,8%) |
+| 20–29 | 3.225 (39,4%) | 408 (41,4%) | 355 (35,5%) |
+| 30+ | 1.878 (22,9%) | 221 (22,4%) | 261 (26,1%) |
+| **Tổng** | **8.192** | **985** | **1.000** |
 
-*Bảng 1. Ba tập dữ liệu dùng trong A2.*
+*Bảng 2. Phân bố số ảnh trên mỗi danh tính ở ba tập; phần trăm tính trên số danh tính của từng tập.*
 
-Việc kiểm tra không có danh tính chung giữa ba tập được thực hiện trong `scripts/a2/prepare_data.py`. Nếu phát hiện chồng lấn, script dừng lại.
+- **Ít ảnh mỗi lớp:** trung vị 21 ảnh, trung bình 19,9 ảnh, phần lớn danh tích có khoảng 20 hoặc 30 ảnh.
+- **Một số danh tính quá ít ảnh:** 36 danh tính (0,4%) chỉ có một ảnh và 684 danh tính (8,3%) có dưới 5 ảnh.
+- **Các tập có phân bố giống nhau:** validation và test cũng có trung vị 21 ảnh mỗi danh tính, nên điểm đánh giá không bị lệch do phân bố.
 
-![Phân bố số ảnh trên mỗi danh tính ở tập train](/assets/a2/eda/identity_hist.png)
+![Ảnh cùng danh tính sau khi căn chỉnh](/assets/a2/eda/samples.png)
 
-*Hình 1. Số ảnh trên mỗi danh tính ở tập train. Đường nét đứt là trung vị, đường chấm là trung bình.*
+*Hình 2. Một vài mẫu từ tập CelebA: mỗi hàng là một danh tính. Ảnh cùng người vẫn khác nhau nhiều về tóc, trang điểm, ánh sáng và tư thế.*
 
-Tập train có khoảng $20$ ảnh mỗi danh tính trên $8.192$ lớp. Đây là điểm khác biệt lớn so với paper: paper huấn luyện trên VGG2 và MS-Celeb-1M đã làm sạch, với hàng chục nghìn đến khoảng $85$ nghìn danh tính và hàng triệu ảnh.
+![Ảnh gốc và ảnh sau căn chỉnh](/assets/a2/eda/alignment.png)
 
-### Tiền xử lý
+*Hình 3. Ảnh gốc $218 \times 178$ (trên) và ảnh sau căn chỉnh $112 \times 112$ (dưới). Sau căn chỉnh, mắt, mũi và khóe miệng ở cùng vị trí.*
 
-Mỗi ảnh được căn chỉnh về $112 \times 112$ bằng một phép biến đổi đồng dạng dựa trên năm điểm mốc: hai mắt, mũi và hai khóe miệng. Ảnh được chuẩn hóa về khoảng $[-1,1]$ bằng:
+### Bài toán và cách đánh giá
+
+Mô hình được **huấn luyện như một bài toán phân loại** trên $8.192$ danh tính của tập train, nhưng được **đánh giá trên các danh tính chưa từng thấy**. Tập validation có $985$ danh tính và tập test có $1.000$ danh tính, và cả hai không có danh tính hay ảnh nào chung với tập train. Vì vậy lớp phân loại cuối bị loại bỏ khi đánh giá. Mỗi ảnh được biến thành một vector embedding $512$ chiều, và hai ảnh được so sánh bằng cosine similarity:
+
+$$s(x,y) = \frac{f(x)^\top f(y)}{\lVert f(x)\rVert \, \lVert f(y)\rVert}.$$
+
+Trong công thức này, $x$ và $y$ là hai ảnh khuôn mặt cần so sánh. Hàm $f(\cdot)$ là backbone dùng để trích xuất vector embedding $512$ chiều từ một ảnh. Tích vô hướng $f(x)^\top f(y)$ đo mức độ cùng hướng của hai embedding. Các chuẩn $\lVert f(x)\rVert$ và $\lVert f(y)\rVert$ là độ dài $L_2$ của từng embedding, và việc chia cho chúng loại bỏ ảnh hưởng của độ dài vector. Kết quả $s(x,y) \in [-1, 1]$ chính là cosine của góc giữa hai embedding, và giá trị càng lớn thì hai ảnh càng có khả năng thuộc cùng một người.
+
+- **Verification:** Bài toán hỏi hai ảnh có thuộc cùng một người hay không. Hai ảnh được xem là cùng người khi $s(x,y) \ge \tau$, với ngưỡng $\tau$ được chọn trên tập validation. Tập test có $10.000$ cặp ảnh, gồm $4.885$ cặp cùng một người và $5.115$ cặp là hai người khác nhau. Các metric gồm accuracy tại ngưỡng đã chọn, TAR@FAR=$10^{-3}$ và TAR@FAR=$10^{-2}$.
+- **Identification:** Bài toán hỏi ảnh truy vấn thuộc danh tính nào trong gallery. Gallery có $997$ ảnh, mỗi danh tính một ảnh, và có $18.962$ ảnh truy vấn. Mỗi ảnh truy vấn được so với toàn bộ gallery bằng $s(x,y)$, rồi các danh tính được xếp hạng theo độ tương đồng giảm dần. Các metric gồm Rank-1 và Rank-5.
+
+Các metric được hiểu như sau:
+
+- **Accuracy:** tỉ lệ cặp verification bị phân loại đúng tại ngưỡng $\tau$ đã chọn. Ngưỡng được chọn trên validation để accuracy cao nhất, rồi giữ nguyên khi đánh giá test.
+- **TAR@FAR:** True Accept Rate (TAR) tại một mức False Accept Rate (FAR) cho trước. FAR là tỉ lệ cặp hai người khác nhau bị nhận nhầm là cùng một người; TAR là tỉ lệ cặp cùng người được nhận đúng. Ví dụ TAR@FAR=$10^{-2}$ là TAR tại mức 1% cặp âm bị chấp nhận sai.
+- **Rank-1:** tỉ lệ probe có ảnh gallery đúng được xếp hạng đầu tiên.
+- **Rank-5:** tỉ lệ probe có ảnh gallery đúng nằm trong năm ứng viên đầu.
+
+## Chuẩn bị dữ liệu huấn luyện
+
+### Căn chỉnh và tiền xử lý
+
+Nhóm dùng ảnh `img_align_celeba` ($218 \times 178$) và năm điểm mốc có sẵn của CelebA. Ảnh được căn chỉnh về $112 \times 112$ bằng phép biến đổi đồng dạng (tỉ lệ, xoay, tịnh tiến), khớp năm điểm mốc với template ArcFace bằng bình phương tối thiểu:
 
 $$
-x \leftarrow \frac{x - 0{,}5}{0{,}5}.
+\min_{s,\,R,\,t}\sum_{k=1}^{5}\left\|sRp_k+t-q_k\right\|^2.
 $$
 
-![Trước và sau căn chỉnh](/assets/a2/eda/alignment.png)
-
-*Hình 2. Hàng trên là ảnh gốc trong `img_align_celeba`, hàng dưới là ảnh sau căn chỉnh về $112 \times 112$.*
+Ảnh sau căn chỉnh được lưu một lần và dùng chung cho cả bốn run. Mọi ảnh sau đó được chuẩn hóa theo mean/std $0{,}5$ cho cả ba kênh. Tăng cường dữ liệu chỉ áp dụng trên tập train.
 
 ### Tăng cường dữ liệu
 
-Chỉ tập train được tăng cường:
+Chỉ tập train được tăng cường; validation, test và các cặp đánh giá chỉ được chuẩn hóa.
 
-- Lật ngang với xác suất $0{,}5$.
-- ColorJitter với brightness, contrast và saturation trong $\pm 20\%$.
-- Không dùng RandomResizedCrop, không xoay, không dịch.
+| Bước | Tham số |
+|---|---|
+| Lật ngang | Xác suất 0,5 |
+| ColorJitter nhẹ | Độ sáng, tương phản, độ bão hòa, mỗi đại lượng tối đa 0,2 |
+| Chuẩn hóa | Mean và std 0,5 |
 
-![Trước và sau augmentation](/assets/a2/eda/augmentation.png)
+*Bảng 3. Pipeline tăng cường dữ liệu của tập train.*
 
-*Hình 3. Hàng trên là ảnh trước augmentation, hàng dưới là ảnh sau augmentation.*
+- Lật ngang không đổi danh tính và giữ nguyên vị trí các điểm mốc sau căn chỉnh; ColorJitter mô phỏng sự khác nhau về ánh sáng giữa các ảnh.
+- Nhóm không dùng xoay hoặc cắt ảnh để không làm lệch mẫu căn chỉnh năm điểm.
 
-Validation và test không được tăng cường. Việc augmentation nhẹ phù hợp với dữ liệu đã căn chỉnh: ảnh đã ở cùng vị trí hai mắt, mũi và miệng, nên các phép biến đổi hình học mạnh dễ làm mất thông tin danh tính.
+### Tập đánh giá và DataLoader
 
-## Phương pháp ArcFace
+- Các cặp verification và việc chia gallery, probe cho identification được sinh một lần với seed cố định, lưu thành tệp và dùng chung cho các lần chạy thí nghiệm.
+- `CelebA` đọc tệp chia tập và ảnh đã căn chỉnh; `VerificationPairs` đọc danh sách cặp. Tập train được xáo trộn mỗi epoch, batch size 128; validation và test không xáo trộn.
 
-### Từ softmax đến ArcFace
+## Phân tích bài báo ArcFace
 
-Softmax dùng logit:
+### Phương pháp
 
-$$
-W_j^\top x_i + b_j.
-$$
+Softmax chuẩn không trực tiếp ép các ảnh cùng người gần nhau hơn và các ảnh khác người xa nhau hơn, nên đặc trưng học được phân tách tốt các lớp đã thấy nhưng chưa chắc tốt cho khuôn mặt mới. ArcFace biến đổi logit của softmax theo ba bước:
 
-ArcFace biến đổi logit này theo ba bước:
+1. Đặt bias bằng 0, nên $W_j^\top x_i = \lVert W_j\rVert\,\lVert x_i\rVert\cos\theta_j$ với $\theta_j$ là góc giữa đặc trưng $x_i$ và trọng số $W_j$ của lớp $j$.
+2. Chuẩn hóa $W_j$ về độ dài 1.
+3. Chuẩn hóa $x_i$ và nhân với hệ số tỉ lệ $s$ (paper chọn $s = 64$), nên logit chỉ còn phụ thuộc vào góc.
 
-1. Bỏ bias: $b_j = 0$.
-2. Chuẩn hóa $\ell_2$ trọng số: $\|W_j\| = 1$.
-3. Chuẩn hóa $\ell_2$ đặc trưng rồi đưa về bán kính $s$:
+Sau đó cộng margin góc $m$ vào góc của lớp đúng:
 
-$$
-W_j \leftarrow \frac{W_j}{\|W_j\|},
-\qquad
-x_i \leftarrow \frac{x_i}{\|x_i\|},
-\qquad
-\cos\theta_j = W_j^\top x_i,
-\qquad
-\|x_i\| = s.
-$$
+$$L = -\frac{1}{N}\sum_{i=1}^{N}\log\frac{e^{s\cos(\theta_{y_i}+m)}}{e^{s\cos(\theta_{y_i}+m)}+\sum_{j\ne y_i}e^{s\cos\theta_j}}, \qquad m = 0{,}5.$$
 
-Khi đó logit chỉ phụ thuộc vào góc $\theta_j$ giữa đặc trưng và vector trọng số của lớp $j$. Paper chọn $s = 64$.
-
-ArcFace chỉ thay logit của lớp đúng:
-
-$$
-s\cos(\theta_{y_i}+m),
-$$
-
-còn các lớp khác giữ nguyên $s\cos\theta_j$. Hàm mất mát là:
-
-$$
-L
-=
--\frac{1}{N}\sum_{i=1}^{N}
-\log
-\frac{
-e^{s\cos(\theta_{y_i}+m)}
-}{
-e^{s\cos(\theta_{y_i}+m)}
-+
-\sum_{j\ne y_i}e^{s\cos\theta_j}
-}.
-$$
-
-Paper chọn $m = 0{,}5$. Với $\theta \in [0,\pi-m]$, ta có $\cos(\theta+m) < \cos\theta$, nên để đạt cùng xác suất thì mẫu phải nằm gần tâm lớp đúng hơn so với softmax đã chuẩn hóa.
-
-### Ý nghĩa hình học
-
-Trên siêu cầu bán kính $s$, margin góc tương ứng với khoảng cách trắc địa (geodesic) giữa các lớp. Trong bài toán hai lớp, biên quyết định của ArcFace là:
-
-$$
-s\left(\cos(\theta_1+m)-\cos\theta_2\right)=0.
-$$
-
-So với:
-
-- SphereFace: $\cos(m\theta_1)=\cos\theta_2$, margin nhân vào góc.
-- CosineFace: $\cos\theta_1-m=\cos\theta_2$, margin trừ trong không gian cosine.
-- ArcFace: $\cos(\theta_1+m)=\cos\theta_2$, margin cộng trong không gian góc.
-
-Vì margin nằm trong không gian góc, nó có diễn giải hình học rõ hơn: khoảng cách trên bề mặt siêu cầu.
+Vì $\cos(\theta + m) < \cos\theta$, mẫu phải nằm gần tâm lớp đúng hơn so với softmax chuẩn hóa mới đạt cùng xác suất. Margin là một góc nên tương ứng với khoảng cách cung trên siêu cầu, đó là lý do gọi là *additive angular margin*.
 
 ### Thí nghiệm của paper
 
-Paper huấn luyện trên VGG2 và MS-Celeb-1M đã làm sạch. Các so sánh loss dùng LResNet100E-IR với MS1M. Kết quả trên LFW, CFP-FP và AgeDB-30:
+- **Dữ liệu và mạng:** VGG2 (8.631 danh tính, 3,14 triệu ảnh) và MS-Celeb-1M đã làm sạch (khoảng 85 nghìn danh tính, 3,8 triệu ảnh), ảnh $112 \times 112$ căn chỉnh năm điểm, backbone ResNet cải tiến (LResNet100E-IR), embedding 512 chiều qua BN-Dropout-FC-BN.
+- **Huấn luyện:** batch 512, SGD momentum 0,9, weight decay $5 \times 10^{-4}$, learning rate 0,1 chia 10 tại các vòng lặp 100k, 140k, 160k trong tổng 200k.
+- **Benchmark:** độ chính xác verification trên LFW, CFP-FP, AgeDB-30; rank-1 identification và TAR@FAR $10^{-6}$ trên MegaFace.
+- **So sánh loss (độ chính xác verification, %):**
 
 | Loss | LFW | CFP-FP | AgeDB-30 |
 |---|---:|---:|---:|
-| Softmax | 99.70 | 91.40 | 95.56 |
-| SphereFace ($m=4$) | 99.76 | 93.70 | 97.56 |
-| CosineFace ($m=0.35$) | 99.80 | 94.40 | 97.91 |
-| ArcFace ($m=0.5$) | 99.83 | 94.04 | 98.08 |
+| Softmax | 99,70 | 91,40 | 95,56 |
+| SphereFace ($m=4$) | 99,76 | 93,70 | 97,56 |
+| CosineFace ($m=0{,}35$) | 99,80 | 94,40 | 97,91 |
+| ArcFace ($m=0{,}5$) | 99,83 | 94,04 | 98,08 |
 
-*Bảng 2. Kết quả so sánh loss trong paper (LResNet100E-IR, MS1M).*
+*Bảng 4. Kết quả so sánh loss trong paper (LResNet100E-IR, huấn luyện trên MS1M).*
 
-Trên MegaFace bản gốc, ArcFace đạt rank-1 $83{,}27\%$ và TAR@FAR=$10^{-6}$ là $98{,}48\%$, so với $78{,}89\%$ và $94{,}95\%$ của softmax. Sau khi làm sạch distractors, rank-1 của ArcFace tăng lên $98{,}36\%$, còn softmax là $91{,}43\%$.
+Chênh lệch giữa các loss nhỏ ở LFW (gần bão hòa) và rõ hơn ở CFP-FP và AgeDB-30. Khi quét $m$ từ 0,2 đến 0,8 trên một backbone nhỏ, $m = 0{,}5$ cho kết quả cao nhất.
 
-## Thiết lập thí nghiệm
+### Hạn chế
 
-### Bốn cấu hình
+Paper không có mục hạn chế riêng. Có thể rút ra các điểm sau:
 
-| Run | Backbone | Loss | Tham số suy luận |
-|---|---|---:|---:|
-| resnet50_softmax | ResNet-50 | softmax | 24,56M |
-| resnet50_arcface | ResNet-50 | ArcFace | 24,56M |
-| mobilenetv3_softmax | MobileNetV3 Large | softmax | 3,47M |
-| mobilenetv3_arcface | MobileNetV3 Large | ArcFace | 3,47M |
+- **Lớp phân loại lớn:** khi số danh tính lên cỡ hàng triệu, lớp phân loại tốn rất nhiều bộ nhớ GPU; tác giả dùng triplet loss để tinh chỉnh ở quy mô đó.
+- **Nhãn nhiễu:** MS1M và MegaFace phải được làm sạch thủ công.
+- **Margin cố định:** $m$ và $s$ dùng chung cho mọi lớp; paper chỉ quét $m$ trên LMobileNetE rồi chọn $m=0{,}5$.
+- **Miền không đơn điệu:** với $m=0{,}5$, $\cos(\theta+m)$ tăng trở lại khi $\theta>151{,}35^\circ$; paper không xử lý vùng này vì cho rằng nó hiếm khi xảy ra khi huấn luyện từ đầu.
 
-*Bảng 3. Bốn cấu hình được so sánh.*
+### Đối chiếu với nhóm
 
-Cả bốn run dùng:
+| | Paper | Nhóm |
+|---|---|---|
+| Dữ liệu | VGG2, MS1M làm sạch (85K danh tính) | CelebA, 8.192 danh tính ở tập train |
+| Backbone | LResNet100E-IR, so sánh với MobileNet | ResNet-50 và MobileNetV3 Large, khởi tạo từ ImageNet |
+| Embedding | BN-Dropout-FC-BN, 512 chiều | BN-Dropout-FC-BN, 512 chiều |
+| Loss | ArcFace, $s=64$, $m=0{,}5$ | Softmax và ArcFace, $s=64$, $m=0{,}5$ |
+| Batch, learning rate | 512, 0,1 | 128, 0,001 |
+| Lịch learning rate | Chia 10 tại vòng lặp cố định | ReduceLROnPlateau theo ROC-AUC validation |
+| Thời gian huấn luyện | 200k vòng lặp | Tối đa 100 epoch, dừng sớm |
+| Tăng cường dữ liệu | Không nêu | Lật ngang, ColorJitter nhẹ |
+| Xử lý $\theta+m>\pi$ | Không xử lý | Logit tuyến tính $\cos\theta - m\sin m$ |
 
-- SGD, momentum $0{,}9$, weight decay $5\times10^{-4}$.
-- Batch size $128$.
-- Learning rate khởi tạo $0{,}001$.
-- Tối đa $100$ epoch, dừng sớm với patience $5$ theo ROC-AUC validation.
-- ReduceLROnPlateau với factor $0{,}5$, patience $2$.
-- FP32, không dùng mixed precision.
-- Seed $42$.
+*Bảng 5. Đối chiếu thiết lập của paper và của nhóm.*
 
-### Tập pairs
+- **Tái hiện được:** xu hướng chính của paper, ArcFace tốt hơn softmax trên cùng backbone. Các con số tuyệt đối không so sánh được vì dữ liệu, backbone và benchmark đều khác.
+- **Không kiểm chứng được:** giá trị $m = 0{,}5$, nhóm không quét margin.
+- **Điều học được:** không sao chép siêu tham số của paper, cần điều chỉnh cho phù hợp với mô hình và dữ liệu; nên báo cáo cả verification và identification vì khác biệt giữa hai loss lộ rõ ở identification.
 
-Mỗi tập validation và test có $10.000$ cặp ảnh. Mỗi cặp được chọn với nhãn dương hoặc âm theo xác suất $1/2$:
+## Pipeline, huấn luyện và so sánh
 
-- Cặp dương: chọn một danh tính có ít nhất hai ảnh, rồi chọn hai ảnh khác nhau của danh tính đó.
-- Cặp âm: chọn hai danh tính khác nhau, rồi chọn một ảnh từ mỗi danh tính.
+### Mô hình
 
-Số cặp dương và âm xấp xỉ bằng nhau, không đúng chính xác $5.000$ mỗi loại.
+Ảnh $112 \times 112$ đi qua backbone, rồi khối embedding BN, Dropout (0,4), Linear, BN cho ra vector 512 chiều. Khi huấn luyện, vector này đi vào lớp phân loại 8.192 lớp của hàm loss; khi đánh giá, lớp phân loại bị bỏ và vector được dùng trực tiếp cho cosine similarity.
 
-### Metric
+- **Softmax:** lớp tuyến tính có bias trên vector chưa chuẩn hóa, loss cross-entropy.
+- **ArcFace:** $s = 64$, $m = 0{,}5$ cố định, không dùng cơ chế tăng dần margin. Với $\theta + m > \pi$, logit của lớp đúng được thay bằng $\cos\theta - m\sin m$ để loss không tăng ở vùng đó.
+- **Backbone:** ResNet-50 (24,56 triệu tham số) và MobileNetV3 Large (3,47 triệu tham số), cả hai khởi tạo từ trọng số ImageNet và được huấn luyện toàn bộ (full fine-tune) với cùng một learning rate.
 
-Chúng tôi báo cáo bốn metric:
+### Thiết lập huấn luyện
 
-- **Accuracy** tại ngưỡng chọn trên validation.
-- **TAR@FAR=$10^{-3}$** và **TAR@FAR=$10^{-2}$**.
-- **Rank-1** và **Rank-5** trên identification.
+- SGD momentum 0,9, weight decay $5 \times 10^{-4}$, batch 128, FP32, seed 42.
+- Learning rate khởi tạo 0,001 cho cả bốn thí nghiệm. Giá trị này được chọn sau thử nghiệm ngắn chỉ với ResNet-50 ArcFace (ở 0,01 loss kẹt quanh 22 đến 23 và ROC-AUC validation chỉ đạt 0,849 sau 9 epoch, còn ở 0,001 đạt 0,976), không tinh chỉnh riêng cho softmax hay MobileNetV3.
+- Tối đa 100 epoch, dừng sớm với patience 5 theo ROC-AUC validation; ReduceLROnPlateau (factor 0,5, patience 2). Checkpoint tốt nhất theo ROC-AUC validation.
+- Huấn luyện trên một GPU A10G (Modal).
 
-ROC-AUC được dùng nội bộ để chọn checkpoint, giảm learning rate và dừng sớm, nhưng không nằm trong bảng kết quả chính.
+Cách chạy lại thí nghiệm: làm theo [SETUP.md](https://github.com/tronglh241/co5085_dl4cv/blob/main/SETUP.md) để cài môi trường, sau đó mở shell trong container và chạy:
 
-Accuracy:
+```bash
+python scripts/a2/prepare_data.py --raw data/celeba --out data/celeba_112 --download
+python scripts/train.py configs/a2/train_resnet50_arcface.yml
+python scripts/a2/evaluate.py --config configs/a2/test_resnet50_arcface.yml
+python scripts/a2/analyze.py
+```
 
-$$
-\mathrm{Acc}(t)=\frac{TP(t)+TN(t)}{P+N}.
-$$
+Thay `resnet50_arcface` bằng ba cấu hình còn lại trong `configs/a2`. `analyze.py` tổng hợp kết quả các run đã đánh giá thành bảng và hình.
 
-TAR@FAR:
+### Hiệu năng tính toán
 
-$$
-\mathrm{TAR@FAR}
-=
-\mathrm{TPR}(t)
-\quad\text{với}\quad
-\mathrm{FPR}(t)=\mathrm{FAR}.
-$$
+| Run | Tham số suy luận | Giây/epoch | Bộ nhớ đỉnh (GB) | Epoch tốt nhất / đã chạy | Phút đến epoch tốt nhất |
+|---|---:|---:|---:|---:|---:|
+| ResNet-50 softmax | 24,56 tr | 116,9 | 2,91 | 27 / 33 | 52,6 |
+| ResNet-50 ArcFace | 24,56 tr | 117,6 | 2,94 | 14 / 20 | 27,4 |
+| MobileNetV3 softmax | 3,47 tr | 45,6 | 1,49 | 51 / 57 | 38,7 |
+| MobileNetV3 ArcFace | 3,47 tr | 47,2 | 1,54 | 20 / 27 | 15,7 |
 
-Identification:
+*Bảng 6. Chi phí của bốn run (A10G, FP32). Thời gian mỗi epoch không gồm validation.*
 
-$$
-\mathrm{Rank@1}
-=
-\frac{1}{Q}\sum_{q=1}^{Q}\mathbf{1}[r_q=1],
-\qquad
-\mathrm{Rank@5}
-=
-\frac{1}{Q}\sum_{q=1}^{Q}\mathbf{1}[r_q\le 5].
-$$
-
-Gallery có $997$ ảnh, probe có $18.962$ ảnh. Mỗi danh tính trong gallery có đúng một ảnh, nên mỗi probe có đúng một mục đúng.
+Nhóm chưa đo độ trễ suy luận, nên số tham số chỉ là chỉ báo gián tiếp cho chi phí khi suy luận.
 
 ## Kết quả
 
-### Verification
-
-| Run | Loss | Tham số suy luận | Acc (%) | TAR@FAR $10^{-3}$ (%) | TAR@FAR $10^{-2}$ (%) |
-|---|---|---:|---:|---:|---:|
-| mobilenetv3_arcface | ArcFace | 3,47M | 94,00 | 68,45 | 84,42 |
-| mobilenetv3_softmax | Softmax | 3,47M | 92,53 | 55,93 | 77,18 |
-| resnet50_arcface | ArcFace | 24,56M | 94,10 | 69,09 | 86,14 |
-| resnet50_softmax | Softmax | 24,56M | 92,42 | 44,69 | 73,53 |
-
-*Bảng 4. Kết quả verification trên tập test.*
-
-![Đường ROC của verification](/assets/a2/roc_a2.png)
-
-*Hình 4. Đường ROC trên tập test. ArcFace nằm trên softmax ở vùng FPR thấp.*
-
-### Identification
-
-| Run | Rank-1 (%) | Rank-5 (%) |
-|---|---:|---:|
-| mobilenetv3_arcface | 66,48 | 80,63 |
-| mobilenetv3_softmax | 52,05 | 71,05 |
-| resnet50_arcface | 68,37 | 82,31 |
-| resnet50_softmax | 45,25 | 66,52 |
-
-*Bảng 5. Kết quả identification trên tập test.*
-
-![So sánh accuracy và Rank-1](/assets/a2/bars_a2.png)
-
-*Hình 5. Accuracy và Rank-1 của bốn run.*
-
-### Khoảng tin cậy bootstrap
-
-Chúng tôi dùng paired bootstrap trên $10.000$ cặp test, $2.000$ lần lấy mẫu, seed $42$. Với mỗi lần lấy mẫu, cùng một chỉ số cặp được dùng cho mọi run, nên chênh lệch giữa hai run là ghép cặp.
-
-| So sánh | Metric | Chênh lệch | KTC 95% |
-|---|---|---:|---:|
-| resnet50_arcface − resnet50_softmax | Accuracy | +1,68 | [+1,19, +2,19] |
-| resnet50_arcface − resnet50_softmax | TAR@FAR $10^{-3}$ | +24,40 | [+14,12, +31,09] |
-| resnet50_arcface − resnet50_softmax | TAR@FAR $10^{-2}$ | +12,61 | [+8,99, +16,13] |
-| mobilenetv3_arcface − mobilenetv3_softmax | Accuracy | +1,47 | [+1,01, +1,94] |
-| mobilenetv3_arcface − mobilenetv3_softmax | TAR@FAR $10^{-3}$ | +12,53 | [+4,21, +26,15] |
-| mobilenetv3_arcface − mobilenetv3_softmax | TAR@FAR $10^{-2}$ | +7,25 | [+4,47, +9,70] |
-| mobilenetv3_arcface − resnet50_arcface | Accuracy | −0,10 | [−0,52, +0,34] |
-| mobilenetv3_arcface − resnet50_arcface | TAR@FAR $10^{-3}$ | −0,63 | [−8,71, +6,91] |
-| mobilenetv3_arcface − resnet50_arcface | TAR@FAR $10^{-2}$ | −1,72 | [−3,99, +1,43] |
-| mobilenetv3_softmax − resnet50_softmax | Accuracy | +0,11 | [−0,40, +0,63] |
-| mobilenetv3_softmax − resnet50_softmax | TAR@FAR $10^{-3}$ | +11,24 | [−2,88, +19,88] |
-| mobilenetv3_softmax − resnet50_softmax | TAR@FAR $10^{-2}$ | +3,64 | [+1,03, +7,82] |
-
-*Bảng 6. Chênh lệch verification và khoảng tin cậy bootstrap 95%. Đơn vị: điểm phần trăm.*
-
 ### Đường cong huấn luyện
 
-![Validation ROC-AUC theo epoch](/assets/a2/curves_a2.png)
+![ROC-AUC trên validation theo epoch](/assets/a2/curves_a2.png)
 
-*Hình 6. ROC-AUC validation theo epoch. ROC-AUC là metric chọn checkpoint, không phải metric báo cáo chính.*
+*Hình 4. ROC-AUC trên tập validation theo epoch của bốn run.*
 
-![Loss huấn luyện theo epoch](/assets/a2/loss_a2.png)
+Hai run ArcFace hội tụ nhanh hơn hẳn: ResNet-50 ArcFace đạt đỉnh ở epoch 14 (0,9795) và MobileNetV3 ArcFace ở epoch 20 (0,9797), trong khi hai run softmax đạt đỉnh ở epoch 27 (0,9720) và 51 (0,9741). Các run dừng sớm sau 20 đến 57 epoch nên trần 100 epoch không bị chạm tới. Loss huấn luyện của hai hàm loss có thang khác nhau (ArcFace từ khoảng 40 xuống 7 đến 12, softmax từ khoảng 9 xuống khoảng 1) nên không so trực tiếp được.
 
-*Hình 7. Loss huấn luyện trung bình mỗi epoch. Softmax và ArcFace có thang khác nhau, nên mỗi loss có một panel riêng.*
+### Kết quả trên tập test
 
-## Thảo luận
+| Run | ROC-AUC | Accuracy (%) | TAR@FAR=$10^{-2}$ (%) | Rank-1 (%) | Rank-5 (%) |
+|---|---:|---:|---:|---:|---:|
+| ResNet-50 softmax | 0,9721 | 92,41 | 73,37 | 45,26 | 66,48 |
+| ResNet-50 ArcFace | 0,9805 | 94,10 | 86,16 | **68,37** | **82,31** |
+| MobileNetV3 softmax | 0,9736 | 92,40 | 77,15 | 52,04 | 71,09 |
+| MobileNetV3 ArcFace | **0,9816** | 93,99 | 84,28 | 66,50 | 80,61 |
 
-### ArcFace tốt hơn softmax
+*Bảng 7. Kết quả test. Accuracy dùng ngưỡng chọn trên validation; Rank-1 và Rank-5 là identification trên gallery 997 ảnh và 18.962 probe.*
 
-Ở cùng backbone và cùng learning rate $0{,}001$, ArcFace tốt hơn softmax trên mọi metric:
+![Đường ROC trên tập test](/assets/a2/roc_a2.png)
 
-- ResNet-50: accuracy tăng $1{,}68$ điểm, TAR@FAR=$10^{-2}$ tăng $12{,}61$ điểm, Rank-1 tăng $23{,}12$ điểm.
-- MobileNetV3 Large: accuracy tăng $1{,}47$ điểm, TAR@FAR=$10^{-2}$ tăng $7{,}25$ điểm, Rank-1 tăng $14{,}43$ điểm.
+*Hình 5. Đường ROC của verification trên tập test; hai đường ArcFace nằm trên hai đường softmax ở vùng FPR thấp.*
 
-Khoảng tin cậy bootstrap của accuracy và TAR@FAR không chứa $0$ ở cả hai cặp so sánh. Chênh lệch ở identification lớn hơn nhiều so với verification. Điều này hợp lý: verification chỉ yêu cầu phân biệt một cặp đúng/sai, còn identification yêu cầu xếp hạng đúng ảnh trong $997$ ứng viên.
+### Softmax so với ArcFace
 
-### Backbone không phải yếu tố quyết định trên verification
+Khoảng tin cậy bootstrap 95% (ghép cặp trên 10.000 cặp test, 2.000 lần lấy mẫu) của chênh lệch giữa các run:
 
-ResNet-50 và MobileNetV3 Large gần như bằng nhau về verification:
+| Phép so sánh | Metric | Chênh lệch | KTC 95% |
+|---|---|---:|---:|
+| ResNet-50: ArcFace − softmax | ROC-AUC | +0,0084 | [+0,0061; +0,0108] |
+| MobileNetV3: ArcFace − softmax | ROC-AUC | +0,0079 | [+0,0060; +0,0100] |
+| ArcFace: MobileNetV3 − ResNet-50 | ROC-AUC | +0,0011 | [−0,0008; +0,0027] |
+| Softmax: MobileNetV3 − ResNet-50 | ROC-AUC | +0,0016 | [−0,0007; +0,0041] |
 
-- ArcFace: accuracy $94{,}10\%$ so với $94{,}00\%$, chênh lệch $-0{,}10$ điểm, KTC $[-0{,}52, +0{,}34]$.
-- Softmax: accuracy $92{,}42\%$ so với $92{,}53\%$, chênh lệch $+0{,}11$ điểm, KTC $[-0{,}40, +0{,}63]$.
+*Bảng 8. Chênh lệch giữa các cặp run trên tập test.*
 
-Khoảng tin cậy chứa $0$, nên dữ liệu không cho thấy bằng chứng về một backbone tốt hơn trên verification. Tuy nhiên, MobileNetV3 có $3{,}47$ triệu tham số suy luận so với $24{,}56$ triệu của ResNet-50, tức nhỏ hơn khoảng $7{,}1$ lần.
+- Verification: ArcFace tốt hơn softmax ở cả hai backbone, và khoảng tin cậy không chứa 0.
+- Identification: Rank-1 tăng 23,1 điểm (ResNet-50) và 14,5 điểm (MobileNetV3), Rank-5 tăng 15,8 và 9,5 điểm. Identification buộc embedding của một ảnh phải gần ảnh cùng người nhất trong 997 danh tính, nên nhạy với việc các lớp có tách nhau đủ xa hay không, đúng là điều margin nhắm tới. Nhóm chưa có thí nghiệm riêng để kiểm chứng cách giải thích này.
+- Lưu ý: learning rate 0,001 được chọn vì ArcFace. Ở learning rate 0,01 (chỉ theo dõi trên validation), softmax ResNet-50 đạt ROC-AUC validation 0,9794, cao hơn 0,9720 ở 0,001. Khoảng cách giữa hai loss ở trên là khoảng cách ở một learning rate chung và có thể bị phóng đại.
 
-Ở identification, hướng chênh lệch không nhất quán:
+### ResNet-50 so với MobileNetV3
 
-- ArcFace: ResNet-50 cao hơn MobileNetV3 ở Rank-1 ($68{,}37\%$ so với $66{,}48\%$).
-- Softmax: MobileNetV3 cao hơn ResNet-50 ở Rank-1 ($52{,}05\%$ so với $45{,}25\%$).
+Với verification, hai backbone không khác biệt có ý nghĩa thống kê (khoảng tin cậy chứa 0 ở cả hai loss). Với identification, hướng chênh lệch không nhất quán: ResNet-50 cao hơn với ArcFace (Rank-1 68,4% so với 66,5%), còn MobileNetV3 cao hơn với softmax (52,0% so với 45,3%). Chi phí thì rất khác nhau: MobileNetV3 có số tham số suy luận nhỏ hơn 7,1 lần, mỗi epoch nhanh hơn 2,5 lần và dùng bộ nhớ ít hơn 1,9 lần. Trong thiết lập này MobileNetV3 là lựa chọn hợp lý hơn, với điều kiện chỉ có một seed và dữ liệu cỡ CelebA.
 
-Vì vậy, kết luận là: **MobileNetV3 là lựa chọn tốt về chi phí trong thiết lập này**, nhưng không có bằng chứng rằng nó luôn tốt hơn ResNet-50 ở identification.
+### Phân tích lỗi
 
-### So với paper
+Nhóm xem lỗi của verification trên 10.000 cặp test ở ngưỡng chọn trên validation:
 
-Xu hướng chính của paper được tái hiện: ArcFace tốt hơn softmax trên cùng backbone. Paper cũng cho thấy khoảng cách giữa các loss nhỏ trên LFW nhưng lớn hơn trên CFP-FP và AgeDB-30. Ở thí nghiệm của chúng tôi, khoảng cách giữa ArcFace và softmax nhỏ trên verification nhưng lớn trên identification.
+| Run | False accept | FAR (%) | False reject | FRR (%) | Tổng lỗi |
+|---|---:|---:|---:|---:|---:|
+| ResNet-50 softmax | 300 | 5,87 | 459 | 9,40 | 759 |
+| ResNet-50 ArcFace | 197 | 3,85 | 393 | 8,05 | 590 |
+| MobileNetV3 softmax | 401 | 7,84 | 359 | 7,35 | 760 |
+| MobileNetV3 ArcFace | 254 | 4,97 | 347 | 7,10 | 601 |
 
-Không so sánh trực tiếp các con số tuyệt đối với paper vì:
+*Bảng 9. False accept là cặp khác người bị nhận là cùng người; false reject là cặp cùng người bị loại.*
 
-- Dữ liệu khác: CelebA nhỏ hơn nhiều so với VGG2/MS1M.
-- Backbone khác: paper dùng LResNet100E-IR; chúng tôi dùng ResNet-50 và MobileNetV3 Large của torchvision.
-- Chế độ huấn luyện khác: paper huấn luyện từ đầu với batch lớn; chúng tôi fine-tune từ ImageNet với batch nhỏ.
-- Paper chỉ quét margin trên LMobileNetE, không phải trên các backbone chúng tôi dùng.
+- **ArcFace giảm chủ yếu false accept:** giảm 34% (ResNet-50) và 37% (MobileNetV3), trong khi false reject chỉ giảm 14% và 3%. Điều này phù hợp với việc margin đẩy các danh tính khác nhau ra xa nhau. Ngưỡng của mỗi run khác nhau nên cách lỗi chia giữa hai loại phụ thuộc vào ngưỡng.
+- **Lỗi chung giữa các run:** 208 cặp bị cả bốn run phân loại sai, 1.392 cặp sai ở ít nhất một run; 56% đến 63% lỗi của ArcFace cũng là lỗi của softmax cùng backbone. Phần lớn lỗi nằm ở các cặp khó, nhưng vẫn có phần lỗi riêng của từng mô hình.
+- **Ca sai điển hình** (nhận xét định tính từ 12 cặp mỗi loại): false reject thường là cùng một người nhưng khác rõ về trang điểm, màu và kiểu tóc, độ tuổi, biểu cảm, ánh sáng; false accept thường là hai người khác nhau nhưng cùng giới tính, nhóm tuổi và sắc tộc, có kiểu tóc hoặc tư thế tương tự. Nhóm chưa kiểm tra nhãn của các cặp này nên không loại trừ nhiễu nhãn.
 
-## Kết luận
+![Các cặp cùng người bị loại sai chắc chắn nhất](/assets/a2/errors_false_reject_a2.png)
 
-- **ArcFace tốt hơn softmax ở cả hai backbone.** Chênh lệch nhỏ trên verification nhưng lớn trên identification.
-- **Backbone không phải yếu tố quyết định trên verification.** MobileNetV3 Large đạt kết quả gần bằng ResNet-50 với số tham số suy luận nhỏ hơn khoảng $7{,}1$ lần.
-- **Identification phân biệt rõ hơn verification.** Đây là nơi margin góc thể hiện tác dụng rõ nhất.
-- **Kết quả định tính giống paper, nhưng không so sánh trực tiếp số tuyệt đối.** Khác biệt về dữ liệu, backbone, khởi tạo và chế độ huấn luyện khiến các con số không cùng thang đo.
+*Hình 6. Các cặp cùng người bị loại sai chắc chắn nhất của MobileNetV3 ArcFace; số trên mỗi cặp là cosine.*
+
+![Các cặp khác người bị nhận sai chắc chắn nhất](/assets/a2/errors_false_accept_a2.png)
+
+*Hình 7. Các cặp khác người bị nhận sai chắc chắn nhất của MobileNetV3 ArcFace.*
+
+- **Chất lượng ảnh:** với cặp cùng người, nhóm ảnh mờ nhất có tỉ lệ false reject cao hơn nhóm trung bình ở cả bốn run (ví dụ MobileNetV3 ArcFace 9,1% so với 5,5%), nhưng ở ba trong bốn run nhóm sắc nét nhất lại cao hơn nhóm trung bình, nên quan hệ không đơn điệu. Với cặp khác người, tỉ lệ false accept gần như không phụ thuộc độ sắc nét. Nhóm chưa kiểm định và chỉ có một seed, nên chỉ xem là xu hướng.
+
+![Tỉ lệ lỗi theo độ sắc nét](/assets/a2/errors_sharpness_a2.png)
+
+*Hình 8. Tỉ lệ lỗi theo độ sắc nét của ảnh mờ hơn trong cặp (chia ba nhóm bằng nhau): trái là cặp cùng người, phải là cặp khác người.*
+
+## Thảo luận và hạn chế
+
+- **Điều kết quả cho thấy:** trên CelebA, ArcFace cho embedding tốt hơn softmax ở cả hai backbone; khác biệt về verification nhỏ nhưng ổn định, còn khác biệt về identification lớn. Backbone không phải yếu tố quyết định.
+- **Đối chiếu với paper:** xu hướng cùng chiều với paper (ArcFace cao hơn softmax, khoảng cách nhỏ ở benchmark dễ như LFW và lớn hơn ở benchmark khó). Độ lớn tuyệt đối không so sánh được.
+- **Một seed:** mỗi cấu hình chỉ chạy một lần. Khoảng tin cậy bootstrap chỉ phản ánh nhiễu do lấy mẫu các cặp test, không phản ánh độ biến động giữa các lần huấn luyện; với identification nhóm không tính được khoảng tin cậy.
+- **Learning rate chưa tinh chỉnh:** dùng chung 0,001 cho bốn run, chọn bằng thử nghiệm ngắn chỉ với ArcFace trên ResNet-50; softmax không được thử giá trị khác.
+- **Quy mô dữ liệu:** khoảng 20 ảnh mỗi danh tính trên 8.192 lớp, nhỏ hơn nhiều so với dữ liệu của paper; kết luận chỉ áp dụng cho quy mô này và cho CelebA.
+- **Tập đánh giá:** gallery có một ảnh mỗi danh tính (ảnh đầu tiên theo tên tệp) và không lặp lại với các lựa chọn khác, nên Rank-1 phụ thuộc vào ảnh được chọn.
+- **Thiết kế thí nghiệm:** không thử các giá trị khác của $s$ và $m$, không ablation riêng cho tăng cường dữ liệu và khởi tạo từ ImageNet, không đánh giá chéo tập dữ liệu (ví dụ LFW), phân tích lỗi chỉ định tính và chưa theo thuộc tính của CelebA, chưa đo độ trễ suy luận.
+- **Dropout trước BatchNorm cuối:** nhóm đã đo ảnh hưởng của việc dropout đứng trước BN cuối của khối embedding (`scripts/a2/check_bn.py`). Hiệu chỉnh lại thống kê của BN này chỉ làm ROC-AUC test thay đổi tối đa 0,0006 và Rank-1 tối đa 0,0016, nhỏ hơn nhiều so với khoảng cách giữa hai loss.
+- **Huấn luyện bị gián đoạn:** bốn run bị thu hồi container và tiếp tục từ bản backup, nên thứ tự lấy mẫu dữ liệu có thể khác một lần chạy liền mạch.
+
+## Demo
+
+Script `scripts/a2/demo.py` nhận hai ảnh khuôn mặt, in cosine similarity và kết luận cùng người hay khác người theo ngưỡng chọn trên validation, đồng thời lưu hình hai ảnh kèm kết quả. Script không có bộ phát hiện khuôn mặt, nên ảnh cần được căn chỉnh sẵn về $112 \times 112$ như dữ liệu huấn luyện; ảnh khác kích thước chỉ được cắt giữa và đổi cỡ.
+
+```bash
+python scripts/a2/demo.py a.jpg b.jpg --run mobilenetv3_arcface --truth same --out demo_pair.png
+```
+
+Video demo: _đang cập nhật liên kết_.

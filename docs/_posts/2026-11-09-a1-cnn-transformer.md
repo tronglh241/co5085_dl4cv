@@ -22,7 +22,7 @@ Thông tin chính của bài:
 - **Tập dữ liệu:** [Food-101](https://huggingface.co/datasets/ethz/food101), 101 lớp món ăn, 101.000 ảnh.
 - **CNN:** ResNet-50 (`microsoft/resnet-50`). **Transformer:** DeiT-S (`facebook/deit-small-patch16-224`). Cả hai có trọng số ImageNet-1k.
 - **Bốn chế độ:** scratch, head, partial, full. Hai mô hình nhân bốn chế độ thành 8 run, mỗi run một lần với seed 42.
-- **Code:** [thư mục `scripts/a1`, `models/a1` và `configs/a1`](https://github.com/tronglh241/co5085_dl4cv/tree/main/scripts/a1) trên GitHub.
+- **Code:** thư mục [`scripts/a1`](https://github.com/tronglh241/co5085_dl4cv/tree/main/scripts/a1), [`models/a1`](https://github.com/tronglh241/co5085_dl4cv/tree/main/models/a1) và [`configs/a1`](https://github.com/tronglh241/co5085_dl4cv/tree/main/configs/a1) trên GitHub.
 - **Báo cáo PDF:** [assignment_1.pdf](https://github.com/tronglh241/co5085_dl4cv/blob/main/reports/assignment_1.pdf), có đầy đủ phần kiến trúc, siêu tham số và các hạn chế.
 
 Kết quả chính:
